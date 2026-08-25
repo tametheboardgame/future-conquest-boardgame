@@ -1,479 +1,511 @@
 # Future Conquest Boardgame Conversion Roadmap
 
-## Purpose
+## Mission
 
-Convert the proven, working `future-conquest` simulation codebase into the new digital board-game version of Future Conquest **without replacing or re-architecting the existing 2.5D map/rendering foundation**.
+Convert the proven, working `future-conquest` simulation into the new digital board-game version of Future Conquest **by editing the existing application around its working 2.5D map**, not by transplanting that map into another application architecture.
 
-The map is the foundation. The game around it changes.
+**The map is the foundation. The game around it changes.**
 
-This roadmap supersedes the attempted `future-conquest-tabletop` architecture for forward development. That repository remains reference material only for mechanics, UI concepts and implementation ideas that can be selectively transplanted.
-
-## Core Architectural Rule
-
-**Do not rebuild the working map inside a new application. Convert the existing working application into the board game.**
-
-The following are treated as protected infrastructure unless a later package explicitly proves a safe reason to change them:
-
-- current MapLibre/WebGL lifecycle
-- terrain and DEM configuration
-- current map mount/startup behaviour
-- existing camera behaviour
-- existing world/city/landmark presentation
-- existing physical unit/miniature rendering where useful
-- current deployment/runtime path that has been proven on real hardware
-
-Board-game state and rules should feed the existing renderer. The renderer should not own authoritative game outcomes.
-
-## BG0 - Golden Baseline Freeze
-
-### Goal
-
-Record the freshly imported repository as the known-good hardware baseline before board-game conversion begins.
-
-### Acceptance
-
-- GitHub Pages deployment is green.
-- Production page loads successfully on the affected real PC/browser.
-- No hard freeze.
-- Existing map can pan/zoom and remains responsive.
-- Existing terrain, cities, landmarks and physical formations render correctly.
-- Current baseline commit and deployment URL are recorded.
-
-### Rule
-
-No gameplay conversion work starts until this baseline is accepted.
+The abandoned `future-conquest-tabletop` repository is now reference-only. It may contribute rules, tests and UI ideas, but its application/rendering architecture must not be copied wholesale.
 
 ---
 
-## BG1 - Board-Game Presentation Shell
+# Locked Architectural Decisions
 
-### Goal
+1. **Preserve the working map stack.** The current MapLibre/WebGL lifecycle, DEM/terrain setup, map mounting behaviour, camera, cities, landmarks and physical map presentation are protected infrastructure.
+2. **Convert in place.** Replace simulation UI and mechanics progressively inside the known-good application.
+3. **Board state is authoritative.** The renderer displays state. React presentation does not decide game outcomes.
+4. **Small packages, frequent deployments.** Any change that can affect the map is deployed and checked on the real hardware before the next risky package.
+5. **Real hardware wins.** Automated browser tests never overrule a freeze or regression on the accepted real PC/browser.
+6. **Keep the visual identity.** The game should look like a physical strategy board game being played on the existing 2.5D campaign map, not like a spreadsheet-heavy military simulator.
+7. **Simplify systems aggressively.** Logistics, engineering, escalation and support should become understandable actions, cards, tracks and tokens rather than deep operational interfaces.
 
-Replace the simulation-oriented interface around the map with the board-game interface while leaving the proven map lifecycle intact.
+---
 
-### Target presentation
+# BG0 - Golden Baseline
+
+**Status: ACCEPTED**
+
+The freshly imported original application is the golden baseline for all subsequent work.
+
+Accepted baseline:
+
+- Repository: `tametheboardgame/future-conquest-boardgame`
+- Accepted `main`: `0faa6c818af1959adcf26633c10de8e62a3d42b2`
+- Production: `https://tametheboardgame.github.io/future-conquest-boardgame/`
+- Real-hardware result: working and responsive, with no hard freeze
+
+Protected baseline behaviours:
+
+- startup/launcher lifecycle
+- map mount lifecycle
+- MapLibre/WebGL context behaviour
+- terrain and DEM configuration
+- camera movement
+- city/landmark/world presentation
+- physical formation rendering where retained
+- production build/deployment path
+
+**Gate:** BG0 is complete. BG1 may begin.
+
+---
+
+# BG1 - Convert the Interface into the Board-Game Shell
+
+## Goal
+
+Make the existing application *look and behave at the presentation level* like the board game we designed, while changing as little map/rendering code as possible.
+
+## Target interface
+
+The main play screen should become map-first and use a compact tabletop command shell:
 
 - `FUTURE CONQUEST / THE CENTRAL FRONT`
-- round counter, initially `Round 1 / 8`
-- active command / active player display
-- remaining Command Actions
+- `Round X / 8`
+- active side / active player
+- Command Actions remaining
 - current phase
-- compact left navigation for Board / Forces / Combat / Cards / Rules as appropriate
-- right-side current activation panel
-- clear primary actions such as Move, Attack, Recover, Engineer, Logistics and Pass
-- alerts and contextual guidance that do not obstruct the map
+- compact navigation such as Board / Forces / Combat / Cards / Rules
+- right-side Current Activation panel
+- large, obvious contextual actions such as Move, Attack and Pass Activation
+- later slots for Recover, Engineer and Logistics
+- unobtrusive notifications and contextual guidance
 
-### Constraints
+## Approach
 
-- map component remains mounted and behaves exactly as the golden baseline unless a small, separately tested integration change is required
-- no gameplay logic should be embedded in UI components
-- old simulation panels are removed or hidden incrementally, not by replacing the application root wholesale
+Do **not** replace the app root and then attempt to reinsert the map.
 
-### Acceptance
+Instead:
 
-- visual shell reads as a board game rather than a simulation control console
-- baseline map remains fully responsive on real hardware
-- no authoritative simulation systems have yet been required to change
+1. keep the existing map mounted exactly as it is
+2. progressively hide/remove old simulation panels
+3. overlay/replace interface chrome around the existing map
+4. introduce the new shell without yet rewriting all underlying simulation systems
+5. keep every step reversible until real-hardware acceptance
+
+## Acceptance
+
+- map looks and behaves like the accepted BG0 baseline
+- interface clearly reads as a digital board game
+- existing simulation screens no longer dominate normal play
+- no new authoritative board-game mechanics are required yet
+- real-hardware test passes before BG2
 
 ---
 
-## BG2 - Board State Foundation
+# BG2 - Board-Game State Foundation
 
-### Goal
+## Goal
 
-Introduce a clean authoritative board-game state model behind the existing map.
+Create a clean authoritative board state behind the retained renderer.
 
-### State model
+## Initial state model
 
 - scenario
 - round and phase
-- active seat/player
+- player/seat configuration
+- active seat
 - Command Actions remaining
-- regions / spaces
-- political ownership and control
-- formations / pieces
-- readiness / damage state
-- supply state at board-game abstraction level
-- card/deck state placeholders
-- deterministic random state
-- save/version metadata
+- regions/spaces
+- control/ownership
+- physical formations/pieces
+- readiness/damage
+- simplified supply state
+- deck/hand/discard placeholders
+- deterministic random seed/state
+- save version metadata
 
-### Principles
+## Rules
 
 - renderer consumes board state
 - UI dispatches actions
-- rules engine determines outcomes
-- state changes are deterministic and testable
+- rules engine validates and resolves actions
+- invalid actions mutate nothing and cost nothing
 - no `Math.random` for authoritative results
+- save/reload must reproduce the same board state
 
-### Acceptance
+## Acceptance
 
-- new board state can initialise, save, reload and reproduce deterministically
-- existing map can visualise ownership/pieces from the new state without changing rendering architecture
+- new board state initialises deterministically
+- save/reload works
+- existing map can render the new ownership/piece state without a renderer rewrite
 
 ---
 
-## BG3 - Players, Seats and Turn Structure
+# BG3 - Players, Seats, Rounds and Alternating Activations
 
-### Goal
+## Goal
 
-Make Future Conquest a proper multi-seat digital board game.
+Turn the application into an actual multi-player board game.
 
-### Required model
+## Player model
 
-- minimum two seats
-- each seat can be Human or Computer
-- hot-seat local multiplayer supported
-- either strategic side may be human or computer controlled
-- architecture permits coalition seats to be split further later, for example national European commands, without forcing that complexity into the first release
+Minimum two seats. Each seat can be:
 
-### Initial turn structure
+- Human
+- Computer
+
+Initial supported configurations:
+
+- Human vs Computer
+- Human vs Human hot-seat
+- Computer vs Computer for automated testing
+
+Architecture should allow coalition control to be split further later, for example by country, without forcing that complexity into the first release.
+
+## Initial turn structure
 
 - round start
-- escalation/reinforcement step where appropriate
+- escalation/reinforcement step where applicable
 - alternating activations
-- each successful action consumes a Command Action
-- active seat alternates according to rules
-- invalid actions consume nothing
-- Pass is always available when appropriate
-- round ends when command/action conditions are exhausted
+- a successful action consumes a Command Action
+- active seat alternates according to the rules
+- invalid action costs nothing
+- Pass Activation is always available when appropriate
+- round ends when action/activation conditions are exhausted
 
-### Acceptance
+## Acceptance
 
-- complete deterministic turn cycle can be played without old simulation turn machinery
-- human-vs-human and human-vs-basic-AI seat configuration works
-
----
-
-## BG4 - Physical Pieces, Selection and Movement
-
-### Goal
-
-Turn the existing physical formations on the working map into board-game pieces rather than simulation entities.
-
-### Features
-
-- obvious selectable pieces
-- clear selected-piece state
-- legal destination highlighting
-- movement allowance expressed as board-game rules, not continuous operational logistics
-- adjacency / route / space rules
-- movement confirmation and cancellation
-- visible movement animation using the existing renderer where practical
-- occupied / blocked / enemy-controlled constraints
-
-### Design direction
-
-The visual effect should resemble moving physical board-game miniatures across the existing 2.5D campaign map.
-
-### Acceptance
-
-- player can select a piece and understand where it may legally move
-- movement is governed solely by board-game rules
-- physical map remains stable throughout repeated movement
+- a complete deterministic round can be played without relying on the old simulation turn engine
+- Human vs Human and Human vs basic Computer seat configuration works
 
 ---
 
-## BG5 - Dice Combat System
+# BG4 - Physical Board Pieces and Movement
 
-### Goal
+## Goal
 
-Replace opaque simulation combat with a legible board-game combat procedure.
+Keep the existing attractive physical formations, but make them behave like board-game pieces.
 
-### Core system
+## Features
 
-- attacker selects legal target
-- game builds an explicit dice pool
-- modifiers are visible before commitment
-- terrain, readiness, support, supply and posture can alter dice or thresholds
-- deterministic seeded rolls
-- visible dice result presentation
-- hits / losses / readiness changes
-- retreat where required
-- elimination where required
-- control change after valid outcome
-- concise combat log/result card
+- pieces clearly selectable directly on the map
+- obvious selected-piece state
+- legal destinations highlighted
+- board-game adjacency/route rules
+- simple movement allowance
+- move preview, confirm and cancel
+- blocked/occupied/enemy-space rules
+- visible movement animation where safe within the existing renderer
+- movement results update authoritative board state
 
-### UX requirement
+## Design rule
 
-The player should be able to answer:
+Remove the old operational movement/logistics burden. The player should think in terms of **where can this piece move this activation?**, not continuous military administration.
 
-- why can I attack?
-- how many dice am I rolling?
-- why did I get those dice?
-- what did each result do?
+## Acceptance
 
-### Acceptance
-
-- all authoritative combat is rules-engine driven and reproducible in tests
-- presentation does not calculate outcomes
+- selection and movement are immediately understandable
+- player can always see why a destination is or is not legal
+- repeated movement does not destabilise the map
 
 ---
 
-## BG6 - Escalation and Reinforcement Decks
+# BG5 - Dice Combat
 
-### Goal
+## Goal
 
-Create the variable, replayable escalation system discussed for the defending coalition.
+Replace opaque simulation combat with a visible, understandable board-game procedure.
 
-### Core concept
+## Core sequence
 
-As the campaign progresses, defending forces gain increasing resources, but the exact timing, quantity and location vary between games.
+1. select attacking piece(s)
+2. select legal target
+3. show dice pool and modifiers before commitment
+4. roll deterministic seeded dice
+5. resolve hits/losses/readiness
+6. retreat/eliminate where required
+7. change control where applicable
+8. show concise result
 
-### Initial design to prototype
+Possible modifiers include:
 
-Use shuffled escalation cards to determine some combination of:
+- formation strength
+- terrain
+- posture
+- readiness
+- supply/support
+- cards
+
+## UX requirement
+
+Before confirming combat the player should understand:
+
+- why the attack is legal
+- how many dice are being rolled
+- why those dice/modifiers apply
+- what outcomes are possible
+
+## Acceptance
+
+- combat is deterministic under a saved seed
+- rules engine owns outcomes
+- presentation only displays them
+- no hidden simulation combat path remains authoritative
+
+---
+
+# BG6 - Escalation and Reinforcement Deck
+
+## Goal
+
+Implement the campaign escalation idea: the defending coalition becomes stronger as the invasion progresses, but shuffled cards make timing, quantity and location vary between games.
+
+## Prototype candidates
+
+A card can determine some combination of:
 
 - reinforcement quantity
 - reinforcement type
-- reinforcement location / theatre
+- reinforcement location/theatre
 - political mobilisation
 - strategic effects
 - emergency responses
 
-The implementation should remain open to either:
+Prototype both conceptual structures before locking the final one:
 
-1. one combined escalation deck; or
-2. separate quantity/effect and location decks
+- one combined escalation deck
+- separate reinforcement/effect and location decks
 
-The final choice should be made after a small playable prototype rather than assumed up front.
+## Design objective
 
-### Acceptance
+The defenders should build toward a dangerous late campaign without every game following the same reinforcement script.
 
-- same scenario can develop differently across seeded games
-- escalation creates increasing pressure without requiring old simulation resource systems
-- deck state is visible and saveable
+## Acceptance
+
+- seeded games reproduce exactly
+- different seeds create materially different campaign development
+- escalation pressure increases over time
+- deck state saves/reloads correctly
 
 ---
 
-## BG7 - Engineering, Logistics and Support as Board-Game Actions
+# BG7 - Engineering, Logistics and Recovery as Simple Board-Game Actions
 
-### Goal
+## Goal
 
-Keep the strategic flavour of the original game while removing interface-heavy simulation administration.
+Keep the strategic importance of the old systems without keeping their administrative complexity.
 
-### Replace deep simulation with
-
-- action choices
-- cards
-- tokens/status markers
-- limited tracks
-- temporary modifiers
-- simple local effects
-
-### Candidate actions
+## Candidate actions/statuses
 
 - Engineer
 - Logistics
 - Recover / Refit
-- Strategic redeployment
-- Interdiction
-- Fortification
-- Bridge / route repair
-- supply restoration
+- Fortify
+- repair route/bridge
+- restore supply
+- strategic redeployment
+- interdiction
+- temporary support
 
-### Rule
+Represent these through combinations of:
 
-If a system requires the player to manage a spreadsheet-like operational interface to use it, simplify it again.
+- action choices
+- tokens/status markers
+- limited tracks
+- cards
+- short-lived modifiers
 
-### Acceptance
+## Hard rule
 
-- logistics and engineering matter strategically
-- they are understandable in seconds, not minutes
-- map gives clear visual feedback for relevant statuses
+If using a system feels like managing an operational spreadsheet, simplify it again.
 
----
+## Acceptance
 
-## BG8 - Cards, Events and Strategic Decisions
-
-### Goal
-
-Use cards to carry much of the historical/strategic flavour that the old simulation exposed through systems and menus.
-
-### Card families
-
-- command cards
-- event cards
-- escalation cards
-- support cards
-- national/political response cards
-- scenario-specific cards
-
-### Card design principle
-
-Cards should create interesting choices, exceptions and replayability without making the core rules difficult to learn.
-
-### Acceptance
-
-- cards have deterministic, testable effects
-- hand/deck/discard state saves correctly
-- card UI does not obscure the map unnecessarily
+- these systems matter strategically
+- their immediate effects are visible on the map
+- rules can be understood quickly from the interface
 
 ---
 
-## BG9 - Computer Player
+# BG8 - Cards and Strategic Events
 
-### Goal
+## Goal
 
-Allow any major seat to be computer controlled.
+Move much of the historical flavour and strategic exception handling from simulation menus into a board-game card system.
 
-### Development order
+## Candidate families
 
-1. legal-action enumerator
+- Command
+- Support
+- Event
+- Escalation
+- National/political response
+- Scenario-specific
+
+## Principles
+
+- cards create choices, exceptions and replayability
+- core rules remain learnable without memorising a deck
+- hand/deck/discard are visible and saveable
+- card effects call the same authoritative rules APIs as other actions
+
+---
+
+# BG9 - Computer Player
+
+## Goal
+
+Allow either strategic side to be computer controlled.
+
+## Development order
+
+1. enumerate legal actions
 2. deterministic baseline policy
-3. tactical scoring for movement/combat
-4. strategic priorities
+3. movement/combat scoring
+4. strategic objectives
 5. card/action valuation
-6. difficulty personalities/parameters
+6. difficulty/personality parameters
 
-### Constraint
+## Hard rule
 
-AI must use the same legal action APIs as human players. No hidden alternate rules engine.
+The AI uses the **same legal actions and rules engine as a human player**. No secret alternative game rules.
 
-### Acceptance
+## Acceptance
 
-- a complete scenario can be played human-vs-AI or AI-vs-AI
-- AI completes turns reliably and cannot issue illegal actions
+- Human vs AI works through a complete campaign
+- AI vs AI can run unattended for balance testing
+- AI cannot issue illegal actions
 
 ---
 
-## BG10 - Scenario, Victory and Balance
+# BG10 - Scenario, Objectives and Victory
 
-### Goal
+## Goal
 
-Turn the board-game system into a complete campaign rather than a mechanics sandbox.
+Turn the mechanics into a complete Central Front campaign.
 
-### Includes
+## Includes
 
 - initial setup
-- scenario length
-- objectives
+- round limit
+- strategic objectives
 - geographical victory conditions
-- political/strategic victory points where useful
-- sudden victory / collapse conditions where appropriate
+- political/strategic victory points if useful
+- sudden victory/collapse conditions where appropriate
 - end-of-round scoring
 - final victory calculation
-- automated balance simulations
 
-### Acceptance
+## Acceptance
 
-- game can be won and lost clearly
-- both sides have viable strategic choices
-- repeated automated games expose obvious dominant strategies before human playtest
+- the game can clearly be won and lost
+- both sides have meaningful strategic choices
+- automated games identify obvious dominant strategies before human testing
 
 ---
 
-## BG11 - Onboarding and Presentation Polish
+# BG11 - Onboarding, Feedback and Presentation Polish
 
-### Goal
+## Goal
 
-Make the board game understandable and satisfying without losing the existing map's visual identity.
+Make the game easy to understand and satisfying to operate without sacrificing the existing map's identity.
 
-### Includes
+## Includes
 
 - guided first turn
 - contextual hints
-- concise rules reference
+- compact rules reference
 - action previews
-- clear disabled-action reasons
-- dice/card animation
-- piece movement polish
-- sound and music controls
-- accessibility options
-- mobile/touch consideration where practical
-- alert suppression / do-not-show-again controls
+- explicit disabled-action reasons
+- dice presentation
+- card presentation
+- movement animation/polish
+- sound/music controls
+- accessibility
+- notification suppression / do-not-show-again options
+- touch/mobile controls where practical
 
-### Acceptance
+## Acceptance
 
-- a new player can begin without reading a long manual
-- no critical rule state is communicated only by colour or animation
+- a new player can start without reading a long manual
+- unavailable actions always have an understandable reason
+- critical state is not communicated only through colour or animation
 
 ---
 
-## BG12 - Final Playtest Remediation and Release Gate
+# BG12 - Structured Playtest Remediation and Release Gate
 
-### Goal
+## Goal
 
-Run structured human playtests and repair the issues that only appear when the complete game is played as a game.
+Play the complete game repeatedly and fix what only becomes apparent when all systems interact.
 
-### Playtest questions
+## Core playtest questions
 
-- Is it fun?
-- Is the player making meaningful choices frequently enough?
-- Is anything too fiddly?
-- Are turns too long?
-- Is the map readable?
-- Can players understand why an action is unavailable?
-- Do cards/dice create useful uncertainty rather than arbitrary outcomes?
-- Does escalation produce a satisfying campaign arc?
-- Are there runaway strategies or unwinnable positions?
+- Is it actually fun?
+- Are meaningful decisions frequent enough?
+- Are any systems too fiddly?
+- Are activations/rounds too long?
+- Is the map readable under real play conditions?
+- Can players understand why actions are unavailable?
+- Do cards and dice create useful uncertainty rather than arbitrary outcomes?
+- Does escalation create a satisfying campaign arc?
+- Are there runaway strategies or unwinnable openings?
 
-### Final gate
+## Final gate
 
-No later major revision begins until:
+Release candidate requires:
 
-- gameplay is stable on real hardware
-- map remains stable on the original affected hardware/browser
-- save/reload works
-- complete campaign works
-- human-vs-human works
-- human-vs-AI works
-- victory conditions work
-- user accepts both gameplay direction and visual presentation
+- stable real-hardware map/runtime
+- complete campaign
+- reliable save/reload
+- Human vs Human
+- Human vs AI
+- clear victory conditions
+- acceptable balance
+- accepted gameplay direction
+- accepted visual presentation
 
 ---
 
 # Delivery Protocol
 
-## One package at a time
-
-Every work package should follow this pattern:
+Every package follows the same sequence:
 
 1. branch from current green `main`
-2. inspect existing implementation before coding
+2. inspect the existing implementation before coding
 3. make the smallest coherent change
 4. add/update deterministic tests
-5. run full relevant validation
+5. run relevant/full validation
 6. open PR
 7. require exact-head CI green
 8. merge
 9. deploy
-10. verify deployment
-11. perform real-hardware acceptance whenever the change touches map lifecycle/rendering or other historically risky areas
+10. verify live deployment
+11. perform real-hardware acceptance whenever map lifecycle/rendering or another historically risky path was touched
 
-## Real-hardware rule
+## Failure policy
 
-Automated Chromium success does **not** overrule a real-hardware failure.
+If a package causes the accepted machine/browser to freeze or materially destabilises the map:
 
-If a change causes the known-good machine/browser to freeze, revert or isolate that package before continuing.
+- stop progression
+- isolate or revert that package
+- do not compensate with a replacement renderer
+- return to the last accepted golden point
 
-## Renderer protection rule
+---
 
-Do not transplant the renderer into a new shell again.
+# What May Be Salvaged from `future-conquest-tabletop`
 
-Prefer:
-
-`existing working app + progressively replaced gameplay/UI`
-
-not:
-
-`new app + recreated old renderer`.
-
-## Salvage from `future-conquest-tabletop`
-
-The superseded tabletop repository may be used as reference for:
+Reference/copy selectively:
 
 - alternating activation concepts
-- deterministic combat rules
-- command-action semantics
-- UI layout concepts
-- tests and rule contracts
-- naming and presentation ideas
+- deterministic dice combat concepts/tests
+- Command Action semantics
+- board-game UI ideas
+- rule contracts
+- naming/presentation work
 
-Do **not** wholesale copy its application/rendering architecture.
+Do **not** copy wholesale:
 
-# Immediate Next Step
+- its application shell architecture
+- its recreated map lifecycle
+- its renderer integration strategy
+- hardware fallback architecture developed during the freeze investigation
 
-**BG0 is the gate currently in progress.**
+---
 
-Once the freshly imported baseline deployment has been explicitly accepted on the real PC/browser as stable, record the exact accepted commit and begin **BG1 - Board-Game Presentation Shell**.
+# Current Position
+
+**BG0 accepted.**
+
+The next implementation package is **BG1 - Convert the Interface into the Board-Game Shell**, working directly around the proven map rather than rebuilding it.
