@@ -1,0 +1,126 @@
+.tabletop-activation-panel {
+  position: fixed;
+  z-index: 34;
+  top: 148px;
+  right: 12px;
+  width: min(292px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid #45636c;
+  border-radius: 4px 0 0 4px;
+  color: #eaf5f5;
+  background: linear-gradient(180deg, rgba(9, 29, 36, .97), rgba(5, 20, 27, .97));
+  box-shadow: -14px 18px 36px rgba(0, 0, 0, .34);
+}
+
+.tabletop-activation-panel header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #294750;
+}
+
+.tabletop-activation-panel header span {
+  color: #79ddd5;
+  font: 700 11px IBM Plex Mono, monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.tabletop-activation-panel header strong {
+  color: #a6bcc2;
+  font: 600 9px IBM Plex Mono, monospace;
+  text-transform: uppercase;
+}
+
+.tabletop-activation-piece {
+  display: grid;
+  gap: 3px;
+  padding: 12px 0;
+}
+
+.tabletop-activation-piece small {
+  margin-top: 4px;
+  color: #78949e;
+  font: 500 8px IBM Plex Mono, monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.tabletop-activation-piece b {
+  overflow: hidden;
+  color: #f1fbfa;
+  font: 600 16px Barlow Condensed, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabletop-activation-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.tabletop-activation-actions button {
+  min-height: 42px;
+  border: 1px solid #46636d;
+  border-radius: 3px;
+  color: #dbe9eb;
+  background: #102b34;
+  font: 700 11px IBM Plex Mono, monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tabletop-activation-actions button.move:not(:disabled) {
+  border-color: #6ccfc6;
+  background: #164943;
+  color: #effffc;
+}
+
+.tabletop-activation-actions button.attack:not(:disabled) {
+  border-color: #db866f;
+  background: #5a302d;
+  color: #fff3ef;
+}
+
+.tabletop-activation-actions button:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.tabletop-activation-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .38;
+}
+
+.tabletop-later-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.tabletop-later-actions span {
+  padding: 6px 4px;
+  border: 1px solid #243f48;
+  color: #607b84;
+  background: rgba(8, 24, 31, .72);
+  font: 600 8px IBM Plex Mono, monospace;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.tabletop-activation-panel > p {
+  margin: 10px 0 0;
+  color: #728c95;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .tabletop-activation-panel {
+    display: none;
+  }
+}
