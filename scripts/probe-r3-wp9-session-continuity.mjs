@@ -68,7 +68,7 @@ try {
 
   const statusAfterLoad = (await page.locator('.campaign-status-card').innerText()).replace(/\s+/g, ' ').trim();
   assert(statusAfterLoad.includes(expectedDay), `continued campaign restored the wrong day: ${statusAfterLoad}`);
-  assert(statusAfterLoad.includes(`Seed ${saved.seed}`), `continued campaign restored the wrong seed: ${statusAfterLoad}`);
+  assert(statusAfterLoad.toLowerCase().includes(`seed ${saved.seed}`), `continued campaign restored the wrong seed: ${statusAfterLoad}`);
   assert(/hard/i.test(statusAfterLoad), `continued campaign restored the wrong difficulty: ${statusAfterLoad}`);
 
   await page.screenshot({ path: `${outputDir}/continued-campaign-after-load.png`, fullPage: false });
