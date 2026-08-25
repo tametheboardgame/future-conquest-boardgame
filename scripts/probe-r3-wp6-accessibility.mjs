@@ -30,7 +30,7 @@ try {
   await page.getByRole('button', { name: 'BEGIN CAMPAIGN', exact: true }).click();
   await page.locator('.command-workspace').waitFor({ state: 'visible', timeout: 15000 });
 
-  const primary = await page.evaluate(() => [...document.querySelectorAll('.command-navigation [data-command-view]')].map(node => {
+  const primary = await page.evaluate(() => [...document.querySelectorAll('.command-nav-primary [data-command-view]')].map(node => {
     const box = node.getBoundingClientRect();
     const label = node.querySelector('.command-nav-label');
     return {
@@ -43,12 +43,34 @@ try {
     };
   }));
 
-  assert(primary.length === 8, `expected eight primary command views, found ${primary.length}`);
+  assert(primary.length === 4, `expected four board-game command views, found ${primary.length}`);
+  assert(primary.map(item => item.view).join(',') === 'map,forces,operations,campaign', `unexpected primary board-game views: ${primary.map(item => item.view).join(',')}`);
   for (const item of primary) {
     assert(Boolean(item.title), `primary command ${item.view} has no hover title`);
     assert(Boolean(item.label) && item.labelDisplay !== 'none', `primary command ${item.view} has no visible caption`);
     assert(item.width >= 54 && item.height >= 54, `primary command ${item.view} has a small target: ${item.width}x${item.height}`);
   }
+
+  const reservedCards = await page.evaluate(() => {
+    const node = document.querySelector('.command-nav-cards');
+    if (!(node instanceof HTMLButtonElement)) return null;
+    const box = node.getBoundingClientRect();
+    return {
+      disabled: node.disabled,
+      label: node.querySelector('.command-nav-label')?.textContent?.trim() ?? '',
+      width: Math.round(box.width),
+      height: Math.round(box.height)
+    };
+  });
+  assert(reservedCards?.disabled && reservedCards.label === 'Cards', `reserved Cards control is not clearly unavailable: ${JSON.stringify(reservedCards)}`);
+  assert((reservedCards?.width ?? 0) >= 54 && (reservedCards?.height ?? 0) >= 54, `reserved Cards target is too small: ${JSON.stringify(reservedCards)}`);
+
+  const more = page.locator('.command-nav-legacy summary');
+  const moreTarget = await more.evaluate(node => {
+    const box = node.getBoundingClientRect();
+    return { width: Math.round(box.width), height: Math.round(box.height) };
+  });
+  assert(moreTarget.width >= 54 && moreTarget.height >= 54, `More disclosure target is too small: ${moreTarget.width}x${moreTarget.height}`);
 
   const forces = page.locator('[data-command-view="forces"]');
   await keyboardFocus('[data-command-view="forces"]');
@@ -63,6 +85,23 @@ try {
   await page.keyboard.press('Enter');
   await page.locator('.forces-view').waitFor({ state: 'visible', timeout: 5000 });
   assert(await forces.getAttribute('aria-current') === 'page', 'keyboard activation did not update primary navigation state');
+
+  await keyboardFocus('.command-nav-legacy summary');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.querySelector('.command-nav-legacy')?.hasAttribute('open'));
+
+  const legacy = await page.evaluate(() => [...document.querySelectorAll('.command-nav-legacy-items [data-command-view]')].map(node => {
+    const box = node.getBoundingClientRect();
+    const label = node.querySelector('.command-nav-label');
+    return {
+      view: node.getAttribute('data-command-view'),
+      label: label?.textContent?.trim() ?? '',
+      width: Math.round(box.width),
+      height: Math.round(box.height)
+    };
+  }));
+  assert(legacy.length === 4, `expected four legacy utility views behind More, found ${legacy.length}`);
+  assert(legacy.every(item => item.width >= 54 && item.height >= 54 && item.label), `legacy utility target is inaccessible after disclosure: ${JSON.stringify(legacy)}`);
 
   const logistics = page.locator('[data-command-view="logistics"]');
   await keyboardFocus('[data-command-view="logistics"]');
@@ -101,12 +140,14 @@ try {
   const reducedMotion = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
   assert(reducedMotion, 'reduced-motion browser preference was not active');
 
+  await page.locator('[data-command-view="map"]').click();
+  await page.locator('.command-nav-legacy').evaluate(node => node.removeAttribute('open'));
   await page.setViewportSize({ width: 640, height: 900 });
   await page.waitForTimeout(250);
   const compact = await page.evaluate(() => {
     const nav = document.querySelector('.command-navigation');
     const navBox = nav?.getBoundingClientRect();
-    const buttons = [...document.querySelectorAll('.command-navigation [data-command-view]')].map(node => {
+    const buttons = [...document.querySelectorAll('.command-nav-primary button')].map(node => {
       const box = node.getBoundingClientRect();
       const label = node.querySelector('.command-nav-label');
       return {
@@ -115,6 +156,8 @@ try {
         labelDisplay: label ? getComputedStyle(label).display : 'missing'
       };
     });
+    const summary = document.querySelector('.command-nav-legacy summary');
+    const summaryBox = summary?.getBoundingClientRect();
     return {
       viewport: { width: innerWidth, height: innerHeight },
       documentFits: document.documentElement.scrollWidth <= innerWidth + 1,
@@ -123,6 +166,7 @@ try {
       navWidth: navBox ? Math.round(navBox.width) : null,
       buttonCount: buttons.length,
       buttons,
+      moreTarget: summaryBox ? { width: Math.round(summaryBox.width), height: Math.round(summaryBox.height) } : null,
       specialistFits: (() => {
         const tabs = document.querySelector('.logistics-tabs');
         if (!tabs) return false;
@@ -135,12 +179,13 @@ try {
   assert(compact.documentFits, `compact layout causes document-level horizontal overflow: ${JSON.stringify(compact)}`);
   assert(compact.navPosition === 'fixed' && Math.abs(compact.navBottom ?? 999) <= 1, `compact primary navigation is not pinned to the bottom: ${JSON.stringify(compact)}`);
   assert(compact.navWidth === 640, `compact navigation does not span the viewport: ${JSON.stringify(compact)}`);
-  assert(compact.buttonCount === 8, `compact navigation lost command views: ${compact.buttonCount}`);
-  assert(compact.buttons.every(item => item.width >= 64 && item.height >= 54), `compact command target is too small: ${JSON.stringify(compact.buttons)}`);
+  assert(compact.buttonCount === 5, `compact navigation lost primary board-game controls: ${compact.buttonCount}`);
+  assert(compact.buttons.every(item => item.width >= 54 && item.height >= 54), `compact command target is too small: ${JSON.stringify(compact.buttons)}`);
   assert(compact.buttons.every(item => item.labelDisplay !== 'none'), '640px compact navigation unexpectedly hid its short captions');
+  assert((compact.moreTarget?.width ?? 0) >= 54 && (compact.moreTarget?.height ?? 0) >= 54, `compact More target is too small: ${JSON.stringify(compact.moreTarget)}`);
   assert(compact.specialistFits, 'compact specialist tabs extend beyond the visible workspace');
 
-  console.log(JSON.stringify({ primary, primaryFocus, specialist, focusEvidence, reducedMotion, compact }, null, 2));
+  console.log(JSON.stringify({ primary, reservedCards, moreTarget, primaryFocus, legacy, specialist, focusEvidence, reducedMotion, compact }, null, 2));
 } finally {
   await browser.close();
 }
