@@ -17,7 +17,7 @@
 
 .command-nav-legacy > summary {
   display: grid;
-  min-height: 38px;
+  min-height: 54px;
   place-items: center;
   gap: 1px;
   padding: 5px 2px;
@@ -61,7 +61,7 @@
 }
 
 .command-nav-legacy-items button {
-  min-height: 48px;
+  min-height: 54px;
 }
 
 @media (max-width: 900px) {
