@@ -13,7 +13,7 @@ test('the command shell exposes eight persistent command views', () => {
     assert.match(navigation, new RegExp(`id: '${view}'`));
     assert.match(app, new RegExp(`currentView === '${view}'`));
   }
-  assert.match(navigation, /aria-label="Primary command views"/);
+  assert.match(navigation, /aria-label="Board game views"/);
   assert.match(app, /PHASE VIII-D \/ OPERATIONAL CLARITY AND ONBOARDING/);
 });
 

@@ -7,29 +7,18 @@ interface Props {
 }
 
 const ITEMS: Array<{ id: CommandView; code: string; label: string }> = [
-  { id: 'map', code: 'MAP', label: 'Command map' },
+  { id: 'map', code: 'BRD', label: 'Board' },
   { id: 'forces', code: 'FRC', label: 'Forces' },
-  { id: 'operations', code: 'OPS', label: 'Operations' },
-  { id: 'territories', code: 'TER', label: 'Territories' },
-  { id: 'engineering', code: 'INF', label: 'Infrastructure' },
+  { id: 'operations', code: 'CBT', label: 'Combat' },
+  { id: 'territories', code: 'REG', label: 'Regions' },
+  { id: 'engineering', code: 'ENG', label: 'Engineer' },
   { id: 'logistics', code: 'LOG', label: 'Logistics' },
-  { id: 'intelligence', code: 'INT', label: 'Intelligence' },
-  { id: 'campaign', code: 'SYS', label: 'Campaign' }
+  { id: 'intelligence', code: 'INT', label: 'Intel' },
+  { id: 'campaign', code: 'SYS', label: 'Rules & Save' }
 ];
 
 function CommandIcon({ view }: { view: CommandView }) {
-  const common = {
-    width: 24,
-    height: 24,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.7,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true
-  };
-
+  const common = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
   if (view === 'map') return <svg {...common}><path d="m3 6 5-2 8 3 5-2v13l-5 2-8-3-5 2Z"/><path d="M8 4v13M16 7v13"/><circle cx="13" cy="11" r="1.7"/></svg>;
   if (view === 'forces') return <svg {...common}><path d="M12 3 7.5 5v5.2c0 4.1 1.9 7.7 4.5 9.8 2.6-2.1 4.5-5.7 4.5-9.8V5Z"/><path d="M9.3 10.5h5.4M12 7.8v5.4"/></svg>;
   if (view === 'operations') return <svg {...common}><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2.3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>;
@@ -41,30 +30,16 @@ function CommandIcon({ view }: { view: CommandView }) {
 }
 
 export function CommandNavigation({ active, onChange, badges }: Props) {
-  return <nav className="command-navigation" aria-label="Primary command views">
-    <div className="command-brand" aria-hidden="true">
-      <strong>FC</strong>
-      <span>COMMAND</span>
-    </div>
+  return <nav className="command-navigation" aria-label="Board game views">
+    <div className="command-brand" aria-hidden="true"><strong>FC</strong><span>CENTRAL FRONT</span></div>
     <div className="command-nav-items">
       {ITEMS.map(item => {
         const badge = badges[item.id];
-        return <button
-          type="button"
-          key={item.id}
-          className={active === item.id ? 'active' : ''}
-          aria-current={active === item.id ? 'page' : undefined}
-          title={item.label}
-          onClick={() => onChange(active === item.id && item.id !== 'map' ? 'map' : item.id)}
-          data-command-view={item.id}
-        >
-          <span className="command-nav-icon"><CommandIcon view={item.id} /></span>
-          <span className="command-nav-code" aria-hidden="true">{item.code}</span>
-          <span className="command-nav-label">{item.label}</span>
-          {badge !== undefined && <span className="command-nav-badge" aria-label={`${badge} items`}>{badge}</span>}
+        return <button type="button" key={item.id} className={active === item.id ? 'active' : ''} aria-current={active === item.id ? 'page' : undefined} title={item.label} onClick={() => onChange(active === item.id && item.id !== 'map' ? 'map' : item.id)} data-command-view={item.id}>
+          <span className="command-nav-icon"><CommandIcon view={item.id} /></span><span className="command-nav-code" aria-hidden="true">{item.code}</span><span className="command-nav-label">{item.label}</span>{badge !== undefined && <span className="command-nav-badge" aria-label={`${badge} items`}>{badge}</span>}
         </button>;
       })}
     </div>
-    <div className="command-nav-footer"><i /> LINK</div>
+    <div className="command-nav-footer"><i /> TABLE LINK</div>
   </nav>;
 }
