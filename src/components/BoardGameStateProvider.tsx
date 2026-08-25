@@ -15,17 +15,18 @@ function browserStorage(): Storage | null {
 
 function initialiseBoardState(): BoardGameState {
   const storage = browserStorage();
-  if (storage) {
-    const stored = inspectStoredBoardState(storage);
-    if (stored.ok) return stored.state;
-  }
+  const stored = storage ? inspectStoredBoardState(storage) : null;
+  if (stored?.ok) return stored.state;
 
   const initial = createInitialBoardState({
     seed: 0x4655434f,
     controllers: { 'seat-1': 'human' }
   });
 
-  if (storage) writeBoardState(storage, initial);
+  // Create the dedicated BG2 save only when it is genuinely absent. Corrupt or
+  // unsupported data is preserved for explicit recovery rather than silently
+  // overwritten during application bootstrap.
+  if (storage && stored?.code === 'missing') writeBoardState(storage, initial);
   return initial;
 }
 
