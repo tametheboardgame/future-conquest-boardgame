@@ -1,0 +1,146 @@
+.tabletop-status-shell {
+  max-width: 1724px;
+  margin: 22px auto 0;
+  display: grid;
+  grid-template-columns: minmax(230px, .8fr) minmax(850px, 3fr);
+  align-items: stretch;
+  border: 1px solid #3b5963;
+  background: linear-gradient(180deg, rgba(15, 36, 43, .98), rgba(8, 24, 31, .98));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .22);
+}
+
+.tabletop-title-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 86px;
+  padding: 14px 20px;
+  border-right: 1px solid #3b5963;
+  background: linear-gradient(135deg, rgba(36, 87, 83, .5), rgba(11, 31, 39, .3));
+}
+
+.tabletop-title-block span {
+  color: #edf8f7;
+  font: 700 24px Barlow Condensed, sans-serif;
+  letter-spacing: .12em;
+  line-height: 1;
+}
+
+.tabletop-title-block strong {
+  margin-top: 7px;
+  color: #76ddd5;
+  font: 600 11px IBM Plex Mono, monospace;
+  letter-spacing: .17em;
+}
+
+.tabletop-status-grid {
+  display: grid;
+  grid-template-columns: .7fr 1.15fr .8fr .9fr .9fr 1.25fr;
+  margin: 0;
+}
+
+.tabletop-status-grid > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 13px 15px;
+  border-left: 1px solid #203d47;
+}
+
+.tabletop-status-grid > div:first-child {
+  border-left: 0;
+}
+
+.tabletop-status-grid dt {
+  color: #78949e;
+  font: 500 9px IBM Plex Mono, monospace;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.tabletop-status-grid dd {
+  margin: 0;
+  overflow: hidden;
+  color: #eff9f8;
+  font: 600 18px Barlow Condensed, sans-serif;
+  letter-spacing: .035em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabletop-status-grid > div:nth-child(4) dd {
+  color: #8fa7af;
+}
+
+.tabletop-activation-status dd {
+  color: #8ff9ed;
+}
+
+/* BG1B removes the simulation KPI dashboard from normal play. The legacy
+   resolve control remains temporarily available until board-state turns land. */
+.tabletop-status-shell + .command-app-shell {
+  padding-top: 9px;
+}
+
+.command-app-shell > .command-metrics {
+  display: none !important;
+}
+
+.command-app-shell > .command-topbar {
+  height: auto;
+  min-height: 34px;
+  justify-content: flex-end;
+  border-bottom: 0;
+}
+
+.command-app-shell > .command-topbar > div:first-child,
+.command-app-shell > .command-topbar .turn-block {
+  display: none;
+}
+
+.command-app-shell > .command-topbar .topbar-command-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.command-app-shell > .command-topbar .global-resolve {
+  padding: 7px 11px;
+  border-color: #35515e;
+  background: rgba(13, 38, 47, .78);
+  color: #9fb6bd;
+  font-size: 9px;
+  opacity: .78;
+}
+
+.command-app-shell > .command-topbar .global-resolve:hover,
+.command-app-shell > .command-topbar .global-resolve:focus-visible {
+  border-color: #70d7d0;
+  background: #153d44;
+  color: #effffc;
+  opacity: 1;
+}
+
+@media (max-width: 1450px) {
+  .tabletop-status-shell {
+    margin-left: 28px;
+    margin-right: 28px;
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .tabletop-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tabletop-status-grid > div:nth-child(4) {
+    border-left: 0;
+    border-top: 1px solid #203d47;
+  }
+
+  .tabletop-status-grid > div:nth-child(5),
+  .tabletop-status-grid > div:nth-child(6) {
+    border-top: 1px solid #203d47;
+  }
+}
