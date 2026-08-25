@@ -30,7 +30,7 @@ try {
   const difficulty = page.getByLabel('New campaign difficulty');
   await difficulty.selectOption('hard');
   const tutorialToggle = page.getByLabel('Guided tutorial');
-  if (await tutorialToggle.isChecked()) await page.locator('label.tutorial-toggle').click();
+  if (await tutorialToggle.isChecked()) await tutorialToggle.uncheck({ force: true });
   await page.getByRole('button', { name: 'New campaign', exact: true }).click();
 
   await page.locator('[data-command-view="campaign"]').click();
