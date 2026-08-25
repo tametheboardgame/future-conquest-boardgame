@@ -57,13 +57,13 @@ test('map marker classes are independently gated without removing territory sele
   assert.match(map, /className="territory-hit-target"/);
 });
 
-test('mobile command navigation shows full labels beneath a dedicated badge row', () => {
+test('mobile command navigation shows the BG1 board-game labels beneath a dedicated badge row', () => {
   const navigation = read('src/components/CommandNavigation.tsx');
   const css = read('src/map-interface-refinements.css');
   const main = read('src/main.tsx');
 
-  for (const label of ['Command map', 'Forces', 'Operations', 'Territories', 'Intelligence', 'Campaign']) {
-    assert.match(navigation, new RegExp(`label: '${label}'`));
+  for (const label of ['Board', 'Forces', 'Combat', 'Regions', 'Engineer', 'Logistics', 'Intel', 'Rules & Save']) {
+    assert.match(navigation, new RegExp(`label: '${label.replace('&', '\\&')}'`));
   }
   assert.match(navigation, /command-nav-badge/);
   assert.match(navigation, /command-nav-label/);

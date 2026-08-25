@@ -11,9 +11,9 @@ test('WP7 replaces stacked engineering/interdiction screens with one infrastruct
   assert.match(component, /type InfrastructureTab = 'overview' \| 'repair' \| 'upgrade' \| 'interdict' \| 'history'/);
 });
 
-test('WP7 navigation calls the shared screen Infrastructure while preserving the engineering route id', () => {
+test('WP7 navigation uses the BG1 Engineer label while preserving the engineering route id', () => {
   const navigation = fs.readFileSync('src/components/CommandNavigation.tsx', 'utf8');
-  assert.match(navigation, /id: 'engineering', code: 'INF', label: 'Infrastructure'/);
+  assert.match(navigation, /id: 'engineering', code: 'ENG', label: 'Engineer'/);
   assert.match(navigation, /data-command-view=\{item\.id\}/);
 });
 
