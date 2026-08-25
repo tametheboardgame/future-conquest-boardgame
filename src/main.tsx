@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { StartupExperience } from './components/StartupExperience';
+import { TabletopStatusShell } from './components/TabletopStatusShell';
 import './styles.css';
 import './command-panel-layout.css';
 import './formation-organisation.css';
@@ -39,6 +40,7 @@ import './r3-wp6-accessibility.css';
 import './r3-wp6-5-interface-polish.css';
 import './r3-wp6-6-command-shell-follow-up.css';
 import './r4-usability-hotfix.css';
+import './bg1-boardgame-shell.css';
 import { installMapTrackpadGuard } from './map-trackpad-guard';
 import { installR3MapVisualGrading } from './presentation/r3-map-visual-grading';
 import { installWp6NotificationDisclosure } from './wp6-notification-disclosure';
@@ -54,6 +56,7 @@ installR4UsabilityHotfix();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StartupExperience>
+      <TabletopStatusShell />
       <App />
     </StartupExperience>
   </StrictMode>
