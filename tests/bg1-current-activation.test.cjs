@@ -37,11 +37,11 @@ test('BG1C remains presentation-only and does not import game rules or renderer 
   assert.match(panel, /does not.*touch the protected map\/render lifecycle/s);
 });
 
-test('BG1C mounts alongside the existing app and keeps the established shell intact', () => {
+test('BG1C mounts without breaking the status-shell adjacency contract', () => {
   const main = read('src/main.tsx');
 
   assert.match(main, /TabletopStatusShell/);
   assert.match(main, /TabletopActivationPanel/);
-  assert.match(main, /<TabletopStatusShell \/>[\s\S]*<TabletopActivationPanel \/>[\s\S]*<App \/>/);
+  assert.match(main, /<TabletopStatusShell \/>\s*<App \/>\s*<TabletopActivationPanel \/>/);
   assert.match(main, /bg1-current-activation\.css/);
 });
