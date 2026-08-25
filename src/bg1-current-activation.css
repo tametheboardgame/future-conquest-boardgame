@@ -1,7 +1,7 @@
 .tabletop-activation-panel {
   position: fixed;
   z-index: 34;
-  top: 78px;
+  top: 148px;
   right: 12px;
   width: min(292px, calc(100vw - 24px));
   padding: 14px;
