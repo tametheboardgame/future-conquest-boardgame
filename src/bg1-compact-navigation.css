@@ -48,26 +48,16 @@
   background: rgba(20, 54, 64, .72);
 }
 
+/* The historical command rail clips overflow on desktop. Keep transition-only
+   utilities inside that rail so opening More always exposes real controls. */
 .command-nav-legacy-items {
-  position: absolute;
-  z-index: 96;
-  left: calc(100% + 6px);
-  bottom: 0;
-  width: 82px;
+  position: static;
+  width: 100%;
   padding: 4px;
   border: 1px solid rgba(83, 143, 153, .52);
   background: rgba(5, 19, 26, .98);
-  box-shadow: 10px 12px 28px rgba(0, 0, 0, .42);
 }
 
 .command-nav-legacy-items button {
   min-height: 54px;
-}
-
-@media (max-width: 900px) {
-  .command-nav-legacy-items {
-    position: static;
-    width: 100%;
-    box-shadow: none;
-  }
 }
