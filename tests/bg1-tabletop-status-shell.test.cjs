@@ -5,26 +5,30 @@ const path = require('node:path');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 
-test('BG1B presents the tabletop campaign status hierarchy without inventing board rules', () => {
+test('BG2D preserves the tabletop hierarchy while binding status to authoritative board state', () => {
   const shell = read('src/components/TabletopStatusShell.tsx');
 
   assert.match(shell, /FUTURE CONQUEST/);
   assert.match(shell, /THE CENTRAL FRONT/);
-  assert.match(shell, /round: '1 \/ 8'/);
-  assert.match(shell, /activeSeat: 'Command Seat 1'/);
-  assert.match(shell, /activePlayer: 'Human'/);
-  assert.match(shell, /commandActions: '—'/);
-  assert.match(shell, /phase: 'Activation'/);
-  assert.match(shell, /activation: 'Select a formation'/);
-  assert.match(shell, /BG2\/BG3 will replace these preview values with authoritative board state/);
+  assert.match(shell, /useBoardGameState/);
+  assert.match(shell, /projectBoardStatus\(state\)/);
+  assert.match(shell, /status\.round/);
+  assert.match(shell, /status\.activeSeat/);
+  assert.match(shell, /status\.activePlayer/);
+  assert.match(shell, /status\.commandActions/);
+  assert.match(shell, /status\.phase/);
 });
 
-test('BG1B mounts before the legacy app and its CSS wins after the old shell styles', () => {
+test('BG2D mounts one unconditional board-state provider around the existing app', () => {
   const main = read('src/main.tsx');
+  const provider = read('src/components/BoardGameStateProvider.tsx');
 
-  assert.match(main, /import \{ TabletopStatusShell \} from '\.\/components\/TabletopStatusShell'/);
-  assert.ok(main.indexOf("./bg1-boardgame-shell.css") > main.indexOf("./r4-usability-hotfix.css"));
+  assert.match(main, /import \{ BoardGameStateProvider \} from '\.\/components\/BoardGameStateProvider'/);
+  assert.ok(main.indexOf('<BoardGameStateProvider>') < main.indexOf('<TabletopStatusShell />'));
   assert.ok(main.indexOf('<TabletopStatusShell />') < main.indexOf('<App />'));
+  assert.ok(main.indexOf('<App />') < main.indexOf('</BoardGameStateProvider>'));
+  assert.doesNotMatch(provider, /\{state\s*&&\s*children\}|state\s*\?\s*children/);
+  assert.match(provider, /useState<BoardGameState>\(initialiseBoardState\)/);
 });
 
 test('BG1B removes simulation KPIs from normal presentation but keeps transition playability', () => {
@@ -37,11 +41,13 @@ test('BG1B removes simulation KPIs from normal presentation but keeps transition
   assert.match(app, /Resolve all orders · day \{state\.turn\}/);
 });
 
-test('BG1B leaves the protected map and renderer integration in App', () => {
+test('BG2D leaves the protected map and renderer integration in App', () => {
   const shell = read('src/components/TabletopStatusShell.tsx');
+  const provider = read('src/components/BoardGameStateProvider.tsx');
   const app = read('src/App.tsx');
 
   assert.doesNotMatch(shell, /MapView|TerrainMapPrototype|maplibre|WebGL/);
+  assert.doesNotMatch(provider, /MapView|TerrainMapPrototype|maplibre|WebGL/);
   assert.match(app, /<TerrainMapPrototype/);
   assert.match(app, /<MapView/);
   assert.match(app, /loadTerrainMapModule/);
