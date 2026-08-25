@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { createInitialBoardState } from '../game/board-state';
 import { inspectStoredBoardState, writeBoardState } from '../game/board-state-persistence';
 import type { BoardGameState } from '../game/board-state-types';
@@ -18,18 +18,10 @@ function initialiseBoardState(): BoardGameState {
   const stored = storage ? inspectStoredBoardState(storage) : null;
   if (stored?.ok) return stored.state;
 
-  const initial = createInitialBoardState({
+  return createInitialBoardState({
     seed: 0x4655434f,
     controllers: { 'seat-1': 'human' }
   });
-
-  // Create the dedicated BG2 save only when it is genuinely absent. Corrupt or
-  // unsupported data is preserved for explicit recovery rather than silently
-  // overwritten during application bootstrap.
-  if (storage && stored && !stored.ok && stored.code === 'missing') {
-    writeBoardState(storage, initial);
-  }
-  return initial;
 }
 
 /**
@@ -38,6 +30,17 @@ function initialiseBoardState(): BoardGameState {
  */
 export function BoardGameStateProvider({ children }: { children: ReactNode }) {
   const [state] = useState<BoardGameState>(initialiseBoardState);
+
+  useEffect(() => {
+    const storage = browserStorage();
+    if (!storage) return;
+    const stored = inspectStoredBoardState(storage);
+    // Create the dedicated BG2 save only when genuinely absent. Corrupt or
+    // unsupported data is preserved for explicit recovery rather than silently
+    // overwritten during application bootstrap.
+    if (!stored.ok && stored.code === 'missing') writeBoardState(storage, state);
+  }, [state]);
+
   return <BoardGameStateContext.Provider value={state}>{children}</BoardGameStateContext.Provider>;
 }
 
