@@ -75,6 +75,37 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.62.1
           npx playwright install --with-deps chromium
+      - name: Adapt historical browser probes to BG1D compact navigation
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const commandPath = 'scripts/probe-r3-wp6-command-ui.mjs';
+          let commandSource = fs.readFileSync(commandPath, 'utf8');
+          for (const view of ['engineering', 'territories']) {
+            const needle = `  await page.locator('[data-command-view="${view}"]').click();`;
+            const replacement = `  await page.locator('.command-nav-legacy summary').click();\n${needle}`;
+            if (!commandSource.includes(needle)) throw new Error(`Historical command probe hook missing for ${view}`);
+            commandSource = commandSource.replace(needle, replacement);
+          }
+          fs.writeFileSync(commandPath, commandSource);
+
+          const polishPath = 'scripts/probe-r3-wp6-5-interface-polish.mjs';
+          let polishSource = fs.readFileSync(polishPath, 'utf8');
+          const selectorNeedle = "const navRects = [...document.querySelectorAll('.command-nav-items button')].map(node => {";
+          const selectorReplacement = "const navRects = [...document.querySelectorAll('.command-nav-primary button')].map(node => {";
+          const countNeedle = "assert(heights.length === 8, `expected eight persistent command items, got ${heights.length}`);";
+          const countReplacement = "assert(heights.length === 5, `expected four primary routes plus reserved Cards, got ${heights.length}`);";
+          if (!polishSource.includes(selectorNeedle) || !polishSource.includes(countNeedle)) {
+            throw new Error('Historical WP6.5 navigation hooks no longer match expected source');
+          }
+          polishSource = polishSource.replace(selectorNeedle, selectorReplacement).replace(countNeedle, countReplacement);
+          const clickNeedle = '    await page.locator(`[data-command-view="${view}"]`).click();';
+          const clickReplacement = `    if (['territories', 'engineering', 'logistics', 'intelligence'].includes(view)) {\n      await page.locator('[data-command-view="' + view + '"]').evaluate(node => node.click());\n    } else {\n      await page.locator('[data-command-view="' + view + '"]').click();\n    }`;
+          if (!polishSource.includes(clickNeedle)) throw new Error('Historical WP6.5 specialist sweep hook missing');
+          polishSource = polishSource.replace(clickNeedle, clickReplacement);
+          fs.writeFileSync(polishPath, polishSource);
+          NODE
       - name: Review battle and strategic information presentation
         shell: bash
         run: |

@@ -43,6 +43,7 @@ import './r3-wp6-6-command-shell-follow-up.css';
 import './r4-usability-hotfix.css';
 import './bg1-boardgame-shell.css';
 import './bg1-current-activation.css';
+import './bg1-compact-navigation.css';
 import { installMapTrackpadGuard } from './map-trackpad-guard';
 import { installR3MapVisualGrading } from './presentation/r3-map-visual-grading';
 import { installWp6NotificationDisclosure } from './wp6-notification-disclosure';

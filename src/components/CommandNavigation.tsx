@@ -6,15 +6,20 @@ interface Props {
   badges: Partial<Record<CommandView, string | number>>;
 }
 
-const ITEMS: Array<{ id: CommandView; code: string; label: string }> = [
+type NavigationItem = { id: CommandView; code: string; label: string };
+
+const PRIMARY_ITEMS: NavigationItem[] = [
   { id: 'map', code: 'BRD', label: 'Board' },
   { id: 'forces', code: 'FRC', label: 'Forces' },
   { id: 'operations', code: 'CBT', label: 'Combat' },
+  { id: 'campaign', code: 'SYS', label: 'Rules & Save' }
+];
+
+const LEGACY_ITEMS: NavigationItem[] = [
   { id: 'territories', code: 'REG', label: 'Regions' },
   { id: 'engineering', code: 'ENG', label: 'Engineer' },
   { id: 'logistics', code: 'LOG', label: 'Logistics' },
-  { id: 'intelligence', code: 'INT', label: 'Intel' },
-  { id: 'campaign', code: 'SYS', label: 'Rules & Save' }
+  { id: 'intelligence', code: 'INT', label: 'Intel' }
 ];
 
 function CommandIcon({ view }: { view: CommandView }) {
@@ -29,17 +34,32 @@ function CommandIcon({ view }: { view: CommandView }) {
   return <svg {...common}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>;
 }
 
+function CardsIcon() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="3" width="12" height="16" rx="1.5"/><path d="m8 7 6 0M8 11h6M8 15h4"/><path d="m17 6 2 1v13H8l-1-1"/></svg>;
+}
+
 export function CommandNavigation({ active, onChange, badges }: Props) {
-  return <nav className="command-navigation" aria-label="Board game views">
+  const renderItem = (item: NavigationItem) => {
+    const badge = badges[item.id];
+    return <button type="button" key={item.id} className={active === item.id ? 'active' : ''} aria-current={active === item.id ? 'page' : undefined} title={item.label} onClick={() => onChange(active === item.id && item.id !== 'map' ? 'map' : item.id)} data-command-view={item.id}>
+      <span className="command-nav-icon"><CommandIcon view={item.id} /></span><span className="command-nav-code" aria-hidden="true">{item.code}</span><span className="command-nav-label">{item.label}</span>{badge !== undefined && <span className="command-nav-badge" aria-label={`${badge} items`}>{badge}</span>}
+    </button>;
+  };
+  const legacyActive = LEGACY_ITEMS.some(item => item.id === active);
+
+  return <nav className="command-navigation" aria-label="Board game views" data-bg-package="BG1D">
     <div className="command-brand" aria-hidden="true"><strong>FC</strong><span>CENTRAL FRONT</span></div>
-    <div className="command-nav-items">
-      {ITEMS.map(item => {
-        const badge = badges[item.id];
-        return <button type="button" key={item.id} className={active === item.id ? 'active' : ''} aria-current={active === item.id ? 'page' : undefined} title={item.label} onClick={() => onChange(active === item.id && item.id !== 'map' ? 'map' : item.id)} data-command-view={item.id}>
-          <span className="command-nav-icon"><CommandIcon view={item.id} /></span><span className="command-nav-code" aria-hidden="true">{item.code}</span><span className="command-nav-label">{item.label}</span>{badge !== undefined && <span className="command-nav-badge" aria-label={`${badge} items`}>{badge}</span>}
-        </button>;
-      })}
+    <div className="command-nav-items command-nav-primary">
+      {PRIMARY_ITEMS.slice(0, 3).map(renderItem)}
+      <button type="button" className="command-nav-cards" disabled title="Cards become playable in BG8" aria-label="Cards, coming later">
+        <span className="command-nav-icon"><CardsIcon /></span><span className="command-nav-code" aria-hidden="true">CRD</span><span className="command-nav-label">Cards</span>
+      </button>
+      {PRIMARY_ITEMS.slice(3).map(renderItem)}
     </div>
+    <details className="command-nav-legacy" open={legacyActive || undefined}>
+      <summary title="Legacy simulation views"><span aria-hidden="true">•••</span><b>More</b></summary>
+      <div className="command-nav-items command-nav-legacy-items">{LEGACY_ITEMS.map(renderItem)}</div>
+    </details>
     <div className="command-nav-footer"><i /> TABLE LINK</div>
   </nav>;
 }

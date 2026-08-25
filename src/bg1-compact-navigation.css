@@ -1,0 +1,63 @@
+/* BG1D keeps the board-game choices prominent while retaining temporary access
+   to simulation-era workspaces until their rules are replaced in later BGs. */
+.command-navigation .command-nav-primary {
+  flex: 0 0 auto;
+}
+
+.command-navigation .command-nav-cards:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+}
+
+.command-nav-legacy {
+  position: relative;
+  margin-top: 2px;
+  border-top: 1px solid rgba(82, 133, 144, .22);
+}
+
+.command-nav-legacy > summary {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
+  gap: 1px;
+  padding: 5px 2px;
+  color: #6f8b95;
+  cursor: pointer;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.command-nav-legacy > summary::-webkit-details-marker {
+  display: none;
+}
+
+.command-nav-legacy > summary span {
+  font: 700 14px/1 IBM Plex Mono, monospace;
+  letter-spacing: .08em;
+}
+
+.command-nav-legacy > summary b {
+  font: 600 6.8px/1 IBM Plex Mono, monospace;
+  letter-spacing: .05em;
+}
+
+.command-nav-legacy[open] > summary,
+.command-nav-legacy > summary:hover,
+.command-nav-legacy > summary:focus-visible {
+  color: #cfe7e8;
+  background: rgba(20, 54, 64, .72);
+}
+
+/* The historical command rail clips overflow on desktop. Keep transition-only
+   utilities inside that rail so opening More always exposes real controls. */
+.command-nav-legacy-items {
+  position: static;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid rgba(83, 143, 153, .52);
+  background: rgba(5, 19, 26, .98);
+}
+
+.command-nav-legacy-items button {
+  min-height: 54px;
+}

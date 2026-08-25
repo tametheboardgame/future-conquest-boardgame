@@ -8,6 +8,7 @@ on:
       - 'src/main.tsx'
       - 'src/bg1-boardgame-shell.css'
       - 'src/bg1-current-activation.css'
+      - 'src/bg1-compact-navigation.css'
       - 'src/components/TabletopStatusShell.tsx'
       - 'src/components/TabletopActivationPanel.tsx'
       - 'src/r3-wp6-command-ui.css'
@@ -28,6 +29,7 @@ on:
       - 'tests/r3-wp6-command-ui.test.cjs'
       - 'tests/bg1-tabletop-status-shell.test.cjs'
       - 'tests/bg1-current-activation.test.cjs'
+      - 'tests/bg1-compact-navigation.test.cjs'
       - 'docs/roadmap/R3-WP6-COMMAND-UI-UX-OVERHAUL.md'
       - '.github/workflows/r3-wp6-command-ui.yml'
 
@@ -51,13 +53,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run command-shell source contracts
-        run: node --test tests/r3-wp6-command-ui.test.cjs tests/bg1-tabletop-status-shell.test.cjs tests/bg1-current-activation.test.cjs
+        run: node --test tests/r3-wp6-command-ui.test.cjs tests/bg1-tabletop-status-shell.test.cjs tests/bg1-current-activation.test.cjs tests/bg1-compact-navigation.test.cjs
       - name: Build production game
         run: npm run build
       - name: Install browser probe runtime
         run: |
           npm install --no-save --ignore-scripts playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Adapt historical workspace probe to BG1D More disclosure
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path = 'scripts/probe-r3-wp6-command-ui.mjs';
+          let source = fs.readFileSync(path, 'utf8');
+          for (const view of ['engineering', 'territories']) {
+            const needle = `  await page.locator('[data-command-view="${view}"]').click();`;
+            const replacement = `  await page.locator('.command-nav-legacy summary').click();\n${needle}`;
+            if (!source.includes(needle)) throw new Error(`Historical probe hook missing for ${view}`);
+            source = source.replace(needle, replacement);
+          }
+          fs.writeFileSync(path, source);
+          NODE
       - name: Start exact production preview
         run: npm run preview -- --host 127.0.0.1 > /tmp/r3-wp6-preview.log 2>&1 &
       - name: Probe map-first shell and pictorial workspaces
