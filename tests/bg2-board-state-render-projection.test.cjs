@@ -57,3 +57,22 @@ test('BG2C supports alternate local/player seat ownership without renderer chang
   assert.equal(projection.pieces.find(piece => piece.id === 'coalition').controller, 'player');
   assert.equal(projection.pieces.find(piece => piece.id === 'invader').controller, 'enemy');
 });
+
+test('BG2C orders renderer IDs by stable code-unit comparison rather than host locale', () => {
+  const state = createInitialBoardState({ seed: 11 });
+  state.spaces = {
+    'ä-space': { id: 'ä-space', control: 'seat-1' },
+    'z-space': { id: 'z-space', control: 'seat-2' },
+    'Å-space': { id: 'Å-space', control: null }
+  };
+  state.pieces = {
+    'ä-piece': { id: 'ä-piece', seatId: 'seat-1', spaceId: 'ä-space', readiness: 5, damage: 0, supply: 'supplied' },
+    'z-piece': { id: 'z-piece', seatId: 'seat-2', spaceId: 'z-space', readiness: 5, damage: 0, supply: 'supplied' },
+    'Å-piece': { id: 'Å-piece', seatId: 'seat-3', spaceId: 'Å-space', readiness: 5, damage: 0, supply: 'supplied' }
+  };
+
+  const projection = projectBoardStateForRenderer(state);
+
+  assert.deepEqual(Object.keys(projection.spaceControllers), ['z-space', 'Å-space', 'ä-space']);
+  assert.deepEqual(projection.pieces.map(piece => piece.id), ['z-piece', 'Å-piece', 'ä-piece']);
+});
