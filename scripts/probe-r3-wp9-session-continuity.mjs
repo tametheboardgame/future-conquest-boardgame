@@ -58,11 +58,15 @@ try {
   await continueButton.click();
 
   await page.locator('.command-workspace').waitFor({ state: 'visible', timeout: 30000 });
+  const expectedDay = `Day ${String(saved.turn).padStart(3, '0')}`;
+  await page.waitForTimeout(180);
   await page.locator('[data-command-view="campaign"]').click();
-  await page.getByText('Game loaded', { exact: false }).waitFor({ state: 'visible', timeout: 10000 });
+  await page.waitForFunction(({ day, seed }) => {
+    const text = document.querySelector('.campaign-status-card')?.textContent ?? '';
+    return text.includes(day) && text.includes(`Seed ${seed}`) && /hard/i.test(text);
+  }, { day: expectedDay, seed: saved.seed }, { timeout: 10000 });
 
   const statusAfterLoad = (await page.locator('.campaign-status-card').innerText()).replace(/\s+/g, ' ').trim();
-  const expectedDay = `Day ${String(saved.turn).padStart(3, '0')}`;
   assert(statusAfterLoad.includes(expectedDay), `continued campaign restored the wrong day: ${statusAfterLoad}`);
   assert(statusAfterLoad.includes(`Seed ${saved.seed}`), `continued campaign restored the wrong seed: ${statusAfterLoad}`);
   assert(/hard/i.test(statusAfterLoad), `continued campaign restored the wrong difficulty: ${statusAfterLoad}`);
