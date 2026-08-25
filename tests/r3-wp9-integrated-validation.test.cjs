@@ -42,7 +42,8 @@ test('WP9 browser continuity follows the real launcher and campaign save control
   assert.match(probe, /Manual campaign saved/);
   assert.match(probe, /page\.reload/);
   assert.match(probe, /CONTINUE CAMPAIGN/);
-  assert.match(probe, /Game loaded/);
+  assert.match(probe, /page\.waitForFunction/);
+  assert.match(probe, /campaign-status-card/);
   assert.match(probe, /statusAfterLoad\.includes\(expectedDay\)/);
   assert.match(probe, /statusAfterLoad\.includes\(`Seed \$\{saved\.seed\}`\)/);
 });
