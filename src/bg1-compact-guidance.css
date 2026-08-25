@@ -1,0 +1,72 @@
+/* BG1E presentation-only guidance pass.
+ * Keep the existing simulation warnings reachable, but make them read as
+ * compact board-game reminders rather than full-width command-system panels.
+ * No game, map or renderer state is owned here. */
+
+.command-app-shell .operational-alert-strip,
+.command-app-shell .adviser-alert-strip,
+.command-app-shell .enemy-action-alert,
+.command-app-shell .combat-report-alert {
+  border-radius: 4px;
+  border-left-width: 3px;
+  padding: 7px 10px;
+  gap: 8px 10px;
+  box-shadow: 0 7px 20px rgba(0, 0, 0, .28);
+}
+
+.command-app-shell .operational-alert-strip small,
+.command-app-shell .adviser-alert-strip small,
+.command-app-shell .enemy-action-alert small,
+.command-app-shell .combat-report-alert small {
+  font-size: 7px;
+  letter-spacing: .11em;
+}
+
+.command-app-shell .operational-alert-strip strong,
+.command-app-shell .adviser-alert-strip strong,
+.command-app-shell .enemy-action-alert strong,
+.command-app-shell .combat-report-alert strong {
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.command-app-shell .operational-alert-strip > button,
+.command-app-shell .adviser-alert-strip > button,
+.command-app-shell .enemy-action-alert > button,
+.command-app-shell .combat-report-alert > button {
+  min-height: 30px;
+  padding: 5px 8px;
+  font-size: 8px;
+}
+
+@media (min-width: 901px) {
+  .command-app-shell .operational-alert-strip,
+  .command-app-shell .adviser-alert-strip,
+  .command-app-shell .enemy-action-alert,
+  .command-app-shell .combat-report-alert {
+    width: min(420px, calc(100vw - 132px));
+    max-height: 50px !important;
+    justify-self: start;
+  }
+
+  .command-app-shell .operational-alert-strip:hover,
+  .command-app-shell .operational-alert-strip:focus-within,
+  .command-app-shell .adviser-alert-strip:hover,
+  .command-app-shell .adviser-alert-strip:focus-within,
+  .command-app-shell .enemy-action-alert:hover,
+  .command-app-shell .enemy-action-alert:focus-within,
+  .command-app-shell .combat-report-alert:hover,
+  .command-app-shell .combat-report-alert:focus-within {
+    width: min(500px, calc(100vw - 132px));
+    max-height: min(480px, calc(100vh - 150px)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .command-app-shell .operational-alert-strip,
+  .command-app-shell .adviser-alert-strip,
+  .command-app-shell .enemy-action-alert,
+  .command-app-shell .combat-report-alert {
+    padding: 8px 9px;
+  }
+}
