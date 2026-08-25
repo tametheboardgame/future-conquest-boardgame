@@ -38,6 +38,12 @@ function presentationController(
   return playerSeatIds.has(seatId) ? 'player' : 'enemy';
 }
 
+function compareIds(left: string, right: string): number {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
 /**
  * Pure presentation seam between authoritative BG2 board state and the retained
  * renderer. It deliberately returns renderer-friendly values without mutating
@@ -56,12 +62,12 @@ export function projectBoardStateForRenderer(
 
   const spaceControllers = Object.fromEntries(
     Object.values(state.spaces)
-      .sort((a, b) => a.id.localeCompare(b.id))
+      .sort((a, b) => compareIds(a.id, b.id))
       .map(space => [space.id, presentationController(space.control, playerSeatIds)])
   );
 
   const pieces = Object.values(state.pieces)
-    .sort((a, b) => a.id.localeCompare(b.id))
+    .sort((a, b) => compareIds(a.id, b.id))
     .map(piece => ({
       id: piece.id,
       seatId: piece.seatId,
