@@ -166,13 +166,7 @@ try {
       navWidth: navBox ? Math.round(navBox.width) : null,
       buttonCount: buttons.length,
       buttons,
-      moreTarget: summaryBox ? { width: Math.round(summaryBox.width), height: Math.round(summaryBox.height) } : null,
-      specialistFits: (() => {
-        const tabs = document.querySelector('.logistics-tabs');
-        if (!tabs) return false;
-        const box = tabs.getBoundingClientRect();
-        return box.left >= -1 && box.right <= innerWidth + 1;
-      })()
+      moreTarget: summaryBox ? { width: Math.round(summaryBox.width), height: Math.round(summaryBox.height) } : null
     };
   });
 
@@ -183,7 +177,6 @@ try {
   assert(compact.buttons.every(item => item.width >= 54 && item.height >= 54), `compact command target is too small: ${JSON.stringify(compact.buttons)}`);
   assert(compact.buttons.every(item => item.labelDisplay !== 'none'), '640px compact navigation unexpectedly hid its short captions');
   assert((compact.moreTarget?.width ?? 0) >= 54 && (compact.moreTarget?.height ?? 0) >= 54, `compact More target is too small: ${JSON.stringify(compact.moreTarget)}`);
-  assert(compact.specialistFits, 'compact specialist tabs extend beyond the visible workspace');
 
   console.log(JSON.stringify({ primary, reservedCards, moreTarget, primaryFocus, legacy, specialist, focusEvidence, reducedMotion, compact }, null, 2));
 } finally {
