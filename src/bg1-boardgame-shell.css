@@ -89,6 +89,16 @@
   padding-top: 8px;
 }
 
+/* The legacy fitted desktop shell owns 100dvh and the document itself is locked
+   against vertical scrolling. BG1B now occupies 62px above it, so return that
+   space to the app rather than clipping the bottom of secondary command views. */
+@media (min-width: 901px) and (min-height: 560px) {
+  .tabletop-status-shell + .command-app-shell {
+    height: calc(100dvh - 62px);
+    max-height: calc(100dvh - 62px);
+  }
+}
+
 .command-app-shell > .command-metrics {
   display: none !important;
 }

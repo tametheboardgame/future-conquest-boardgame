@@ -220,7 +220,7 @@ try {
   await page.screenshot({ path: `${outputDir}/tutorial-640x900.png`, fullPage: false });
   evidence.captures.tutorialCompact = 'tutorial-640x900.png';
 
-  await page.getByRole('button', { name: 'Skip tutorial', exact: true }).click();
+  await page.getByRole('button', { name: 'Skip tutorial', exact: true }).evaluate(element => element.click());
   await page.waitForTimeout(100);
   evidence.shell.compact = await capture('command-map-640x900', 640, 900, { expectTerrain: false });
   evidence.captures.compact = 'command-map-640x900.png';
