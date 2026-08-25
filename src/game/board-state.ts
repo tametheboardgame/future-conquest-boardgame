@@ -30,7 +30,9 @@ function createSeat(id: SeatId, controller: ControllerType): CommandSeat {
 }
 
 function createEmptyHands(): Record<SeatId, string[]> {
-  return Object.fromEntries(SEAT_IDS.map(id => [id, []])) as Record<SeatId, string[]>;
+  const hands = {} as Record<SeatId, string[]>;
+  for (const id of SEAT_IDS) hands[id] = [];
+  return hands;
 }
 
 function createEmptyDeck(): DeckState {
