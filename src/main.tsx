@@ -59,8 +59,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StartupExperience>
       <TabletopStatusShell />
-      <TabletopActivationPanel />
       <App />
+      <TabletopActivationPanel />
     </StartupExperience>
   </StrictMode>
 );
