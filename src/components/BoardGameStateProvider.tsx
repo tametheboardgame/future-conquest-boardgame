@@ -26,7 +26,9 @@ function initialiseBoardState(): BoardGameState {
   // Create the dedicated BG2 save only when it is genuinely absent. Corrupt or
   // unsupported data is preserved for explicit recovery rather than silently
   // overwritten during application bootstrap.
-  if (storage && stored?.code === 'missing') writeBoardState(storage, initial);
+  if (storage && stored && !stored.ok && stored.code === 'missing') {
+    writeBoardState(storage, initial);
+  }
   return initial;
 }
 
