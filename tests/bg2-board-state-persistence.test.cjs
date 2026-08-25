@@ -54,6 +54,9 @@ test('BG2B reports missing, corrupt and unsupported board saves without touching
     message: 'No board-game state has been saved in this browser.'
   });
 
+  storage.setItem(BOARD_STATE_SAVE_KEY, '');
+  assert.equal(inspectStoredBoardState(storage).code, 'corrupt');
+
   storage.setItem(BOARD_STATE_SAVE_KEY, '{bad json');
   assert.equal(inspectStoredBoardState(storage).code, 'corrupt');
 
