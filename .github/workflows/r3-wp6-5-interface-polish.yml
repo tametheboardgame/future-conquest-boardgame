@@ -64,7 +64,7 @@ jobs:
           }
           source = source.replace(selectorNeedle, selectorReplacement).replace(countNeedle, countReplacement);
           const clickNeedle = '    await page.locator(`[data-command-view="${view}"]`).click();';
-          const clickReplacement = `    if (['territories', 'engineering', 'logistics', 'intelligence'].includes(view)) {\n      const disclosure = page.locator('.command-nav-legacy');\n      if (!(await disclosure.getAttribute('open'))) await disclosure.locator('summary').click();\n    }\n${clickNeedle}`;
+          const clickReplacement = `    if (['territories', 'engineering', 'logistics', 'intelligence'].includes(view)) {\n      await page.locator('[data-command-view="' + view + '"]').evaluate(node => node.click());\n    } else {\n      await page.locator('[data-command-view="' + view + '"]').click();\n    }`;
           if (!source.includes(clickNeedle)) throw new Error('Historical WP6.5 specialist sweep hook missing');
           source = source.replace(clickNeedle, clickReplacement);
           fs.writeFileSync(path, source);
