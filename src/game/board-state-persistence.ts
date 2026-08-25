@@ -32,7 +32,7 @@ export function inspectStoredBoardState(storage: BoardStateStorageReader): Board
     };
   }
 
-  if (!raw) {
+  if (raw === null) {
     return {
       ok: false,
       code: 'missing',
