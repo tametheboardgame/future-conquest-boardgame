@@ -1,41 +1,44 @@
 .tabletop-status-shell {
-  max-width: 1724px;
-  margin: 22px auto 0;
+  position: relative;
+  min-height: 54px;
+  margin: 8px 10px 0;
+  padding-right: 180px;
   display: grid;
-  grid-template-columns: minmax(230px, .8fr) minmax(850px, 3fr);
+  grid-template-columns: minmax(180px, .72fr) minmax(0, 4.5fr);
   align-items: stretch;
   border: 1px solid #3b5963;
   background: linear-gradient(180deg, rgba(15, 36, 43, .98), rgba(8, 24, 31, .98));
-  box-shadow: 0 16px 48px rgba(0, 0, 0, .22);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .2);
 }
 
 .tabletop-title-block {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 86px;
-  padding: 14px 20px;
+  min-height: 52px;
+  padding: 7px 14px;
   border-right: 1px solid #3b5963;
   background: linear-gradient(135deg, rgba(36, 87, 83, .5), rgba(11, 31, 39, .3));
 }
 
 .tabletop-title-block span {
   color: #edf8f7;
-  font: 700 24px Barlow Condensed, sans-serif;
-  letter-spacing: .12em;
+  font: 700 19px Barlow Condensed, sans-serif;
+  letter-spacing: .11em;
   line-height: 1;
 }
 
 .tabletop-title-block strong {
-  margin-top: 7px;
+  margin-top: 4px;
   color: #76ddd5;
-  font: 600 11px IBM Plex Mono, monospace;
-  letter-spacing: .17em;
+  font: 600 9px IBM Plex Mono, monospace;
+  letter-spacing: .14em;
 }
 
 .tabletop-status-grid {
   display: grid;
-  grid-template-columns: .7fr 1.15fr .8fr .9fr .9fr 1.25fr;
+  grid-template-columns: .7fr 1.1fr .75fr .9fr .85fr 1.25fr;
+  min-width: 0;
   margin: 0;
 }
 
@@ -44,8 +47,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 5px;
-  padding: 13px 15px;
+  gap: 3px;
+  padding: 7px 10px;
   border-left: 1px solid #203d47;
 }
 
@@ -55,8 +58,8 @@
 
 .tabletop-status-grid dt {
   color: #78949e;
-  font: 500 9px IBM Plex Mono, monospace;
-  letter-spacing: .11em;
+  font: 500 8px IBM Plex Mono, monospace;
+  letter-spacing: .1em;
   text-transform: uppercase;
 }
 
@@ -64,9 +67,9 @@
   margin: 0;
   overflow: hidden;
   color: #eff9f8;
-  font: 600 18px Barlow Condensed, sans-serif;
-  letter-spacing: .035em;
-  line-height: 1.1;
+  font: 600 15px Barlow Condensed, sans-serif;
+  letter-spacing: .03em;
+  line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -79,10 +82,11 @@
   color: #8ff9ed;
 }
 
-/* BG1B removes the simulation KPI dashboard from normal play. The legacy
-   resolve control remains temporarily available until board-state turns land. */
+/* BG1B removes the simulation KPI dashboard from normal play. The historical
+   resolver remains a small overlaid compatibility control until board turns land. */
 .tabletop-status-shell + .command-app-shell {
-  padding-top: 9px;
+  position: relative;
+  padding-top: 8px;
 }
 
 .command-app-shell > .command-metrics {
@@ -90,10 +94,18 @@
 }
 
 .command-app-shell > .command-topbar {
-  height: auto;
-  min-height: 34px;
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  left: 10px;
+  z-index: 36;
+  height: 54px;
+  min-height: 54px;
+  padding: 0 48px 0 0;
   justify-content: flex-end;
-  border-bottom: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
 }
 
 .command-app-shell > .command-topbar > div:first-child,
@@ -102,17 +114,23 @@
 }
 
 .command-app-shell > .command-topbar .topbar-command-actions {
-  width: 100%;
+  position: absolute;
+  top: 10px;
+  right: 48px;
+  width: auto;
   justify-content: flex-end;
+  pointer-events: none;
 }
 
 .command-app-shell > .command-topbar .global-resolve {
-  padding: 7px 11px;
+  min-height: 30px;
+  padding: 6px 9px;
   border-color: #35515e;
-  background: rgba(13, 38, 47, .78);
+  background: rgba(8, 27, 34, .9);
   color: #9fb6bd;
-  font-size: 9px;
-  opacity: .78;
+  font-size: 8px;
+  opacity: .74;
+  pointer-events: auto;
 }
 
 .command-app-shell > .command-topbar .global-resolve:hover,
@@ -123,24 +141,53 @@
   opacity: 1;
 }
 
-@media (max-width: 1450px) {
+@media (max-width: 1280px) {
   .tabletop-status-shell {
-    margin-left: 28px;
-    margin-right: 28px;
-    grid-template-columns: 210px minmax(0, 1fr);
+    padding-right: 170px;
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+
+  .tabletop-title-block span {
+    font-size: 17px;
+  }
+
+  .tabletop-status-grid > div {
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+
+  .tabletop-status-grid dd {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .tabletop-status-shell {
+    min-height: 92px;
+    margin: 6px;
+    padding-right: 48px;
+    grid-template-columns: 150px minmax(0, 1fr);
   }
 
   .tabletop-status-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .tabletop-status-grid > div:nth-child(4) {
-    border-left: 0;
-    border-top: 1px solid #203d47;
-  }
-
+  .tabletop-status-grid > div:nth-child(4),
   .tabletop-status-grid > div:nth-child(5),
   .tabletop-status-grid > div:nth-child(6) {
     border-top: 1px solid #203d47;
+  }
+
+  .command-app-shell > .command-topbar {
+    top: 6px;
+    right: 6px;
+    left: 6px;
+    height: 92px;
+    min-height: 92px;
+  }
+
+  .command-app-shell > .command-topbar .global-resolve {
+    display: none;
   }
 }
