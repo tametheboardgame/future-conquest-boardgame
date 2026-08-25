@@ -60,6 +60,20 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Adapt historical workspace probe to BG1D More disclosure
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path = 'scripts/probe-r3-wp6-command-ui.mjs';
+          let source = fs.readFileSync(path, 'utf8');
+          for (const view of ['engineering', 'territories']) {
+            const needle = `  await page.locator('[data-command-view="${view}"]').click();`;
+            const replacement = `  await page.locator('.command-nav-legacy summary').click();\n${needle}`;
+            if (!source.includes(needle)) throw new Error(`Historical probe hook missing for ${view}`);
+            source = source.replace(needle, replacement);
+          }
+          fs.writeFileSync(path, source);
+          NODE
       - name: Start exact production preview
         run: npm run preview -- --host 127.0.0.1 > /tmp/r3-wp6-preview.log 2>&1 &
       - name: Probe map-first shell and pictorial workspaces
