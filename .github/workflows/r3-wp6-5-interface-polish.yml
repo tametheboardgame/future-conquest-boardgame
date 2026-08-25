@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'src/main.tsx'
+      - 'src/bg1-compact-navigation.css'
       - 'src/r3-wp6-5-interface-polish.css'
       - 'src/components/TutorialOverlay.tsx'
       - 'src/components/TerrainMapPrototype.tsx'
@@ -15,6 +16,7 @@ on:
       - 'src/components/CommandNavigation.tsx'
       - 'scripts/probe-r3-wp6-5-interface-polish.mjs'
       - 'tests/r3-wp6-5-interface-polish.test.cjs'
+      - 'tests/bg1-compact-navigation.test.cjs'
       - 'docs/roadmap/R3-WP6.5-*'
       - '.github/workflows/r3-wp6-5-interface-polish.yml'
 
@@ -38,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run WP6.5 source contracts
-        run: node --test tests/r3-wp6-5-interface-polish.test.cjs
+        run: node --test tests/r3-wp6-5-interface-polish.test.cjs tests/bg1-compact-navigation.test.cjs
       - name: Run engine regression suite
         run: npm test
       - name: Build production game
@@ -47,6 +49,26 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.55.0
           npx playwright install --with-deps chromium
+      - name: Adapt historical WP6.5 probe to BG1D More disclosure
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const path = 'scripts/probe-r3-wp6-5-interface-polish.mjs';
+          let source = fs.readFileSync(path, 'utf8');
+          const selectorNeedle = "const navRects = [...document.querySelectorAll('.command-nav-items button')].map(node => {";
+          const selectorReplacement = "const navRects = [...document.querySelectorAll('.command-nav-primary button')].map(node => {";
+          const countNeedle = "assert(heights.length === 8, `expected eight persistent command items, got ${heights.length}`);";
+          const countReplacement = "assert(heights.length === 5, `expected four primary routes plus reserved Cards, got ${heights.length}`);";
+          if (!source.includes(selectorNeedle) || !source.includes(countNeedle)) {
+            throw new Error('Historical WP6.5 navigation hooks no longer match expected source');
+          }
+          source = source.replace(selectorNeedle, selectorReplacement).replace(countNeedle, countReplacement);
+          const clickNeedle = '    await page.locator(`[data-command-view="${view}"]`).click();';
+          const clickReplacement = `    if (['territories', 'engineering', 'logistics', 'intelligence'].includes(view)) {\n      const disclosure = page.locator('.command-nav-legacy');\n      if (!(await disclosure.getAttribute('open'))) await disclosure.locator('summary').click();\n    }\n${clickNeedle}`;
+          if (!source.includes(clickNeedle)) throw new Error('Historical WP6.5 specialist sweep hook missing');
+          source = source.replace(clickNeedle, clickReplacement);
+          fs.writeFileSync(path, source);
+          NODE
       - name: Start exact production preview
         run: npm run preview -- --host 127.0.0.1 > /tmp/r3-wp6-5-preview.log 2>&1 &
       - name: Probe interface polish acceptance
