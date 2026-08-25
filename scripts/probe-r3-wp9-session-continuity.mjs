@@ -52,7 +52,7 @@ try {
   await page.screenshot({ path: `${outputDir}/manual-save-before-reload.png`, fullPage: false });
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const continueButton = page.getByRole('button', { name: 'CONTINUE CAMPAIGN', exact: true });
+  const continueButton = page.getByRole('button', { name: /^CONTINUE CAMPAIGN/ });
   await continueButton.waitFor({ state: 'visible', timeout: 30000 });
   await page.screenshot({ path: `${outputDir}/continue-launcher-after-reload.png`, fullPage: false });
   await continueButton.click();
