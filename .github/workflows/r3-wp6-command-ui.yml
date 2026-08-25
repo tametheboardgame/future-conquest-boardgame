@@ -8,6 +8,7 @@ on:
       - 'src/main.tsx'
       - 'src/bg1-boardgame-shell.css'
       - 'src/bg1-current-activation.css'
+      - 'src/bg1-compact-navigation.css'
       - 'src/components/TabletopStatusShell.tsx'
       - 'src/components/TabletopActivationPanel.tsx'
       - 'src/r3-wp6-command-ui.css'
@@ -28,6 +29,7 @@ on:
       - 'tests/r3-wp6-command-ui.test.cjs'
       - 'tests/bg1-tabletop-status-shell.test.cjs'
       - 'tests/bg1-current-activation.test.cjs'
+      - 'tests/bg1-compact-navigation.test.cjs'
       - 'docs/roadmap/R3-WP6-COMMAND-UI-UX-OVERHAUL.md'
       - '.github/workflows/r3-wp6-command-ui.yml'
 
@@ -51,7 +53,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run command-shell source contracts
-        run: node --test tests/r3-wp6-command-ui.test.cjs tests/bg1-tabletop-status-shell.test.cjs tests/bg1-current-activation.test.cjs
+        run: node --test tests/r3-wp6-command-ui.test.cjs tests/bg1-tabletop-status-shell.test.cjs tests/bg1-current-activation.test.cjs tests/bg1-compact-navigation.test.cjs
       - name: Build production game
         run: npm run build
       - name: Install browser probe runtime
