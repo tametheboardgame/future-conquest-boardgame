@@ -1,4 +1,5 @@
 import {
+  BOARD_COMMAND_ACTIONS_PER_ROUND,
   BOARD_ROUND_LIMIT,
   BOARD_STATE_SCHEMA,
   BOARD_STATE_VERSION,
@@ -44,7 +45,6 @@ function createSeat(id: SeatId, controller: ControllerType, participating: boole
     id,
     controller,
     participating,
-    // Later BG3 packages own the rules that grant/spend Command Actions.
     commandActionsRemaining: 0
   };
 }
@@ -181,11 +181,59 @@ export function deserializeBoardState(serialized: string): BoardGameState {
 }
 
 /**
- * BG2 established the dispatch boundary without inventing later rules early.
- * Until a board action has an authoritative BG3+ handler, rejecting it remains
- * required: no mutation and no Command Action cost.
+ * Starts the current round from the authoritative round-start phase.
+ * The current two-seat Central Front prototype grants four Command Actions to
+ * each participating command seat. Non-participating seats are always kept at
+ * zero so they cannot become accidentally actionable.
+ */
+export function startBoardRound(state: BoardGameState): BoardActionResult {
+  if (state.phase !== 'round-start') {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: `Cannot start round during ${state.phase} phase.`
+    };
+  }
+
+  const participatingSeatIds = getParticipatingSeatIds(state);
+  if (participatingSeatIds.length < 2) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: 'Cannot start round without at least two participating command seats.'
+    };
+  }
+
+  const seats = Object.fromEntries(SEAT_IDS.map(id => {
+    const seat = state.seats[id];
+    return [id, {
+      ...seat,
+      commandActionsRemaining: seat.participating ? BOARD_COMMAND_ACTIONS_PER_ROUND : 0
+    }];
+  })) as Record<SeatId, CommandSeat>;
+
+  return {
+    state: {
+      ...state,
+      phase: 'activation',
+      activeSeat: participatingSeatIds[0],
+      seats
+    },
+    accepted: true,
+    commandActionsSpent: 0,
+    reason: `Round ${state.round} started.`
+  };
+}
+
+/**
+ * Board actions cross this single authoritative dispatch boundary. BG3 adds
+ * handlers incrementally; unsupported actions remain no-cost/no-mutation.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
+  if (action.type === 'start-round') return startBoardRound(state);
+
   return {
     state,
     accepted: false,
