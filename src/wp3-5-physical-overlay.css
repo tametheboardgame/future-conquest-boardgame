@@ -3,14 +3,18 @@
    occlusion. Once the Three.js formation layer is ready, that inline opacity
    must not repaint the legacy TG cards over the physical miniatures. Opacity
    keeps the marker in the pointer/keyboard hit-test path; focus-visible restores
-   a concise identity surface for keyboard users when the marker is not already
-   the selected formation represented by the physical layer. */
+   a concise identity surface for keyboard users. Selected formations already
+   have a physical representation, so their compatibility card stays hidden. */
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker {
   opacity: 0 !important;
 }
 
-.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible:not([data-r3-marker-kind='selected-formation']) {
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible {
   opacity: 1 !important;
+}
+
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker[data-r3-marker-kind='selected-formation']:focus-visible {
+  opacity: 0 !important;
 }
 
 /* World and formation layers are currently initialised as one physical package.
