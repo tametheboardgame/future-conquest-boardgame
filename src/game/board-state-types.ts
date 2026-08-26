@@ -1,8 +1,9 @@
 export const BOARD_STATE_SCHEMA = 'future-conquest-board-state' as const;
-export const BOARD_STATE_VERSION = 1 as const;
+export const BOARD_STATE_VERSION = 2 as const;
 export const BOARD_ROUND_LIMIT = 8 as const;
 
 export const SEAT_IDS = ['seat-1', 'seat-2', 'seat-3', 'seat-4', 'seat-5', 'seat-6'] as const;
+export const DEFAULT_PARTICIPATING_SEAT_IDS = ['seat-1', 'seat-2'] as const;
 
 export type SeatId = typeof SEAT_IDS[number];
 export type ControllerType = 'human' | 'computer';
@@ -17,6 +18,7 @@ export interface BoardSaveMetadata {
 export interface CommandSeat {
   id: SeatId;
   controller: ControllerType;
+  participating: boolean;
   commandActionsRemaining: number;
 }
 
@@ -67,6 +69,7 @@ export interface CreateBoardStateOptions {
   seed: number;
   scenarioId?: string;
   controllers?: Partial<Record<SeatId, ControllerType>>;
+  participatingSeatIds?: readonly SeatId[];
 }
 
 export interface BoardAction {
