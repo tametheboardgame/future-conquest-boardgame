@@ -11,8 +11,11 @@ import type { GameState } from './types';
  * fully populated without changing this integration boundary.
  *
  * Board pieces only relocate retained formations whose IDs already exist in the
- * legacy renderer model. BG2E does not invent synthetic legacy combat values or
- * expose hidden enemy detail merely to make a miniature appear.
+ * legacy renderer model. Matching pieces that are authoritative but off-board,
+ * or placed in a space the retained map cannot render, are suppressed rather
+ * than left visible at a stale legacy location. BG2E does not invent synthetic
+ * legacy combat values or expose hidden enemy detail merely to make a miniature
+ * appear.
  */
 export function applyBoardProjectionToRendererState(
   legacyState: GameState,
@@ -31,18 +34,29 @@ export function applyBoardProjectionToRendererState(
 
   for (const piece of projection.pieces) {
     const spaceId = piece.spaceId;
-    if (!spaceId || !legacyState.territories[spaceId]) continue;
 
     if (piece.controller === 'player') {
       const group = taskGroups[piece.id];
-      if (!group || group.location === spaceId) continue;
+      if (!group) continue;
+      if (!spaceId || !legacyState.territories[spaceId]) {
+        if (taskGroups === legacyState.taskGroups) taskGroups = { ...legacyState.taskGroups };
+        delete taskGroups[piece.id];
+        continue;
+      }
+      if (group.location === spaceId) continue;
       if (taskGroups === legacyState.taskGroups) taskGroups = { ...legacyState.taskGroups };
       taskGroups[piece.id] = { ...group, location: spaceId };
       continue;
     }
 
     const formation = enemyFormations[piece.id];
-    if (!formation || formation.location === spaceId) continue;
+    if (!formation) continue;
+    if (!spaceId || !legacyState.territories[spaceId]) {
+      if (enemyFormations === legacyState.enemyFormations) enemyFormations = { ...legacyState.enemyFormations };
+      delete enemyFormations[piece.id];
+      continue;
+    }
+    if (formation.location === spaceId) continue;
     if (enemyFormations === legacyState.enemyFormations) enemyFormations = { ...legacyState.enemyFormations };
     enemyFormations[piece.id] = { ...formation, location: spaceId };
   }
