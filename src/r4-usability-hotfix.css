@@ -176,6 +176,13 @@
   box-shadow: 0 0 0 2px rgba(102, 245, 226, .34), 0 4px 12px rgba(0, 0, 0, .68);
 }
 
+/* The selected formation already has an explicit physical miniature. Keep its
+ * compatibility DOM target invisible so the R4 selector chip cannot repaint a
+ * second formation card over the physical piece. */
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector[data-r3-marker-kind='selected-formation'] {
+  opacity: 0 !important;
+}
+
 .r3-terrain-task-group-marker.r4-cut-off {
   border-color: #ff765f !important;
   color: #fff1ec;
