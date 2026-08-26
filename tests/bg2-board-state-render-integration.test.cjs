@@ -77,6 +77,20 @@ test('BG2E overlays authoritative ownership and matching piece placement without
   assert.equal(legacy.territories[originalPlayerLocation].controller, originalNeutralController);
 });
 
+test('BG2E suppresses matching authoritative pieces that are off-board without mutating legacy state', () => {
+  const { legacy, board, playerGroup, enemyFormation } = integrationFixture();
+  board.pieces[playerGroup.id].spaceId = null;
+  board.pieces[enemyFormation.id].spaceId = null;
+
+  const rendered = applyBoardProjectionToRendererState(legacy, projectBoardStateForRenderer(board));
+
+  assert.notEqual(rendered, legacy);
+  assert.equal(rendered.taskGroups[playerGroup.id], undefined);
+  assert.equal(rendered.enemyFormations[enemyFormation.id], undefined);
+  assert.ok(legacy.taskGroups[playerGroup.id], 'renderer projection must not remove the legacy friendly formation');
+  assert.ok(legacy.enemyFormations[enemyFormation.id], 'renderer projection must not remove the legacy enemy formation');
+});
+
 test('BG2E leaves the retained renderer state reference untouched while the authoritative board has no populated spaces or pieces', () => {
   const legacy = newGame(17);
   const emptyBoard = createInitialBoardState({ seed: 17 });
