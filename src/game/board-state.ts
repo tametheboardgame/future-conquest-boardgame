@@ -24,18 +24,19 @@ function normaliseSeed(seed: number): number {
 
 function normaliseParticipatingSeatIds(requested?: readonly SeatId[]): SeatId[] {
   const source = requested ?? DEFAULT_PARTICIPATING_SEAT_IDS;
-  const unique: SeatId[] = [];
+  const requestedSeats = new Set<SeatId>();
 
   for (const id of source) {
     if (!SEAT_IDS.includes(id)) throw new Error(`Unknown command seat: ${id}`);
-    if (!unique.includes(id)) unique.push(id);
+    requestedSeats.add(id);
   }
 
-  if (unique.length < 2) {
+  const participatingSeatIds = SEAT_IDS.filter(id => requestedSeats.has(id));
+  if (participatingSeatIds.length < 2) {
     throw new Error('A board game requires at least two participating command seats.');
   }
 
-  return unique;
+  return participatingSeatIds;
 }
 
 function createSeat(id: SeatId, controller: ControllerType, participating: boolean): CommandSeat {
@@ -145,7 +146,11 @@ function hasValidSeatConfiguration(value: unknown, activeSeat: SeatId): boolean 
     const seat = value[id];
     if (!isRecord(seat)) return false;
     if (seat.id !== id || !isControllerType(seat.controller) || typeof seat.participating !== 'boolean') return false;
-    if (!Number.isInteger(seat.commandActionsRemaining) || Number(seat.commandActionsRemaining) < 0) return false;
+    if (
+      typeof seat.commandActionsRemaining !== 'number'
+      || !Number.isInteger(seat.commandActionsRemaining)
+      || seat.commandActionsRemaining < 0
+    ) return false;
     if (seat.participating) participating += 1;
   }
 
@@ -164,9 +169,10 @@ export function deserializeBoardState(serialized: string): BoardGameState {
     parsed.roundLimit !== BOARD_ROUND_LIMIT
     || !SEAT_IDS.includes(parsed.activeSeat as SeatId)
     || !isBoardPhase(parsed.phase)
+    || typeof parsed.round !== 'number'
     || !Number.isInteger(parsed.round)
-    || Number(parsed.round) < 1
-    || Number(parsed.round) > BOARD_ROUND_LIMIT
+    || parsed.round < 1
+    || parsed.round > BOARD_ROUND_LIMIT
     || !hasValidSeatConfiguration(parsed.seats, parsed.activeSeat as SeatId)
   ) {
     throw new Error('Invalid Future Conquest board state metadata.');
