@@ -280,13 +280,22 @@ const layersControl = page.locator('.r3-terrain-layer-control');
 if (!(await layersControl.isVisible())) throw new Error('terrain Layers control is not visible');
 await layersControl.locator('summary').click();
 const toggles = ['Territory names', 'Friendly formations', 'Cities and hubs', 'Ports'];
-for (const label of toggles) await layersControl.getByLabel(label, { exact: true }).uncheck();
+const setLayerToggle = async (label, checked) => {
+  await layersControl.getByLabel(label, { exact: true }).evaluate((input, desired) => {
+    if (!(input instanceof HTMLInputElement)) throw new Error('layer toggle is not an input');
+    if (input.checked !== desired) input.click();
+    if (input.checked !== desired) throw new Error(`layer toggle did not change to ${desired}`);
+  }, checked);
+};
+// WP2F validates persisted presentation state, not pointer actionability. Use
+// native DOM clicks so a legitimate alert overlay cannot distort this contract.
+for (const label of toggles) await setLayerToggle(label, false);
 await activateCamera('campaign');
 await page.waitForTimeout(900);
 for (const label of toggles) {
   if (await layersControl.getByLabel(label, { exact: true }).isChecked()) throw new Error(`${label} did not remain disabled through camera refresh`);
 }
-for (const label of toggles) await layersControl.getByLabel(label, { exact: true }).check();
+for (const label of toggles) await setLayerToggle(label, true);
 await page.locator('.r3-terrain-territory-label:not([hidden])').nth(1).click();
 await page.waitForTimeout(100);
 for (const label of toggles) {

@@ -9,6 +9,7 @@ import { CombatAfterActionAlert, CombatReportsPanel } from './components/CombatR
 import { StrategicCollapseDecision } from './components/StrategicCollapseDecision';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { useLiveGlobalSettings } from './components/StartupExperience';
+import { useBoardGameState } from './components/BoardGameStateProvider';
 import { MapView } from './components/MapView';
 import { loadTerrainMapModule, prewarmTerrainMapModule } from './presentation/r3-terrain-loader';
 
@@ -18,6 +19,8 @@ import { STRATEGIC_ROUTE_BY_ID } from './game/strategic-network-data';
 import { NODE_TYPE_LABELS, ROUTE_TYPE_LABELS, nodesForTerritory, routeStatusLabel, routesForTerritory } from './game/strategic-network';
 import { estimateRouteMovementDays } from './game/route-movement';
 import { SUPPLY_CONDITION_LABELS } from './game/supply-network';
+import { applyBoardProjectionToRendererState } from './game/board-state-render-integration';
+import { projectBoardStateForRenderer } from './game/board-state-render-projection';
 import {
   getEnemyContacts,
   getAdviserWarnings,
@@ -67,6 +70,7 @@ type MovementResolutionState = { phase: 'arming' | 'playing'; next: GameState; r
 
 export default function App() {
   const { assistanceLevel, autosaveEnabled } = useLiveGlobalSettings();
+  const boardState = useBoardGameState();
   const [state, setState] = useState<GameState>(() => newGame());
   const [newDifficulty, setNewDifficulty] = useState<Difficulty>('standard');
   const [currentView, setCurrentView] = useState<CommandView>('map');
@@ -115,6 +119,14 @@ export default function App() {
   const movementMapState: GameState = movementResolution?.phase === 'playing'
     ? { ...state, taskGroups: movementResolution.next.taskGroups }
     : state;
+  const boardRenderProjection = useMemo(
+    () => projectBoardStateForRenderer(boardState),
+    [boardState]
+  );
+  const renderedMapState = useMemo(
+    () => applyBoardProjectionToRendererState(movementMapState, boardRenderProjection),
+    [movementMapState, boardRenderProjection]
+  );
 
   const groups = Object.values(state.taskGroups);
   const operations = Object.values(state.operations).sort((a, b) => a.target.localeCompare(b.target));
@@ -603,7 +615,7 @@ export default function App() {
             </div>}
             {terrainPrototypeRequested && !terrainPrototypeFailed ? <Suspense fallback={<div className="r3-terrain-prototype-loading" role="status">Loading terrain command map…</div>}>
               <TerrainMapPrototype
-                state={movementMapState}
+                state={renderedMapState}
                 onSelect={openTerritoryOnMap}
                 onSelectGroup={openGroupOnMap}
                 onFallback={(reason) => {
@@ -613,7 +625,7 @@ export default function App() {
                 }}
               />
             </Suspense> : <MapView
-              state={movementMapState}
+              state={renderedMapState}
               onSelect={openTerritoryOnMap}
               onSelectGroup={openGroupOnMap}
               operationConfirmation={canAttack && target ? {

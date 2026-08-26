@@ -29,8 +29,9 @@ test('WP3.7 keeps next-day command state hidden while formation positions animat
   assert.match(app, /const movementMapState: GameState = movementResolution\?\.phase === 'playing'/);
   assert.match(app, /\{ \.\.\.state, taskGroups: movementResolution\.next\.taskGroups \}/);
   assert.doesNotMatch(app, /movementMapState[^;]*territories:\s*movementResolution\.next\.territories/s);
-  assert.match(app, /<TerrainMapPrototype\s+state=\{movementMapState\}/);
-  assert.match(app, /<MapView\s+state=\{movementMapState\}/);
+  assert.match(app, /applyBoardProjectionToRendererState\(movementMapState, boardRenderProjection\)/);
+  assert.match(app, /<TerrainMapPrototype\s+state=\{renderedMapState\}/);
+  assert.match(app, /<MapView\s+state=\{renderedMapState\}/);
   assert.match(app, /setState\(movementResolution\.next\);\s*setMovementResolution\(null\);/s);
   assert.match(app, /window\.setTimeout\(\(\) => \{\s*setState\(movementResolution\.next\)/s);
   assert.match(app, /aria-busy=\{Boolean\(movementResolution\)\}/);
