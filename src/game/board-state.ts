@@ -2,10 +2,12 @@ import {
   BOARD_ROUND_LIMIT,
   BOARD_STATE_SCHEMA,
   BOARD_STATE_VERSION,
+  DEFAULT_PARTICIPATING_SEAT_IDS,
   SEAT_IDS,
   type BoardAction,
   type BoardActionResult,
   type BoardGameState,
+  type BoardPhase,
   type CommandSeat,
   type ControllerType,
   type CreateBoardStateOptions,
@@ -20,11 +22,28 @@ function normaliseSeed(seed: number): number {
   return normalised === 0 ? 0x6d2b79f5 : normalised;
 }
 
-function createSeat(id: SeatId, controller: ControllerType): CommandSeat {
+function normaliseParticipatingSeatIds(requested?: readonly SeatId[]): SeatId[] {
+  const source = requested ?? DEFAULT_PARTICIPATING_SEAT_IDS;
+  const unique: SeatId[] = [];
+
+  for (const id of source) {
+    if (!SEAT_IDS.includes(id)) throw new Error(`Unknown command seat: ${id}`);
+    if (!unique.includes(id)) unique.push(id);
+  }
+
+  if (unique.length < 2) {
+    throw new Error('A board game requires at least two participating command seats.');
+  }
+
+  return unique;
+}
+
+function createSeat(id: SeatId, controller: ControllerType, participating: boolean): CommandSeat {
   return {
     id,
     controller,
-    // BG3 owns the rules that grant/spend Command Actions. BG2 only stores them.
+    participating,
+    // Later BG3 packages own the rules that grant/spend Command Actions.
     commandActionsRemaining: 0
   };
 }
@@ -43,11 +62,17 @@ function createEmptyDeck(): DeckState {
   };
 }
 
+export function getParticipatingSeatIds(state: BoardGameState): SeatId[] {
+  return SEAT_IDS.filter(id => state.seats[id].participating);
+}
+
 export function createInitialBoardState(options: CreateBoardStateOptions): BoardGameState {
   const seed = normaliseSeed(options.seed);
+  const participatingSeatIds = normaliseParticipatingSeatIds(options.participatingSeatIds);
+  const participatingSeats = new Set<SeatId>(participatingSeatIds);
   const seats = Object.fromEntries(SEAT_IDS.map(id => [
     id,
-    createSeat(id, options.controllers?.[id] ?? 'computer')
+    createSeat(id, options.controllers?.[id] ?? 'computer', participatingSeats.has(id))
   ])) as Record<SeatId, CommandSeat>;
 
   return {
@@ -59,7 +84,7 @@ export function createInitialBoardState(options: CreateBoardStateOptions): Board
     round: 1,
     roundLimit: BOARD_ROUND_LIMIT,
     phase: 'round-start',
-    activeSeat: 'seat-1',
+    activeSeat: participatingSeatIds[0],
     seats,
     spaces: {},
     pieces: {},
@@ -104,6 +129,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isControllerType(value: unknown): value is ControllerType {
+  return value === 'human' || value === 'computer';
+}
+
+function isBoardPhase(value: unknown): value is BoardPhase {
+  return value === 'round-start' || value === 'activation' || value === 'round-end';
+}
+
+function hasValidSeatConfiguration(value: unknown, activeSeat: SeatId): boolean {
+  if (!isRecord(value)) return false;
+  let participating = 0;
+
+  for (const id of SEAT_IDS) {
+    const seat = value[id];
+    if (!isRecord(seat)) return false;
+    if (seat.id !== id || !isControllerType(seat.controller) || typeof seat.participating !== 'boolean') return false;
+    if (!Number.isInteger(seat.commandActionsRemaining) || Number(seat.commandActionsRemaining) < 0) return false;
+    if (seat.participating) participating += 1;
+  }
+
+  return participating >= 2 && (value[activeSeat] as Record<string, unknown>).participating === true;
+}
+
 export function deserializeBoardState(serialized: string): BoardGameState {
   const parsed: unknown = JSON.parse(serialized);
   if (!isRecord(parsed) || !isRecord(parsed.save)) {
@@ -112,16 +160,24 @@ export function deserializeBoardState(serialized: string): BoardGameState {
   if (parsed.save.schema !== BOARD_STATE_SCHEMA || parsed.save.version !== BOARD_STATE_VERSION) {
     throw new Error('Unsupported Future Conquest board state version.');
   }
-  if (parsed.roundLimit !== BOARD_ROUND_LIMIT || !SEAT_IDS.includes(parsed.activeSeat as SeatId)) {
+  if (
+    parsed.roundLimit !== BOARD_ROUND_LIMIT
+    || !SEAT_IDS.includes(parsed.activeSeat as SeatId)
+    || !isBoardPhase(parsed.phase)
+    || !Number.isInteger(parsed.round)
+    || Number(parsed.round) < 1
+    || Number(parsed.round) > BOARD_ROUND_LIMIT
+    || !hasValidSeatConfiguration(parsed.seats, parsed.activeSeat as SeatId)
+  ) {
     throw new Error('Invalid Future Conquest board state metadata.');
   }
   return parsed as unknown as BoardGameState;
 }
 
 /**
- * BG2 establishes the dispatch boundary without inventing BG3+ rules early.
- * Until a board action has an authoritative handler, rejecting it is required:
- * no mutation and no Command Action cost.
+ * BG2 established the dispatch boundary without inventing later rules early.
+ * Until a board action has an authoritative BG3+ handler, rejecting it remains
+ * required: no mutation and no Command Action cost.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   return {
