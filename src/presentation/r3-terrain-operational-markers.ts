@@ -36,14 +36,6 @@ const syncStrategicEvents = (map: Map, state: GameState) => syncBattleEventOverl
   deriveR3FrontSegments(state.territories, TERRITORIES)
 );
 
-const syncPhysicalFormationCompatibilityOpacity = (map: Map, markers: readonly Marker[]) => {
-  if (map.getContainer().parentElement?.dataset.physicalFormations !== 'ready') return;
-  for (const marker of markers) {
-    const kind = marker.getElement().dataset.r3MarkerKind;
-    if (kind === 'formation' || kind === 'selected-formation') marker.setOpacity(0, 0);
-  }
-};
-
 export function buildTerrainOperationalMarkers(map: Map, state: GameState, callbacks: MarkerCallbacks): Marker[] {
   const markers = applyMovingFormationMarkers(
     buildCoreTerrainOperationalMarkers(map, state, callbacks),
@@ -81,7 +73,6 @@ export function applyTerrainOperationalMarkerLayout(
   withIndependentMovingFormationClusters(markers, () => {
     applyCoreTerrainOperationalMarkerLayout(map, markers, layers);
   });
-  syncPhysicalFormationCompatibilityOpacity(map, markers);
   syncFormationMovementRouteOverlay(map, markers);
   setBattleEventOverlayVisible(map, layers.operations);
 }
