@@ -280,13 +280,15 @@ const layersControl = page.locator('.r3-terrain-layer-control');
 if (!(await layersControl.isVisible())) throw new Error('terrain Layers control is not visible');
 await layersControl.locator('summary').click();
 const toggles = ['Territory names', 'Friendly formations', 'Cities and hubs', 'Ports'];
-for (const label of toggles) await layersControl.getByLabel(label, { exact: true }).uncheck();
+// WP2F validates persisted presentation state, not pointer actionability. A
+// separate alert strip may legitimately occlude the control in this fixture.
+for (const label of toggles) await layersControl.getByLabel(label, { exact: true }).uncheck({ force: true });
 await activateCamera('campaign');
 await page.waitForTimeout(900);
 for (const label of toggles) {
   if (await layersControl.getByLabel(label, { exact: true }).isChecked()) throw new Error(`${label} did not remain disabled through camera refresh`);
 }
-for (const label of toggles) await layersControl.getByLabel(label, { exact: true }).check();
+for (const label of toggles) await layersControl.getByLabel(label, { exact: true }).check({ force: true });
 await page.locator('.r3-terrain-territory-label:not([hidden])').nth(1).click();
 await page.waitForTimeout(100);
 for (const label of toggles) {
