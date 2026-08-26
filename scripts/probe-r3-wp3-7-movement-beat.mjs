@@ -106,6 +106,9 @@ try {
   await page.goto(`http://127.0.0.1:${port}${mount}/?terrain=1`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.getByRole('button', { name: 'BEGIN CAMPAIGN', exact: true }).click({ timeout: 30_000 });
   await page.locator('.startup-game-shell').waitFor({ state: 'visible', timeout: 30_000 });
+  // The production game now enters on Map. Navigate to Campaign before loading
+  // the seeded autosave, then return to Map to exercise the movement renderer.
+  await page.locator('[data-command-view="campaign"]').click();
   await page.getByRole('button', { name: 'Load Autosave', exact: true }).click({ timeout: 30_000 });
   await page.locator('[data-command-view="map"]').click();
 
