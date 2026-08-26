@@ -16,8 +16,8 @@ function integrationFixture() {
   assert.ok(enemyFormation, 'legacy renderer fixture needs an enemy formation');
 
   const playerDestination = territoryIds.find(id => id !== playerGroup.location);
-  const enemyDestination = territoryIds.find(id => id !== enemyFormation.location && id !== playerDestination);
-  assert.ok(playerDestination && enemyDestination, 'legacy renderer fixture needs multiple territories');
+  const enemyDestination = territoryIds.find(id => id !== enemyFormation.location && id !== playerDestination && id !== playerGroup.location);
+  assert.ok(playerDestination && enemyDestination, 'legacy renderer fixture needs multiple non-colliding territories');
 
   const board = createInitialBoardState({ seed: 20260826 });
   board.spaces = {
