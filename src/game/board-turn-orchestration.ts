@@ -20,11 +20,15 @@ export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction |
   const activeSeat = state.seats[state.activeSeat];
   if (state.phase !== 'activation' || activeSeat.controller !== 'computer') return null;
 
-  // BG3 has no paid computer action yet. A basic computer may legally yield
-  // tempo back to a human opponent, but computer-v-computer must not create an
-  // infinite zero-cost Pass loop. BG4 supplies the first real paid action.
+  // BG3 has no paid computer action yet. Computer seats may legally yield
+  // through a mixed seat chain while at least one human can still activate.
+  // An all-computer (or humans-exhausted) position deliberately waits instead
+  // of creating an infinite zero-cost Pass loop. BG4 supplies paid actions.
+  const humanCanActivate = Object.values(state.seats).some(seat =>
+    seat.participating && seat.controller === 'human' && seat.commandActionsRemaining > 0
+  );
+  if (!humanCanActivate) return null;
+
   const pass = applyBoardAction(state, { type: 'pass-activation' });
-  if (!pass.accepted) return null;
-  const nextSeat = pass.state.seats[pass.state.activeSeat];
-  return nextSeat.controller === 'human' ? { type: 'pass-activation' } : null;
+  return pass.accepted ? { type: 'pass-activation' } : null;
 }
