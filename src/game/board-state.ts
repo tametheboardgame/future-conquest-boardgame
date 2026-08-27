@@ -227,6 +227,101 @@ export function startBoardRound(state: BoardGameState): BoardActionResult {
   };
 }
 
+/** True only when every participating seat has exhausted its Command Actions. */
+export function isBoardRoundExhausted(state: BoardGameState): boolean {
+  const participatingSeatIds = getParticipatingSeatIds(state);
+  return participatingSeatIds.length >= 2
+    && participatingSeatIds.every(id => state.seats[id].commandActionsRemaining === 0);
+}
+
+/**
+ * Closes the current activation phase once no participating seat can continue.
+ * Round-end is deliberately separate from campaign resolution: BG10 owns any
+ * victory or defeat decision at the eight-round boundary.
+ */
+export function endBoardRound(state: BoardGameState): BoardActionResult {
+  if (state.phase !== 'activation') {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: `Cannot end round during ${state.phase} phase.`
+    };
+  }
+
+  if (!isBoardRoundExhausted(state)) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: 'Cannot end round while a participating seat still has Command Actions.'
+    };
+  }
+
+  return {
+    state: {
+      ...state,
+      phase: 'round-end'
+    },
+    accepted: true,
+    commandActionsSpent: 0,
+    reason: `Round ${state.round} ended.`
+  };
+}
+
+/**
+ * Advances a completed round to the next deterministic round-start state.
+ * The campaign cannot advance beyond the locked eight-round boundary; BG10
+ * will later decide the campaign outcome from that terminal board position.
+ */
+export function advanceBoardRound(state: BoardGameState): BoardActionResult {
+  if (state.phase !== 'round-end') {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: `Cannot advance round during ${state.phase} phase.`
+    };
+  }
+
+  if (state.round >= state.roundLimit) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: `Round ${state.roundLimit} is the campaign limit; BG10 owns campaign resolution.`
+    };
+  }
+
+  const participatingSeatIds = getParticipatingSeatIds(state);
+  if (participatingSeatIds.length < 2) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: 'Cannot advance round without at least two participating command seats.'
+    };
+  }
+
+  const seats = Object.fromEntries(SEAT_IDS.map(id => [id, {
+    ...state.seats[id],
+    commandActionsRemaining: 0
+  }])) as Record<SeatId, CommandSeat>;
+
+  return {
+    state: {
+      ...state,
+      round: state.round + 1,
+      phase: 'round-start',
+      activeSeat: participatingSeatIds[0],
+      seats
+    },
+    accepted: true,
+    commandActionsSpent: 0,
+    reason: `Advanced to round ${state.round + 1}.`
+  };
+}
+
 /**
  * Returns the next participating seat that still has Command Actions. Search
  * wraps in permanent seat order and may return the current seat only after a
@@ -299,6 +394,8 @@ export function passBoardActivation(state: BoardGameState): BoardActionResult {
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   if (action.type === 'start-round') return startBoardRound(state);
   if (action.type === 'pass-activation') return passBoardActivation(state);
+  if (action.type === 'end-round') return endBoardRound(state);
+  if (action.type === 'advance-round') return advanceBoardRound(state);
 
   return {
     state,
