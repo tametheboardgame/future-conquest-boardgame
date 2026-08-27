@@ -1,5 +1,5 @@
 export const BOARD_STATE_SCHEMA = 'future-conquest-board-state' as const;
-export const BOARD_STATE_VERSION = 2 as const;
+export const BOARD_STATE_VERSION = 3 as const;
 export const BOARD_ROUND_LIMIT = 8 as const;
 export const BOARD_COMMAND_ACTIONS_PER_ROUND = 4 as const;
 
@@ -26,6 +26,7 @@ export interface CommandSeat {
 export interface BoardSpace {
   id: string;
   control: SeatId | null;
+  adjacentSpaceIds: string[];
 }
 
 export interface BoardPiece {
