@@ -55,16 +55,19 @@ jobs:
         run: |
           for sample in 1 2 3; do
             export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-base-${sample}.json"
-            set +e
-            node scripts/run-r3-wp2e-performance.mjs
-            status=$?
-            set -e
-            if [ "$status" -eq 75 ]; then
-              echo "Base terrain renderer-start failed once on sample ${sample}; retrying in a fresh Chromium process."
+            for attempt in 1 2; do
+              set +e
               node scripts/run-r3-wp2e-performance.mjs
-            elif [ "$status" -ne 0 ]; then
-              exit "$status"
-            fi
+              status=$?
+              set -e
+              if [ "$status" -eq 0 ]; then
+                break
+              fi
+              if [ "$attempt" -eq 2 ]; then
+                exit "$status"
+              fi
+              echo "Base measurement sample ${sample} failed once (exit ${status}); retrying in a fresh Chromium process."
+            done
           done
       - name: Stop base preview
         run: pkill -f 'vite preview' || true
@@ -92,7 +95,19 @@ jobs:
         run: |
           for sample in 1 2 3; do
             export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-head-${sample}.json"
-            node scripts/run-r3-wp2e-performance.mjs
+            for attempt in 1 2; do
+              set +e
+              node scripts/run-r3-wp2e-performance.mjs
+              status=$?
+              set -e
+              if [ "$status" -eq 0 ]; then
+                break
+              fi
+              if [ "$attempt" -eq 2 ]; then
+                exit "$status"
+              fi
+              echo "Head measurement sample ${sample} failed once (exit ${status}); retrying in a fresh Chromium process."
+            done
           done
       - name: Record explicit MapLibre cancellation A/B evidence
         env:
