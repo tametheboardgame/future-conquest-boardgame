@@ -47,23 +47,25 @@ jobs:
           npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/r3-wp2e-vite.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/r3-wp2e-vite.log; exit 1
-      - name: Record exact base evidence
+      - name: Record three exact base timing samples
         env:
           R3_WP2E_BUILD_SHA: ${{ github.event.pull_request.base.sha }}
           R3_WP2E_VARIANT: base
           R3_WP2E_TILE_CANCELLATION: cancel
-          R3_WP2E_EVIDENCE: artifacts/r3-wp2e-performance-base.json
         run: |
-          set +e
-          node scripts/run-r3-wp2e-performance.mjs
-          status=$?
-          set -e
-          if [ "$status" -eq 75 ]; then
-            echo 'Base terrain renderer-start failed once; retrying in a fresh Chromium process.'
+          for sample in 1 2 3; do
+            export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-base-${sample}.json"
+            set +e
             node scripts/run-r3-wp2e-performance.mjs
-          elif [ "$status" -ne 0 ]; then
-            exit "$status"
-          fi
+            status=$?
+            set -e
+            if [ "$status" -eq 75 ]; then
+              echo "Base terrain renderer-start failed once on sample ${sample}; retrying in a fresh Chromium process."
+              node scripts/run-r3-wp2e-performance.mjs
+            elif [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
+          done
       - name: Stop base preview
         run: pkill -f 'vite preview' || true
       - name: Checkout exact PR head
@@ -83,12 +85,15 @@ jobs:
           npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/r3-wp2e-vite.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/r3-wp2e-vite.log; exit 1
-      - name: Record exact head evidence
+      - name: Record three exact head timing samples
         env:
           R3_WP2E_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
           R3_WP2E_VARIANT: head
-          R3_WP2E_EVIDENCE: artifacts/r3-wp2e-performance-head.json
-        run: node scripts/run-r3-wp2e-performance.mjs
+        run: |
+          for sample in 1 2 3; do
+            export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-head-${sample}.json"
+            node scripts/run-r3-wp2e-performance.mjs
+          done
       - name: Record explicit MapLibre cancellation A/B evidence
         env:
           R3_WP2E_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -104,11 +109,11 @@ jobs:
             echo 'WP2E cancellation diagnostic failed once; retrying in a fresh Chromium process.'
             node scripts/run-r3-wp2e-performance.mjs
           fi
-      - name: Assert identities, compare base with head and enforce regression budgets
+      - name: Assert identities, compare timing medians and enforce unchanged regression budgets
         run: >-
           node scripts/compare-r3-wp2e-performance.mjs
-          artifacts/r3-wp2e-performance-base.json
-          artifacts/r3-wp2e-performance-head.json
+          artifacts/r3-wp2e-performance-base-1.json,artifacts/r3-wp2e-performance-base-2.json,artifacts/r3-wp2e-performance-base-3.json
+          artifacts/r3-wp2e-performance-head-1.json,artifacts/r3-wp2e-performance-head-2.json,artifacts/r3-wp2e-performance-head-3.json
           artifacts/r3-wp2e-performance-comparison.json
           '${{ github.event.pull_request.base.sha }}'
           '${{ github.event.pull_request.head.sha }}'
