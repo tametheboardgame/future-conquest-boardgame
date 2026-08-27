@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { applyBoardAction } from '../game/board-state';
+import { useBoardGameDispatch, useBoardGameState } from './BoardGameStateProvider';
 
 type ActivationSnapshot = {
   visible: boolean;
@@ -47,13 +49,18 @@ function invokeLegacyAction(selector: string) {
 }
 
 /**
- * BG1C is a presentation adapter over the existing simulation controls.
- * It mirrors legal Move/Attack availability and delegates clicks to the same
- * authoritative handlers already owned by App. It does not calculate outcomes,
- * mutate campaign state directly, or touch the protected map/render lifecycle.
+ * BG3E keeps the existing Move/Attack adapters while routing Pass through the
+ * authoritative board dispatcher. Presentation asks the game layer whether a
+ * Pass is legal; it does not calculate the turn result itself or touch the
+ * protected map/render lifecycle.
  */
 export function TabletopActivationPanel() {
   const [snapshot, setSnapshot] = useState<ActivationSnapshot>(EMPTY);
+  const boardState = useBoardGameState();
+  const dispatchBoardAction = useBoardGameDispatch();
+  const activeSeat = boardState.seats[boardState.activeSeat];
+  const passPreview = applyBoardAction(boardState, { type: 'pass-activation' });
+  const canPass = activeSeat.controller === 'human' && passPreview.accepted;
 
   useEffect(() => {
     let frame: number | null = null;
@@ -80,10 +87,10 @@ export function TabletopActivationPanel() {
 
   if (!snapshot.visible) return null;
 
-  return <aside className="tabletop-activation-panel" aria-label="Current activation" data-bg-package="BG1C">
+  return <aside className="tabletop-activation-panel" aria-label="Current activation" data-bg-package="BG3E">
     <header>
       <span>Current Activation</span>
-      <strong>{snapshot.canAttack ? 'Attack available' : snapshot.canMove ? 'Move available' : 'Choose action'}</strong>
+      <strong>{activeSeat.controller === 'computer' ? 'Computer turn' : snapshot.canAttack ? 'Attack available' : snapshot.canMove ? 'Move available' : 'Choose action'}</strong>
     </header>
 
     <div className="tabletop-activation-piece">
@@ -94,14 +101,14 @@ export function TabletopActivationPanel() {
     </div>
 
     <div className="tabletop-activation-actions" aria-label="Activation actions">
-      <button type="button" className="move" disabled={!snapshot.canMove} onClick={() => invokeLegacyAction('.map-context-panel [data-tutorial="move-action"]')}>Move</button>
-      <button type="button" className="attack" disabled={!snapshot.canAttack} onClick={() => invokeLegacyAction('.map-context-panel [data-tutorial="attack-action"]')}>Attack</button>
-      <button type="button" disabled title="Alternating-activation passing becomes authoritative in BG3">Pass Activation</button>
+      <button type="button" className="move" disabled={!snapshot.canMove || activeSeat.controller !== 'human'} onClick={() => invokeLegacyAction('.map-context-panel [data-tutorial="move-action"]')}>Move</button>
+      <button type="button" className="attack" disabled={!snapshot.canAttack || activeSeat.controller !== 'human'} onClick={() => invokeLegacyAction('.map-context-panel [data-tutorial="attack-action"]')}>Attack</button>
+      <button type="button" disabled={!canPass} title={canPass ? 'Yield this activation without spending a Command Action' : passPreview.reason} onClick={() => dispatchBoardAction({ type: 'pass-activation' })}>Pass Activation</button>
     </div>
 
     <div className="tabletop-later-actions" aria-label="Later board game actions">
       <span>Recover</span><span>Engineer</span><span>Logistics</span>
     </div>
-    <p>Move and Attack use the existing legal simulation actions during BG1. Pass, Recover, Engineer and Logistics become board actions in later packages.</p>
+    <p>Pass is now an authoritative board action. Move and Attack remain connected to the retained simulation controls until BG4 replaces their action plumbing.</p>
   </aside>;
 }
