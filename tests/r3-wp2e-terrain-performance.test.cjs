@@ -43,7 +43,7 @@ test('markers reconcile by stable identity and overlay source updates are isolat
   assert.doesNotMatch(implementation, /\[politicalData, frontData, routeData, nodeData\]/);
 });
 
-test('exact-head Chromium gate waits for useful paint and completed terrain bodies', () => {
+test('exact-head Chromium gate waits for useful paint, completed terrain bodies and repeated timing evidence', () => {
   const probe = read('scripts/run-r3-wp2e-performance.mjs');
   const comparison = read('scripts/compare-r3-wp2e-performance.mjs');
   const workflow = read('.github/workflows/r3-wp2e-performance-gate.yml');
@@ -76,6 +76,9 @@ test('exact-head Chromium gate waits for useful paint and completed terrain bodi
   assert.match(workflow, /R3_WP2E_VARIANT: base[\s\S]+R3_WP2E_TILE_CANCELLATION: cancel/);
   assert.match(workflow, /R3_WP2E_TILE_CANCELLATION: cancel/);
   assert.match(workflow, /head-cancel-pending-tiles/);
+  assert.match(workflow, /for sample in 1 2 3/);
+  assert.match(workflow, /r3-wp2e-performance-base-1\.json,r3-wp2e-performance-base-2\.json,r3-wp2e-performance-base-3\.json/);
+  assert.match(workflow, /r3-wp2e-performance-head-1\.json,r3-wp2e-performance-head-2\.json,r3-wp2e-performance-head-3\.json/);
   assert.match(implementation, /cancelPendingTileRequestsWhileZooming: cancelTilesWhileZooming/);
   assert.match(implementation, /presentationProfile === 'compact'[\s\S]+tileCancellationOverride !== 'retain'/);
   assert.doesNotMatch(implementation, /tileCancellationOverride === 'cancel'/);
@@ -86,6 +89,8 @@ test('exact-head Chromium gate waits for useful paint and completed terrain bodi
   assert.match(comparison, /regressionBudget/);
   assert.match(comparison, /maximumHeadValue/);
   assert.match(comparison, /timingMeasurementEpsilonMs = 5/);
+  assert.match(comparison, /timingAggregation: 'median'/);
+  assert.match(comparison, /networkAggregation: 'first-exact-sample'/);
   assert.match(comparison, /performance regression budget exceeded/);
   for (const field of ['firstUsefulPaintMs', 'campaignSettledMs', 'campaignToTheatreMs', 'theatreToSelectedMs']) {
     assert.match(comparison, new RegExp(field));
@@ -147,6 +152,63 @@ test('performance comparator absorbs timer-boundary jitter but still fails a mat
     assert.notEqual(failing.status, 0);
     assert.match(`${failing.stderr}\n${failing.stdout}`, /performance regression budget exceeded/);
     assert.equal(JSON.parse(fs.readFileSync(failingOutputPath, 'utf8')).regressionBudget.passed, false);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('performance comparator uses timing medians to reject persistent regressions without failing one noisy sample', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'r3-wp2e-median-'));
+  const comparator = path.resolve('scripts/compare-r3-wp2e-performance.mjs');
+  const baseSha = 'base-sha';
+  const headSha = 'head-sha';
+  const makeEvidence = (variant, buildSha, campaignToTheatreMs) => ({
+    variant,
+    buildSha,
+    timingsMs: {
+      firstUsefulPaintMs: 36000,
+      campaignSettledMs: 37000,
+      campaignToTheatreMs,
+      theatreToSelectedMs: 9000
+    },
+    terrainNetwork: {
+      totalRequests: 64,
+      uniqueRequests: 54,
+      duplicateRequestCount: 10,
+      declaredBytes: 5_200_000,
+      transferredBytes: 5_220_000,
+      encodedBodyBytes: 5_200_000
+    }
+  });
+  const write = (name, evidence) => {
+    const filePath = path.join(tempDir, name);
+    fs.writeFileSync(filePath, JSON.stringify(evidence));
+    return filePath;
+  };
+
+  try {
+    const basePaths = [1000, 1100, 1200].map((value, index) => write(`base-${index}.json`, makeEvidence('base', baseSha, value)));
+    const noisyHeadPaths = [1200, 2900, 1300].map((value, index) => write(`head-noisy-${index}.json`, makeEvidence('head', headSha, value)));
+    const slowHeadPaths = [2800, 2900, 3000].map((value, index) => write(`head-slow-${index}.json`, makeEvidence('head', headSha, value)));
+    const noisyOutput = path.join(tempDir, 'noisy-output.json');
+    const slowOutput = path.join(tempDir, 'slow-output.json');
+
+    const noisy = spawnSync(process.execPath, [comparator, basePaths.join(','), noisyHeadPaths.join(','), noisyOutput, baseSha, headSha], { encoding: 'utf8' });
+    assert.equal(noisy.status, 0, noisy.stderr || noisy.stdout);
+    const noisyComparison = JSON.parse(fs.readFileSync(noisyOutput, 'utf8'));
+    assert.equal(noisyComparison.sampling.baseSamples, 3);
+    assert.equal(noisyComparison.sampling.headSamples, 3);
+    assert.equal(noisyComparison.sampling.timingAggregation, 'median');
+    assert.equal(noisyComparison.timingsMs.campaignToTheatreMs.base, 1100);
+    assert.equal(noisyComparison.timingsMs.campaignToTheatreMs.head, 1300);
+    assert.equal(noisyComparison.regressionBudget.passed, true);
+
+    const slow = spawnSync(process.execPath, [comparator, basePaths.join(','), slowHeadPaths.join(','), slowOutput, baseSha, headSha], { encoding: 'utf8' });
+    assert.notEqual(slow.status, 0);
+    assert.match(`${slow.stderr}\n${slow.stdout}`, /performance regression budget exceeded/);
+    const slowComparison = JSON.parse(fs.readFileSync(slowOutput, 'utf8'));
+    assert.equal(slowComparison.timingsMs.campaignToTheatreMs.head, 2900);
+    assert.equal(slowComparison.regressionBudget.passed, false);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
