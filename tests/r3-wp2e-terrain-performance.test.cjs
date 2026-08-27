@@ -71,8 +71,9 @@ test('exact-head Chromium gate waits for useful paint, completed terrain bodies 
   assert.match(probe, /startupOutcome/);
   assert.match(probe, /r3-terrain-fallback-notice/);
   assert.match(probe, /process\.exit\(75\)/);
-  assert.match(workflow, /if \[ \"\$status\" -eq 75 \]/);
-  assert.match(workflow, /elif \[ \"\$status\" -ne 0 \]/);
+  assert.match(workflow, /for attempt in 1 2/);
+  assert.match(workflow, /if \[ \"\$attempt\" -eq 2 \]/);
+  assert.match(workflow, /failed once \(exit \$\{status\}\); retrying in a fresh Chromium process/);
   assert.match(workflow, /R3_WP2E_VARIANT: base[\s\S]+R3_WP2E_TILE_CANCELLATION: cancel/);
   assert.match(workflow, /R3_WP2E_TILE_CANCELLATION: cancel/);
   assert.match(workflow, /head-cancel-pending-tiles/);
