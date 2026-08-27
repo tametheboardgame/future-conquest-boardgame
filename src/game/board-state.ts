@@ -228,11 +228,77 @@ export function startBoardRound(state: BoardGameState): BoardActionResult {
 }
 
 /**
+ * Returns the next participating seat that still has Command Actions. Search
+ * wraps in permanent seat order and may return the current seat only after a
+ * full circuit, which lets future paid actions continue when every opponent is
+ * exhausted while still preserving deterministic alternating order whenever
+ * another seat can act.
+ */
+export function getNextActivatingSeatId(state: BoardGameState): SeatId | null {
+  const activeIndex = SEAT_IDS.indexOf(state.activeSeat);
+  if (activeIndex < 0) return null;
+
+  for (let offset = 1; offset <= SEAT_IDS.length; offset += 1) {
+    const id = SEAT_IDS[(activeIndex + offset) % SEAT_IDS.length];
+    const seat = state.seats[id];
+    if (seat.participating && seat.commandActionsRemaining > 0) return id;
+  }
+
+  return null;
+}
+
+/**
+ * Pass yields only the current activation. It never spends or discards Command
+ * Actions, so a seat can act when activation returns later in the round.
+ */
+export function passBoardActivation(state: BoardGameState): BoardActionResult {
+  if (state.phase !== 'activation') {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: `Cannot pass activation during ${state.phase} phase.`
+    };
+  }
+
+  const activeSeat = state.seats[state.activeSeat];
+  if (!activeSeat.participating || activeSeat.commandActionsRemaining <= 0) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: `${state.activeSeat} has no legal activation to pass.`
+    };
+  }
+
+  const nextSeat = getNextActivatingSeatId(state);
+  if (!nextSeat || nextSeat === state.activeSeat) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: 'No other participating seat has a legal activation.'
+    };
+  }
+
+  return {
+    state: {
+      ...state,
+      activeSeat: nextSeat
+    },
+    accepted: true,
+    commandActionsSpent: 0,
+    reason: `${state.activeSeat} passed activation to ${nextSeat}.`
+  };
+}
+
+/**
  * Board actions cross this single authoritative dispatch boundary. BG3 adds
  * handlers incrementally; unsupported actions remain no-cost/no-mutation.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   if (action.type === 'start-round') return startBoardRound(state);
+  if (action.type === 'pass-activation') return passBoardActivation(state);
 
   return {
     state,

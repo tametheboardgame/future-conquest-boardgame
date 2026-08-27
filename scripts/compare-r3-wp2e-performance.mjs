@@ -1,22 +1,47 @@
 import fs from 'node:fs';
 
-const [basePath, headPath, outputPath, expectedBaseSha, expectedHeadSha] = process.argv.slice(2);
-if (![basePath, headPath, outputPath, expectedBaseSha, expectedHeadSha].every(Boolean)) {
-  throw new Error('usage: compare-r3-wp2e-performance.mjs BASE HEAD OUTPUT EXPECTED_BASE_SHA EXPECTED_HEAD_SHA');
+const [basePathSpec, headPathSpec, outputPath, expectedBaseSha, expectedHeadSha] = process.argv.slice(2);
+if (![basePathSpec, headPathSpec, outputPath, expectedBaseSha, expectedHeadSha].every(Boolean)) {
+  throw new Error('usage: compare-r3-wp2e-performance.mjs BASE[,BASE...] HEAD[,HEAD...] OUTPUT EXPECTED_BASE_SHA EXPECTED_HEAD_SHA');
 }
 
-const base = JSON.parse(fs.readFileSync(basePath, 'utf8'));
-const head = JSON.parse(fs.readFileSync(headPath, 'utf8'));
+const timingFields = ['firstUsefulPaintMs', 'campaignSettledMs', 'campaignToTheatreMs', 'theatreToSelectedMs'];
+const networkFields = ['totalRequests', 'uniqueRequests', 'duplicateRequestCount', 'declaredBytes', 'transferredBytes', 'encodedBodyBytes'];
+
+const readEvidenceSet = pathSpec => pathSpec.split(',').map(filePath => JSON.parse(fs.readFileSync(filePath, 'utf8')));
 const assertIdentity = (evidence, variant, buildSha) => {
   if (evidence.variant !== variant || evidence.buildSha !== buildSha) {
     throw new Error(`${variant} evidence identity mismatch: expected ${buildSha}, got ${evidence.variant}:${evidence.buildSha}`);
   }
 };
-assertIdentity(base, 'base', expectedBaseSha);
-assertIdentity(head, 'head', expectedHeadSha);
+const median = values => {
+  const ordered = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 1 ? ordered[middle] : (ordered[middle - 1] + ordered[middle]) / 2;
+};
+const aggregateTimings = evidenceSet => Object.fromEntries(timingFields.map(field => {
+  const values = evidenceSet.map(evidence => evidence.timingsMs[field]);
+  if (!values.every(Number.isFinite)) throw new Error(`performance evidence missing numeric timingsMs.${field}`);
+  return [field, median(values)];
+}));
 
-const timingFields = ['firstUsefulPaintMs', 'campaignSettledMs', 'campaignToTheatreMs', 'theatreToSelectedMs'];
-const networkFields = ['totalRequests', 'uniqueRequests', 'duplicateRequestCount', 'declaredBytes', 'transferredBytes', 'encodedBodyBytes'];
+const baseSamples = readEvidenceSet(basePathSpec);
+const headSamples = readEvidenceSet(headPathSpec);
+if (baseSamples.length < 1 || headSamples.length < 1) throw new Error('performance evidence set must contain at least one base and head sample');
+baseSamples.forEach(evidence => assertIdentity(evidence, 'base', expectedBaseSha));
+headSamples.forEach(evidence => assertIdentity(evidence, 'head', expectedHeadSha));
+
+// Timing metrics are scheduler-sensitive on shared runners. Compare medians when
+// repeated samples are supplied, while retaining the first exact sample for all
+// network/payload checks so the existing non-timing guardrails are unchanged.
+const base = {
+  ...baseSamples[0],
+  timingsMs: aggregateTimings(baseSamples)
+};
+const head = {
+  ...headSamples[0],
+  timingsMs: aggregateTimings(headSamples)
+};
 
 // These are regression guardrails, not optimisation targets. The relative and
 // absolute tolerances deliberately absorb normal shared-runner variance while
@@ -59,13 +84,21 @@ const budgetChecks = regressionBudgets.map(budget => {
 const failedBudgetChecks = budgetChecks.filter(check => !check.passed);
 
 const comparison = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   identities: {
     base: { variant: base.variant, buildSha: base.buildSha },
     head: { variant: head.variant, buildSha: head.buildSha }
   },
+  sampling: {
+    baseSamples: baseSamples.length,
+    headSamples: headSamples.length,
+    timingAggregation: 'median',
+    networkAggregation: 'first-exact-sample'
+  },
   timingsMs: Object.fromEntries(timingFields.map(field => [field, {
-    base: base.timingsMs[field], head: head.timingsMs[field], delta: head.timingsMs[field] - base.timingsMs[field]
+    base: base.timingsMs[field], head: head.timingsMs[field], delta: head.timingsMs[field] - base.timingsMs[field],
+    baseSamples: baseSamples.map(evidence => evidence.timingsMs[field]),
+    headSamples: headSamples.map(evidence => evidence.timingsMs[field])
   }])),
   terrainNetwork: Object.fromEntries(networkFields.map(field => [field, {
     base: base.terrainNetwork[field], head: head.terrainNetwork[field], delta: head.terrainNetwork[field] - base.terrainNetwork[field]
