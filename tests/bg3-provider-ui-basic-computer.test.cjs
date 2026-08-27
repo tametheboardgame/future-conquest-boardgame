@@ -24,17 +24,28 @@ test('BG3E automatically starts authoritative round-start states', () => {
 
 test('BG3E basic computer yields through the same Pass dispatcher back to a human seat', () => {
   let state = startedState({ controllers: { 'seat-1': 'human', 'seat-2': 'computer' } });
-  const humanPass = applyBoardAction(state, { type: 'pass-activation' });
-  assert.equal(humanPass.accepted, true);
-  state = humanPass.state;
+  state = applyBoardAction(state, { type: 'pass-activation' }).state;
   assert.equal(state.activeSeat, 'seat-2');
-
   const computerChoice = chooseAutomaticBoardAction(state);
   assert.deepEqual(computerChoice, { type: 'pass-activation' });
   const computerPass = applyBoardAction(state, computerChoice);
   assert.equal(computerPass.accepted, true);
   assert.equal(computerPass.state.activeSeat, 'seat-1');
   assert.equal(computerPass.commandActionsSpent, 0);
+});
+
+test('BG3E mixed computer chains keep yielding until the next human can activate', () => {
+  let state = startedState({
+    participatingSeatIds: ['seat-1', 'seat-2', 'seat-3'],
+    controllers: { 'seat-1': 'computer', 'seat-2': 'computer', 'seat-3': 'human' }
+  });
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'pass-activation' });
+  state = applyBoardAction(state, { type: 'pass-activation' }).state;
+  assert.equal(state.activeSeat, 'seat-2');
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'pass-activation' });
+  state = applyBoardAction(state, { type: 'pass-activation' }).state;
+  assert.equal(state.activeSeat, 'seat-3');
+  assert.equal(chooseAutomaticBoardAction(state), null);
 });
 
 test('BG3E computer-v-computer does not create an infinite zero-cost Pass loop before paid actions exist', () => {
@@ -47,7 +58,6 @@ test('BG3E automatic orchestration closes exhausted rounds and advances complete
   state.seats['seat-1'].commandActionsRemaining = 0;
   state.seats['seat-2'].commandActionsRemaining = 0;
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-round' });
-
   const ended = endBoardRound(state);
   assert.equal(ended.accepted, true);
   assert.deepEqual(chooseAutomaticBoardAction(ended.state), { type: 'advance-round' });
@@ -63,11 +73,11 @@ test('BG3E stops automatic advancement at the round-eight boundary', () => {
   assert.equal(chooseAutomaticBoardAction(state), null);
 });
 
-test('BG3E provider exposes authoritative dispatch and persists every accepted action', () => {
+test('BG3E provider exposes authoritative dispatch, persistence and save-preservation guards', () => {
   const provider = read('src/components/BoardGameStateProvider.tsx');
-
   assert.match(provider, /applyBoardAction\(state, action\)/);
   assert.match(provider, /if \(!result\.accepted\) return result/);
+  assert.match(provider, /!preserveExistingBoardSave/);
   assert.match(provider, /writeBoardState\(storage, result\.state\)/);
   assert.match(provider, /setState\(result\.state\)/);
   assert.match(provider, /chooseAutomaticBoardAction\(state\)/);
@@ -77,7 +87,6 @@ test('BG3E provider exposes authoritative dispatch and persists every accepted a
 
 test('BG3E Pass control asks the authoritative dispatcher for legality and dispatches the same action', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
-
   assert.match(panel, /applyBoardAction\(boardState, \{ type: 'pass-activation' \}\)/);
   assert.match(panel, /const canPass = activeSeat\.controller === 'human' && passPreview\.accepted/);
   assert.match(panel, /dispatchBoardAction\(\{ type: 'pass-activation' \}\)/);
