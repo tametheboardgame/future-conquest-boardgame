@@ -77,8 +77,8 @@ test('exact-head Chromium gate waits for useful paint, completed terrain bodies 
   assert.match(workflow, /R3_WP2E_TILE_CANCELLATION: cancel/);
   assert.match(workflow, /head-cancel-pending-tiles/);
   assert.match(workflow, /for sample in 1 2 3/);
-  assert.match(workflow, /r3-wp2e-performance-base-1\.json,r3-wp2e-performance-base-2\.json,r3-wp2e-performance-base-3\.json/);
-  assert.match(workflow, /r3-wp2e-performance-head-1\.json,r3-wp2e-performance-head-2\.json,r3-wp2e-performance-head-3\.json/);
+  assert.match(workflow, /r3-wp2e-performance-base-1\.json,artifacts\/r3-wp2e-performance-base-2\.json,artifacts\/r3-wp2e-performance-base-3\.json/);
+  assert.match(workflow, /r3-wp2e-performance-head-1\.json,artifacts\/r3-wp2e-performance-head-2\.json,artifacts\/r3-wp2e-performance-head-3\.json/);
   assert.match(implementation, /cancelPendingTileRequestsWhileZooming: cancelTilesWhileZooming/);
   assert.match(implementation, /presentationProfile === 'compact'[\s\S]+tileCancellationOverride !== 'retain'/);
   assert.doesNotMatch(implementation, /tileCancellationOverride === 'cancel'/);
