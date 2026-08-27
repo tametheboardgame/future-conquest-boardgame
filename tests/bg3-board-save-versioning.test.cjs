@@ -24,13 +24,13 @@ class MemoryStorage {
   }
 }
 
-test('BG3A uses a new board-save slot and leaves the BG2 v1 slot untouched', () => {
-  const previousKey = 'future-conquest-board-state-v1';
-  const previousValue = '{"preserved":"bg2"}';
+test('BG4A uses a new board-save slot and leaves the BG3 v2 slot untouched', () => {
+  const previousKey = 'future-conquest-board-state-v2';
+  const previousValue = '{"preserved":"bg3"}';
   const storage = new MemoryStorage({ [previousKey]: previousValue });
 
-  assert.equal(BOARD_STATE_VERSION, 2);
-  assert.equal(BOARD_STATE_SAVE_KEY, 'future-conquest-board-state-v2');
+  assert.equal(BOARD_STATE_VERSION, 3);
+  assert.equal(BOARD_STATE_SAVE_KEY, 'future-conquest-board-state-v3');
   assert.equal(inspectStoredBoardState(storage).code, 'missing');
 
   const state = createInitialBoardState({ seed: 6, controllers: { 'seat-1': 'human' } });
