@@ -1,9 +1,15 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { createInitialBoardState } from '../game/board-state';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { applyBoardAction, createInitialBoardState } from '../game/board-state';
 import { inspectStoredBoardState, writeBoardState } from '../game/board-state-persistence';
-import type { BoardGameState } from '../game/board-state-types';
+import { chooseAutomaticBoardAction } from '../game/board-turn-orchestration';
+import type { BoardAction, BoardActionResult, BoardGameState } from '../game/board-state-types';
 
-const BoardGameStateContext = createContext<BoardGameState | null>(null);
+type BoardGameStateContextValue = {
+  state: BoardGameState;
+  dispatch: (action: BoardAction) => BoardActionResult;
+};
+
+const BoardGameStateContext = createContext<BoardGameStateContextValue | null>(null);
 
 function browserStorage(): Storage | null {
   try {
@@ -13,9 +19,13 @@ function browserStorage(): Storage | null {
   }
 }
 
-function initialiseBoardState(): BoardGameState {
+function inspectBrowserBoardState() {
   const storage = browserStorage();
-  const stored = storage ? inspectStoredBoardState(storage) : null;
+  return storage ? inspectStoredBoardState(storage) : null;
+}
+
+function initialiseBoardState(): BoardGameState {
+  const stored = inspectBrowserBoardState();
   if (stored?.ok) return stored.state;
 
   return createInitialBoardState({
@@ -24,28 +34,59 @@ function initialiseBoardState(): BoardGameState {
   });
 }
 
+function shouldPreserveExistingBoardSave(): boolean {
+  const stored = inspectBrowserBoardState();
+  return Boolean(stored && !stored.ok && (stored.code === 'corrupt' || stored.code === 'unsupported'));
+}
+
 /**
- * BG2 state host. It is deliberately unconditional so wrapping the existing
- * application cannot unmount or recreate the protected map during play.
+ * BG3 state host. The provider stays mounted around the existing application so
+ * authoritative board actions never recreate or replace the protected map.
  */
 export function BoardGameStateProvider({ children }: { children: ReactNode }) {
-  const [state] = useState<BoardGameState>(initialiseBoardState);
+  const [state, setState] = useState<BoardGameState>(initialiseBoardState);
+  const [preserveExistingBoardSave] = useState(shouldPreserveExistingBoardSave);
+
+  const dispatch = useCallback((action: BoardAction): BoardActionResult => {
+    const result = applyBoardAction(state, action);
+    if (!result.accepted) return result;
+
+    const storage = browserStorage();
+    if (storage && !preserveExistingBoardSave) writeBoardState(storage, result.state);
+    setState(result.state);
+    return result;
+  }, [state, preserveExistingBoardSave]);
 
   useEffect(() => {
     const storage = browserStorage();
-    if (!storage) return;
+    if (!storage || preserveExistingBoardSave) return;
     const stored = inspectStoredBoardState(storage);
-    // Create the dedicated BG2 save only when genuinely absent. Corrupt or
+    // Create the dedicated board save only when genuinely absent. Corrupt or
     // unsupported data is preserved for explicit recovery rather than silently
-    // overwritten during application bootstrap.
+    // overwritten during application bootstrap or automatic turn progression.
     if (!stored.ok && stored.code === 'missing') writeBoardState(storage, state);
-  }, [state]);
+  }, [preserveExistingBoardSave]); // Bootstrap-only: accepted actions persist synchronously in dispatch.
 
-  return <BoardGameStateContext.Provider value={state}>{children}</BoardGameStateContext.Provider>;
+  useEffect(() => {
+    const automaticAction = chooseAutomaticBoardAction(state);
+    if (!automaticAction) return;
+    dispatch(automaticAction);
+  }, [state, dispatch]);
+
+  const value = useMemo<BoardGameStateContextValue>(() => ({ state, dispatch }), [state, dispatch]);
+  return <BoardGameStateContext.Provider value={value}>{children}</BoardGameStateContext.Provider>;
+}
+
+function useBoardGameContext(): BoardGameStateContextValue {
+  const value = useContext(BoardGameStateContext);
+  if (!value) throw new Error('Board game hooks must be used within BoardGameStateProvider');
+  return value;
 }
 
 export function useBoardGameState(): BoardGameState {
-  const state = useContext(BoardGameStateContext);
-  if (!state) throw new Error('useBoardGameState must be used within BoardGameStateProvider');
-  return state;
+  return useBoardGameContext().state;
+}
+
+export function useBoardGameDispatch(): (action: BoardAction) => BoardActionResult {
+  return useBoardGameContext().dispatch;
 }
