@@ -19,9 +19,13 @@ function browserStorage(): Storage | null {
   }
 }
 
-function initialiseBoardState(): BoardGameState {
+function inspectBrowserBoardState() {
   const storage = browserStorage();
-  const stored = storage ? inspectStoredBoardState(storage) : null;
+  return storage ? inspectStoredBoardState(storage) : null;
+}
+
+function initialiseBoardState(): BoardGameState {
+  const stored = inspectBrowserBoardState();
   if (stored?.ok) return stored.state;
 
   return createInitialBoardState({
@@ -30,32 +34,38 @@ function initialiseBoardState(): BoardGameState {
   });
 }
 
+function shouldPreserveExistingBoardSave(): boolean {
+  const stored = inspectBrowserBoardState();
+  return Boolean(stored && !stored.ok && (stored.code === 'corrupt' || stored.code === 'unsupported'));
+}
+
 /**
  * BG3 state host. The provider stays mounted around the existing application so
  * authoritative board actions never recreate or replace the protected map.
  */
 export function BoardGameStateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BoardGameState>(initialiseBoardState);
+  const [preserveExistingBoardSave] = useState(shouldPreserveExistingBoardSave);
 
   const dispatch = useCallback((action: BoardAction): BoardActionResult => {
     const result = applyBoardAction(state, action);
     if (!result.accepted) return result;
 
     const storage = browserStorage();
-    if (storage) writeBoardState(storage, result.state);
+    if (storage && !preserveExistingBoardSave) writeBoardState(storage, result.state);
     setState(result.state);
     return result;
-  }, [state]);
+  }, [state, preserveExistingBoardSave]);
 
   useEffect(() => {
     const storage = browserStorage();
-    if (!storage) return;
+    if (!storage || preserveExistingBoardSave) return;
     const stored = inspectStoredBoardState(storage);
     // Create the dedicated board save only when genuinely absent. Corrupt or
     // unsupported data is preserved for explicit recovery rather than silently
-    // overwritten during application bootstrap.
+    // overwritten during application bootstrap or automatic turn progression.
     if (!stored.ok && stored.code === 'missing') writeBoardState(storage, state);
-  }, []); // Bootstrap-only: accepted actions persist synchronously in dispatch.
+  }, [preserveExistingBoardSave]); // Bootstrap-only: accepted actions persist synchronously in dispatch.
 
   useEffect(() => {
     const automaticAction = chooseAutomaticBoardAction(state);
