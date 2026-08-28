@@ -410,6 +410,7 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
   private motionScale = 1;
   private visible: boolean;
   private renderCount = 0;
+  private rendererFailed = false;
   private clusterOffsetById = new globalThis.Map<string, readonly [number, number]>();
 
   constructor(state: GameState, layers: Pick<TerrainOperationalLayers, 'friendlyFormations'>) {
@@ -419,6 +420,7 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
 
   onAdd(map: Map, gl: WebGL2RenderingContext) {
     this.map = map;
+    this.rendererFailed = false;
     this.renderer = new WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
     this.renderer.autoClear = false;
     this.scene.add(new AmbientLight(0xd9f6ee, 1.5));
@@ -497,6 +499,21 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
   }
 
   render(_gl: WebGL2RenderingContext, options: CustomRenderMethodInput) {
+    if (this.rendererFailed) return;
+    try {
+      this.renderFrame(options);
+    } catch (error) {
+      this.rendererFailed = true;
+      const host = this.map?.getContainer().parentElement;
+      if (host) host.dataset.physicalFormations = 'fallback';
+      console.warn('R3 physical formation renderer failed at runtime; retaining compatible markers.', error);
+      this.renderer?.dispose();
+      this.renderer = undefined;
+      this.map?.triggerRepaint();
+    }
+  }
+
+  private renderFrame(options: CustomRenderMethodInput) {
     if (!this.map || !this.renderer) return;
     this.syncMotionPreferences();
     const now = performance.now();
@@ -562,8 +579,13 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
     this.renderer = undefined;
     this.map = undefined;
     for (const piece of this.pieces.values()) disposeMiniature(piece.root);
-    for (const child of this.scene.children) if (child instanceof Object3D) child.clear();
     this.pieces.clear();
+    this.scene.clear();
+    this.clusterOffsetById.clear();
+    this.reducedMotion = false;
+    this.motionScale = 1;
+    this.renderCount = 0;
+    this.rendererFailed = false;
     delete window.__r3FormationMiniatures;
     delete window.__r3FormationPortalTargets;
   }
