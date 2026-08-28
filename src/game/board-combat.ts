@@ -5,11 +5,13 @@ import {
 } from './board-state';
 import type {
   BoardActionResult,
+  BoardCombatConsequence,
   BoardCombatModifiers,
   BoardCombatState,
   BoardGameState,
   BoardPiece,
   BoardSpace,
+  SeatId,
   SupplyState
 } from './board-state-types';
 import type { Terrain } from './types';
@@ -17,6 +19,12 @@ import type { Terrain } from './types';
 export const BOARD_COMBAT_DIE_COUNT = 1 as const;
 export const BOARD_COMBAT_DIE_SIDES = 20 as const;
 export const BOARD_COMBAT_BASE_TARGET = 11 as const;
+export const BOARD_COMBAT_DAMAGE_PER_HIT = 1 as const;
+export const BOARD_COMBAT_CRITICAL_DAMAGE = 2 as const;
+export const BOARD_COMBAT_READINESS_LOSS = 25 as const;
+export const BOARD_COMBAT_CRITICAL_READINESS_LOSS = 50 as const;
+export const BOARD_COMBAT_RETREAT_THRESHOLD = 50 as const;
+export const BOARD_COMBAT_ELIMINATION_DAMAGE = 3 as const;
 
 const TERRAIN_DEFENCE_MODIFIER: Record<Terrain, number> = {
   'open-lowland': 0,
@@ -52,6 +60,7 @@ export type BoardCombatPreview =
       attackModifier: number;
       defenceModifier: number;
       target: number;
+      possibleOutcomes: string[];
     };
 
 function getFortificationModifier(space: BoardSpace): number {
@@ -137,13 +146,20 @@ function buildLegalPreview(
     modifiers,
     attackModifier,
     defenceModifier,
-    target: BOARD_COMBAT_BASE_TARGET + defenceModifier
+    target: BOARD_COMBAT_BASE_TARGET + defenceModifier,
+    possibleOutcomes: [
+      'Miss: no loss to the defender.',
+      `Hit: +${BOARD_COMBAT_DAMAGE_PER_HIT} damage and -${BOARD_COMBAT_READINESS_LOSS} readiness.`,
+      `Natural 20: +${BOARD_COMBAT_CRITICAL_DAMAGE} damage and -${BOARD_COMBAT_CRITICAL_READINESS_LOSS} readiness.`,
+      `At ${BOARD_COMBAT_RETREAT_THRESHOLD} readiness or lower the defender must retreat if a legal space exists.`,
+      `${BOARD_COMBAT_ELIMINATION_DAMAGE} damage or 0 readiness eliminates the defender.`
+    ]
   };
 }
 
 /**
  * Returns the exact seeded-dice contract the UI can show before commitment.
- * BG5 presentation must consume this preview rather than recreating combat rules.
+ * Presentation consumes this preview rather than recreating combat rules.
  */
 export function getBoardCombatPreview(
   state: BoardGameState,
@@ -167,10 +183,24 @@ export function getBoardCombatPreview(
   );
 }
 
+/** Legal enemy-piece targets for one attacker, in stable piece-id order. */
+export function getBoardCombatTargets(
+  state: BoardGameState,
+  attackerPieceId: string
+): Extract<BoardCombatPreview, { legal: true }>[] {
+  return Object.values(state.pieces)
+    .filter(piece => piece.id !== attackerPieceId)
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .flatMap(piece => {
+      const preview = getBoardCombatPreview(state, attackerPieceId, piece.id);
+      return preview.legal ? [preview] : [];
+    });
+}
+
 /**
  * Locks a legal attack and its visible modifiers without consuming randomness or
- * Command Actions. Resolution is a separate state transition so the shell can
- * present the committed dice procedure before the seeded roll occurs.
+ * Command Actions. Resolution remains separate internally so future dice
+ * presentation can animate a committed roll without gaining rules authority.
  */
 export function declareBoardCombat(
   state: BoardGameState,
@@ -238,10 +268,143 @@ function getResolutionRejectionReason(state: BoardGameState): string | null {
   return null;
 }
 
+function hasHostileOccupant(state: BoardGameState, spaceId: string, seatId: SeatId): boolean {
+  return Object.values(state.pieces).some(piece =>
+    piece.spaceId === spaceId && piece.seatId !== seatId
+  );
+}
+
+function chooseRetreatSpaceId(
+  state: BoardGameState,
+  defender: BoardPiece,
+  originSpaceId: string,
+  targetSpaceId: string
+): string | null {
+  return state.spaces[targetSpaceId].adjacentSpaceIds
+    .filter(spaceId => spaceId !== originSpaceId)
+    .filter(spaceId => {
+      const space = state.spaces[spaceId];
+      if (!space) return false;
+      if (space.control !== null && space.control !== defender.seatId) return false;
+      return !hasHostileOccupant(state, spaceId, defender.seatId);
+    })
+    .sort((a, b) => {
+      const aFriendly = state.spaces[a].control === defender.seatId ? 0 : 1;
+      const bFriendly = state.spaces[b].control === defender.seatId ? 0 : 1;
+      return aFriendly - bFriendly || a.localeCompare(b);
+    })[0] ?? null;
+}
+
+function resolveHitConsequences(
+  state: BoardGameState,
+  combat: BoardCombatState,
+  die: number
+): {
+  pieces: BoardGameState['pieces'];
+  spaces: BoardGameState['spaces'];
+  consequence: BoardCombatConsequence;
+  log: string[];
+} {
+  const attacker = state.pieces[combat.attackerPieceId];
+  const defender = state.pieces[combat.defenderPieceId];
+  const critical = die === BOARD_COMBAT_DIE_SIDES;
+  let readinessLoss = critical ? BOARD_COMBAT_CRITICAL_READINESS_LOSS : BOARD_COMBAT_READINESS_LOSS;
+  let damageInflicted = critical ? BOARD_COMBAT_CRITICAL_DAMAGE : BOARD_COMBAT_DAMAGE_PER_HIT;
+  let nextReadiness = Math.max(0, defender.readiness - readinessLoss);
+  let nextDamage = defender.damage + damageInflicted;
+  let defenderStatus: BoardCombatConsequence['defenderStatus'] = 'held';
+  let retreatSpaceId: string | null = null;
+  const log: string[] = [
+    `${combat.defenderPieceId} takes ${damageInflicted} damage and loses ${readinessLoss} readiness.`
+  ];
+
+  if (nextDamage >= BOARD_COMBAT_ELIMINATION_DAMAGE || nextReadiness <= 0) {
+    defenderStatus = 'eliminated';
+  } else if (critical || nextReadiness <= BOARD_COMBAT_RETREAT_THRESHOLD) {
+    retreatSpaceId = chooseRetreatSpaceId(state, defender, combat.originSpaceId, combat.targetSpaceId);
+    if (retreatSpaceId) {
+      defenderStatus = 'retreated';
+    } else {
+      damageInflicted += 1;
+      readinessLoss += BOARD_COMBAT_READINESS_LOSS;
+      nextDamage += 1;
+      nextReadiness = Math.max(0, nextReadiness - BOARD_COMBAT_READINESS_LOSS);
+      log.push(`${combat.defenderPieceId} has no legal retreat and takes 1 additional damage and ${BOARD_COMBAT_READINESS_LOSS} additional readiness loss.`);
+      if (nextDamage >= BOARD_COMBAT_ELIMINATION_DAMAGE || nextReadiness <= 0) {
+        defenderStatus = 'eliminated';
+      }
+    }
+  }
+
+  let pieces: BoardGameState['pieces'] = {
+    ...state.pieces,
+    [defender.id]: {
+      ...defender,
+      readiness: nextReadiness,
+      damage: nextDamage,
+      spaceId: defenderStatus === 'eliminated'
+        ? null
+        : defenderStatus === 'retreated'
+          ? retreatSpaceId
+          : defender.spaceId
+    }
+  };
+
+  if (defenderStatus === 'eliminated') {
+    log.push(`${combat.defenderPieceId} is eliminated.`);
+  } else if (defenderStatus === 'retreated') {
+    log.push(`${combat.defenderPieceId} retreats to ${retreatSpaceId}.`);
+  } else {
+    log.push(`${combat.defenderPieceId} holds ${combat.targetSpaceId} at ${nextReadiness} readiness.`);
+  }
+
+  const hostilePiecesRemain = Object.values(pieces).some(piece =>
+    piece.spaceId === combat.targetSpaceId && piece.seatId !== attacker.seatId
+  );
+  const targetCleared = !hostilePiecesRemain && defenderStatus !== 'held';
+  let spaces = state.spaces;
+  let attackerAdvanced = false;
+  let controlChanged = false;
+
+  if (targetCleared) {
+    attackerAdvanced = true;
+    controlChanged = state.spaces[combat.targetSpaceId].control !== attacker.seatId;
+    pieces = {
+      ...pieces,
+      [attacker.id]: {
+        ...attacker,
+        spaceId: combat.targetSpaceId
+      }
+    };
+    spaces = {
+      ...state.spaces,
+      [combat.targetSpaceId]: {
+        ...state.spaces[combat.targetSpaceId],
+        control: attacker.seatId
+      }
+    };
+    log.push(`${combat.attackerPieceId} advances into ${combat.targetSpaceId}${controlChanged ? ' and takes control' : ''}.`);
+  }
+
+  return {
+    pieces,
+    spaces,
+    consequence: {
+      critical,
+      readinessLoss,
+      damageInflicted,
+      defenderStatus,
+      retreatSpaceId,
+      attackerAdvanced,
+      controlChanged
+    },
+    log
+  };
+}
+
 /**
- * Resolves the committed D20 roll from authoritative RNG state. This BG5A
- * foundation records hit/miss only; casualty, retreat and control effects are
- * intentionally left to the next combat-resolution slice rather than guessed.
+ * Resolves the committed D20 roll from authoritative RNG state and applies the
+ * explicit BG5B damage/readiness/retreat/elimination/control procedure.
  */
 export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
   const rejectionReason = getResolutionRejectionReason(state);
@@ -269,6 +432,24 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
       commandActionsRemaining: state.seats[activeSeatId].commandActionsRemaining - 1
     }
   };
+
+  const consequenceResult = outcome === 'hit'
+    ? resolveHitConsequences(state, combat, die)
+    : {
+        pieces: state.pieces,
+        spaces: state.spaces,
+        consequence: {
+          critical: false,
+          readinessLoss: 0,
+          damageInflicted: 0,
+          defenderStatus: 'held' as const,
+          retreatSpaceId: null,
+          attackerAdvanced: false,
+          controlChanged: false
+        },
+        log: [`${combat.defenderPieceId} takes no loss and holds ${combat.targetSpaceId}.`]
+      };
+
   const resolvedCombat: BoardCombatState = {
     ...combat,
     status: 'resolved',
@@ -278,14 +459,18 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
       target,
       outcome
     },
+    consequence: consequenceResult.consequence,
     log: [
       ...combat.log,
-      `D20 ${die} ${attackModifier >= 0 ? '+' : ''}${attackModifier} = ${attackTotal} vs ${target}: ${outcome.toUpperCase()}.`
+      `D20 ${die} ${attackModifier >= 0 ? '+' : ''}${attackModifier} = ${attackTotal} vs ${target}: ${outcome.toUpperCase()}.`,
+      ...consequenceResult.log
     ]
   };
   const paidState: BoardGameState = {
     ...state,
     seats,
+    pieces: consequenceResult.pieces,
+    spaces: consequenceResult.spaces,
     rng: random.rng,
     combat: resolvedCombat
   };
@@ -293,13 +478,27 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
   const nextState: BoardGameState = nextSeat
     ? { ...paidState, activeSeat: nextSeat }
     : paidState;
+  const resultSummary = outcome === 'miss'
+    ? 'miss, defender held'
+    : `${consequenceResult.consequence.critical ? 'critical ' : ''}hit, defender ${consequenceResult.consequence.defenderStatus}`;
 
   return {
     state: nextState,
     accepted: true,
     commandActionsSpent: 1,
     reason: nextSeat
-      ? `${combat.attackerPieceId} rolled ${die}: ${outcome}; activation progressed to ${nextSeat}.`
-      : `${combat.attackerPieceId} rolled ${die}: ${outcome}; all participating seats are exhausted.`
+      ? `${combat.attackerPieceId} rolled ${die}: ${resultSummary}; activation progressed to ${nextSeat}.`
+      : `${combat.attackerPieceId} rolled ${die}: ${resultSummary}; all participating seats are exhausted.`
   };
+}
+
+/** Atomic runtime attack used by the shared dispatcher after UI preview. */
+export function attackBoardPiece(
+  state: BoardGameState,
+  attackerPieceId: string,
+  defenderPieceId: string
+): BoardActionResult {
+  const declared = declareBoardCombat(state, attackerPieceId, defenderPieceId);
+  if (!declared.accepted) return declared;
+  return resolveBoardCombat(declared.state);
 }

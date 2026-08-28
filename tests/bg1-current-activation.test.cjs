@@ -46,12 +46,13 @@ test('activation panel keeps board rules authoritative while using retained rend
   assert.match(panel, /data-bg-movement="BG4C"/);
 });
 
-test('activation panel remains mounted adjacent to the retained app under the board provider', () => {
+test('board action panels remain mounted adjacent to the retained app under the board provider', () => {
   const main = read('src/main.tsx');
 
   assert.match(main, /BoardGameStateProvider/);
   assert.match(main, /TabletopStatusShell/);
+  assert.match(main, /TabletopCombatPanel/);
   assert.match(main, /TabletopActivationPanel/);
-  assert.match(main, /<TabletopStatusShell \/>\s*<App \/>\s*<TabletopActivationPanel \/>/);
+  assert.match(main, /<TabletopStatusShell \/>\s*<App \/>\s*<TabletopCombatPanel \/>\s*<TabletopActivationPanel \/>/);
   assert.match(main, /bg1-current-activation\.css/);
 });
