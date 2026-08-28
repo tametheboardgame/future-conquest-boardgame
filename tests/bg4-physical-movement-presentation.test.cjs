@@ -11,8 +11,8 @@ test('BG4D authoritative board placement remains the source of miniature destina
   const layer = read('src/presentation/r3-formation-miniatures-layer.ts');
 
   assert.match(app, /applyBoardProjectionToRendererState\(movementMapState, boardRenderProjection\)/);
-  assert.match(integration, /taskGroups\[matchingLegacyGroup\.id\] = \{/);
-  assert.match(integration, /location: piece\.spaceId/);
+  assert.match(integration, /const spaceId = piece\.spaceId/);
+  assert.match(integration, /taskGroups\[piece\.id\] = \{ \.\.\.group, location: spaceId \};/);
   assert.match(layer, /formationPresentationPosition\(group, terrainOperationalTerritoryCentres\)/);
   assert.doesNotMatch(layer, /state\.taskGroups\[[^\]]+\]\s*=/);
 });
