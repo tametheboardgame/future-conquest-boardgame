@@ -59,6 +59,7 @@ test('BG5A exposes a legal adjacent-enemy D20 preview with explicit terrain and 
   assert.equal(preview.modifiers.terrain, TERRAIN_MODIFIER[TERRITORIES[targetSpaceId].terrain]);
   assert.equal(preview.modifiers.fortification, 2);
   assert.equal(preview.target, BOARD_COMBAT_BASE_TARGET + preview.modifiers.terrain + 2);
+  assert.ok(preview.possibleOutcomes.length >= 4);
 });
 
 test('BG5A declaration locks the visible combat contract without spending an action or consuming RNG', () => {
@@ -95,7 +96,7 @@ test('BG5A resolution uses authoritative seeded RNG, records hit/miss, spends on
   assert.equal(resolved.state.combat.roll.outcome, 'hit');
   assert.equal(resolved.state.seats['seat-1'].commandActionsRemaining, 3);
   assert.equal(resolved.state.activeSeat, 'seat-2');
-  assert.match(resolved.state.combat.log.at(-1), /HIT/);
+  assert.ok(resolved.state.combat.log.some(line => /HIT/.test(line)));
 });
 
 test('BG5A identical seeds and board positions reproduce the exact same combat roll', () => {
@@ -170,12 +171,13 @@ test('BG5A does not roll twice or allow a second declaration while combat is pen
   assert.equal(secondResolution.state.rng.calls, 1);
 });
 
-test('BG5A preserves pieces on hit until casualty rules are introduced by the next BG5 slice', () => {
+test('BG5B applies the first ordinary hit to the visible damage and readiness tracks', () => {
   const state = startedState(11264);
   const { defender } = adjacentEnemy(state);
-  const originalDefender = { ...defender };
   const resolved = resolveBoardCombat(declareBoardCombat(state, 'TG-1', defender.id).state);
 
   assert.equal(resolved.state.combat.roll.outcome, 'hit');
-  assert.deepEqual(resolved.state.pieces[defender.id], originalDefender);
+  assert.equal(resolved.state.pieces[defender.id].damage, 1);
+  assert.equal(resolved.state.pieces[defender.id].readiness, 75);
+  assert.equal(resolved.state.combat.consequence.defenderStatus, 'held');
 });
