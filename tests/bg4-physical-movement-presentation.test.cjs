@@ -48,4 +48,20 @@ test('BG4D only repaints while a piece is genuinely travelling and retains lifec
   assert.match(layer, /this\.renderer\?\.dispose\(\)/);
   assert.match(layer, /disposeMiniature\(piece\.root\)/);
   assert.match(layer, /this\.pieces\.clear\(\)/);
+  assert.match(layer, /this\.scene\.clear\(\)/);
+  assert.match(layer, /this\.clusterOffsetById\.clear\(\)/);
+  assert.match(layer, /this\.renderCount = 0/);
+});
+
+test('BG4D runtime Three.js failure becomes an inert one-shot fallback and can recover on a fresh lifecycle', () => {
+  const layer = read('src/presentation/r3-formation-miniatures-layer.ts');
+
+  assert.match(layer, /private rendererFailed = false/);
+  assert.match(layer, /if \(this\.rendererFailed\) return/);
+  assert.match(layer, /this\.rendererFailed = true/);
+  assert.match(layer, /host\.dataset\.physicalFormations = 'fallback'/);
+  assert.match(layer, /retaining compatible markers/);
+  assert.match(layer, /this\.renderer = undefined/);
+  assert.match(layer, /onAdd\([\s\S]*this\.rendererFailed = false/);
+  assert.match(layer, /onRemove\(\)[\s\S]*this\.rendererFailed = false/);
 });
