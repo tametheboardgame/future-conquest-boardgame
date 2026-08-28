@@ -2,9 +2,9 @@
 
 ## Status
 
-IN PROGRESS
+IN PROGRESS - BG4A-C MERGED; BG4D IN VALIDATION
 
-BG3A-E are merged. BG4 is the active conversion phase.
+BG3A-E and BG4A-C are merged. BG4D is the active final package for BG4.
 
 ## Goal
 
@@ -24,7 +24,7 @@ Make the retained physical formations behave as board-game pieces on the existin
 
 ## Package sequence
 
-### BG4A - Authoritative spaces and physical-piece population
+### BG4A - Authoritative spaces and physical-piece population - MERGED
 
 - advance the board save to schema v3 so existing BG3 v2 saves remain untouched
 - populate all 15 retained Central Front spaces
@@ -35,7 +35,7 @@ Make the retained physical formations behave as board-game pieces on the existin
 - validate adjacency, piece ownership and piece locations during save load
 - preserve deterministic save/reload
 
-### BG4B - Paid movement legality and activation progression
+### BG4B - Paid movement legality and activation progression - MERGED
 
 - add authoritative `move-piece`
 - require activation phase and ownership by the active seat
@@ -47,7 +47,7 @@ Make the retained physical formations behave as board-game pieces on the existin
 - progress to the next legal activating seat using the BG3 turn engine
 - preserve deterministic save/reload after movement
 
-### BG4C - Direct map selection, destination highlights and confirmation
+### BG4C - Direct map selection, destination highlights and confirmation - MERGED
 
 - select retained physical pieces directly on the map where renderer hooks safely permit it
 - show an obvious selected-piece state
@@ -57,11 +57,13 @@ Make the retained physical formations behave as board-game pieces on the existin
 - route confirmed movement through the same board dispatcher
 - remove the temporary legacy Move delegation once authoritative map movement is usable
 
-### BG4D - Physical movement presentation and hardening
+### BG4D - Physical movement presentation and hardening - IN VALIDATION
 
 - project accepted authoritative piece movement into retained physical miniatures
 - add visible movement animation only through the existing renderer lifecycle
 - preserve reduced-motion and renderer fallback behaviour
+- preserve in-flight timing across selection/status-only miniature rebuilds and retarget accepted moves from the current presentation position
+- repaint only while a miniature is genuinely travelling
 - stress repeated moves, selection changes, save/reload and map navigation
 - validate on exact-head browser/terrain gates
 - perform real-hardware acceptance because this package touches historically sensitive map interaction/presentation paths
@@ -69,3 +71,5 @@ Make the retained physical formations behave as board-game pieces on the existin
 ## BG4 exit
 
 BG4 is complete when a player can select a physical formation, understand its legal destinations, preview/cancel/confirm a board move, spend exactly one Command Action on success, see the miniature move on the retained 2.5D map, save/reload that position exactly, and repeat movement without destabilising the renderer.
+
+After BG4 acceptance, proceed to **BG5 - Dice Combat**.
