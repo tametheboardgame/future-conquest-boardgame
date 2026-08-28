@@ -23,6 +23,7 @@ test('BG2C projects authoritative board state into a deterministic renderer-frie
 
   assert.deepEqual(projection, {
     scenarioId: 'central-front',
+    sourceSeed: 20260825,
     round: 1,
     phase: 'activation',
     activeSeat: 'seat-1',

@@ -5,6 +5,11 @@ import type { GameState } from './types';
  * Apply authoritative BG2 ownership and piece placement to a renderer-only
  * legacy GameState snapshot. The legacy simulation state remains untouched.
  *
+ * BG4A can populate authoritative spaces and pieces before the retained campaign
+ * and the board-state provider share one scenario initialisation path. A seed
+ * mismatch therefore suppresses projection rather than drawing one board layout
+ * over a different legacy campaign while Move/Attack still use legacy state.
+ *
  * Neutral board spaces deliberately preserve the retained renderer's existing
  * control colour because the legacy map has no neutral controller vocabulary.
  * BG4 can introduce a dedicated neutral presentation when board spaces are
@@ -21,6 +26,8 @@ export function applyBoardProjectionToRendererState(
   legacyState: GameState,
   projection: BoardRenderProjection
 ): GameState {
+  if (projection.sourceSeed !== legacyState.seed) return legacyState;
+
   let territories = legacyState.territories;
   let taskGroups = legacyState.taskGroups;
   let enemyFormations = legacyState.enemyFormations;

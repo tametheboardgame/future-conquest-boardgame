@@ -18,6 +18,7 @@ export interface BoardPiecePresentation {
 
 export interface BoardRenderProjection {
   scenarioId: string;
+  sourceSeed: number;
   round: number;
   phase: BoardGameState['phase'];
   activeSeat: SeatId;
@@ -48,6 +49,11 @@ function compareIds(left: string, right: string): number {
  * Pure presentation seam between authoritative BG2 board state and the retained
  * renderer. It deliberately returns renderer-friendly values without mutating
  * board state or the legacy simulation state.
+ *
+ * The source seed travels with the projection so BG4 can refuse to overlay a
+ * populated authoritative board onto a separately initialised legacy campaign.
+ * Until both state models share scenario initialisation, matching seeds are the
+ * minimum safe condition for renderer projection.
  *
  * The first conversion pass treats seat-1 as the local/player presentation side.
  * BG3 owns player/seat configuration and can supply a different playerSeatIds set
@@ -80,6 +86,7 @@ export function projectBoardStateForRenderer(
 
   return {
     scenarioId: state.scenario.id,
+    sourceSeed: state.rng.seed,
     round: state.round,
     phase: state.phase,
     activeSeat: state.activeSeat,

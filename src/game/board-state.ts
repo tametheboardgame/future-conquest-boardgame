@@ -1,3 +1,4 @@
+import { createCentralFrontBoardSetup } from './board-scenario';
 import {
   BOARD_COMMAND_ACTIONS_PER_ROUND,
   BOARD_ROUND_LIMIT,
@@ -9,12 +10,15 @@ import {
   type BoardActionResult,
   type BoardGameState,
   type BoardPhase,
+  type BoardPiece,
+  type BoardSpace,
   type CommandSeat,
   type ControllerType,
   type CreateBoardStateOptions,
   type DeckState,
   type DeterministicRandomState,
-  type SeatId
+  type SeatId,
+  type SupplyState
 } from './board-state-types';
 
 function normaliseSeed(seed: number): number {
@@ -75,6 +79,7 @@ export function createInitialBoardState(options: CreateBoardStateOptions): Board
     id,
     createSeat(id, options.controllers?.[id] ?? 'computer', participatingSeats.has(id))
   ])) as Record<SeatId, CommandSeat>;
+  const boardSetup = createCentralFrontBoardSetup(seed, participatingSeatIds[0], participatingSeatIds[1]);
 
   return {
     save: {
@@ -87,8 +92,8 @@ export function createInitialBoardState(options: CreateBoardStateOptions): Board
     phase: 'round-start',
     activeSeat: participatingSeatIds[0],
     seats,
-    spaces: {},
-    pieces: {},
+    spaces: boardSetup.spaces,
+    pieces: boardSetup.pieces,
     decks: {
       escalation: createEmptyDeck(),
       action: createEmptyDeck()
@@ -130,12 +135,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isSeatId(value: unknown): value is SeatId {
+  return typeof value === 'string' && SEAT_IDS.includes(value as SeatId);
+}
+
 function isControllerType(value: unknown): value is ControllerType {
   return value === 'human' || value === 'computer';
 }
 
 function isBoardPhase(value: unknown): value is BoardPhase {
   return value === 'round-start' || value === 'activation' || value === 'round-end';
+}
+
+function isSupplyState(value: unknown): value is SupplyState {
+  return value === 'supplied' || value === 'strained' || value === 'isolated';
 }
 
 function hasValidSeatConfiguration(value: unknown, activeSeat: SeatId): boolean {
@@ -157,6 +170,54 @@ function hasValidSeatConfiguration(value: unknown, activeSeat: SeatId): boolean 
   return participating >= 2 && (value[activeSeat] as Record<string, unknown>).participating === true;
 }
 
+function hasValidBoardSpaces(value: unknown): value is Record<string, BoardSpace> {
+  if (!isRecord(value) || Object.keys(value).length === 0) return false;
+  const spaceIds = new Set(Object.keys(value));
+
+  for (const [id, rawSpace] of Object.entries(value)) {
+    if (!isRecord(rawSpace) || rawSpace.id !== id) return false;
+    if (rawSpace.control !== null && !isSeatId(rawSpace.control)) return false;
+    if (!Array.isArray(rawSpace.adjacentSpaceIds)) return false;
+    const adjacent = rawSpace.adjacentSpaceIds;
+    if (new Set(adjacent).size !== adjacent.length) return false;
+    if (adjacent.some(otherId => typeof otherId !== 'string' || otherId === id || !spaceIds.has(otherId))) return false;
+  }
+
+  for (const [id, rawSpace] of Object.entries(value)) {
+    const adjacent = (rawSpace as Record<string, unknown>).adjacentSpaceIds as string[];
+    for (const otherId of adjacent) {
+      const otherSpace = value[otherId];
+      if (
+        !isRecord(otherSpace)
+        || !Array.isArray(otherSpace.adjacentSpaceIds)
+        || !otherSpace.adjacentSpaceIds.includes(id)
+      ) return false;
+    }
+  }
+
+  return true;
+}
+
+function hasValidBoardPieces(value: unknown, spaces: Record<string, BoardSpace>): value is Record<string, BoardPiece> {
+  if (!isRecord(value)) return false;
+
+  for (const [id, rawPiece] of Object.entries(value)) {
+    if (!isRecord(rawPiece) || rawPiece.id !== id || !isSeatId(rawPiece.seatId)) return false;
+    if (rawPiece.spaceId !== null && (typeof rawPiece.spaceId !== 'string' || !spaces[rawPiece.spaceId])) return false;
+    if (
+      typeof rawPiece.readiness !== 'number'
+      || !Number.isFinite(rawPiece.readiness)
+      || rawPiece.readiness < 0
+      || typeof rawPiece.damage !== 'number'
+      || !Number.isFinite(rawPiece.damage)
+      || rawPiece.damage < 0
+      || !isSupplyState(rawPiece.supply)
+    ) return false;
+  }
+
+  return true;
+}
+
 export function deserializeBoardState(serialized: string): BoardGameState {
   const parsed: unknown = JSON.parse(serialized);
   if (!isRecord(parsed) || !isRecord(parsed.save)) {
@@ -174,6 +235,8 @@ export function deserializeBoardState(serialized: string): BoardGameState {
     || parsed.round < 1
     || parsed.round > BOARD_ROUND_LIMIT
     || !hasValidSeatConfiguration(parsed.seats, parsed.activeSeat as SeatId)
+    || !hasValidBoardSpaces(parsed.spaces)
+    || !hasValidBoardPieces(parsed.pieces, parsed.spaces)
   ) {
     throw new Error('Invalid Future Conquest board state metadata.');
   }
