@@ -63,6 +63,8 @@ export type FormationMiniatureBrowserEvidence = {
   layerId: string;
   visualFamily: typeof R3_FUTURE_SOLDIER_VISUAL_FAMILY;
   reducedMotion: boolean;
+  motionScale: number;
+  animationDurationMs: number;
   renderCount: number;
   presentationWithheld: boolean;
   pieces: Array<{
@@ -330,6 +332,10 @@ function coordinateKey(point: FormationGeoPoint) {
   return `${point[0].toFixed(5)}:${point[1].toFixed(5)}`;
 }
 
+function sameFormationPoint(left: FormationGeoPoint, right: FormationGeoPoint) {
+  return left[0] === right[0] && left[1] === right[1];
+}
+
 function clusterOffsets(state: GameState) {
   const clusters = new globalThis.Map<string, Array<{ id: string; point: FormationGeoPoint }>>();
   for (const group of Object.values(state.taskGroups)) {
@@ -400,19 +406,21 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
   private readonly scene = new Scene();
   private readonly pieces = new globalThis.Map<string, Piece>();
   private state: GameState;
-  private reducedMotion: boolean;
+  private reducedMotion = false;
+  private motionScale = 1;
   private visible: boolean;
   private renderCount = 0;
+  private rendererFailed = false;
   private clusterOffsetById = new globalThis.Map<string, readonly [number, number]>();
 
   constructor(state: GameState, layers: Pick<TerrainOperationalLayers, 'friendlyFormations'>) {
     this.state = state;
     this.visible = layers.friendlyFormations;
-    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   onAdd(map: Map, gl: WebGL2RenderingContext) {
     this.map = map;
+    this.rendererFailed = false;
     this.renderer = new WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
     this.renderer.autoClear = false;
     this.scene.add(new AmbientLight(0xd9f6ee, 1.5));
@@ -428,6 +436,15 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
     this.visible = layers.friendlyFormations;
     this.rebuild();
     this.map?.triggerRepaint();
+  }
+
+  private syncMotionPreferences() {
+    const systemReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const shell = this.map?.getContainer().closest<HTMLElement>('.r3-terrain-prototype-shell');
+    const appReducedMotion = shell?.dataset.reducedMotion === 'true';
+    const rawMotionScale = Number(shell?.dataset.motionScale ?? '1');
+    this.motionScale = Number.isFinite(rawMotionScale) && rawMotionScale >= 0 ? rawMotionScale : 1;
+    this.reducedMotion = systemReducedMotion || appReducedMotion || this.motionScale === 0;
   }
 
   private publishPortalTargets() {
@@ -450,23 +467,25 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
       if (!target) continue;
       const selected = group.id === this.state.selectedTaskGroupId;
       const old = this.pieces.get(group.id);
+      const targetChanged = Boolean(old && !sameFormationPoint(old.target, target));
       if (!old || old.root.userData.status !== group.status || Boolean(old.root.userData.selected) !== selected) {
         if (old) { this.scene.remove(old.root); disposeMiniature(old.root); }
         const root = makeMiniature(group, selected);
         root.rotation.z = movementBearing(group);
         this.scene.add(root);
         const current = old?.current ?? target;
+        const now = performance.now();
         this.pieces.set(group.id, {
           root,
           current,
-          from: current,
+          from: targetChanged ? current : old?.from ?? current,
           target,
-          startedAt: performance.now(),
+          startedAt: targetChanged ? now : old?.startedAt ?? now,
           elevation: old?.elevation,
           elevationAt: old?.elevationAt
         });
       } else {
-        if (old.target[0] !== target[0] || old.target[1] !== target[1]) {
+        if (targetChanged) {
           old.from = old.current; old.target = target; old.startedAt = performance.now();
         }
         old.root.rotation.z = movementBearing(group);
@@ -480,7 +499,23 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
   }
 
   render(_gl: WebGL2RenderingContext, options: CustomRenderMethodInput) {
+    if (this.rendererFailed) return;
+    try {
+      this.renderFrame(options);
+    } catch (error) {
+      this.rendererFailed = true;
+      const host = this.map?.getContainer().parentElement;
+      if (host) host.dataset.physicalFormations = 'fallback';
+      console.warn('R3 physical formation renderer failed at runtime; retaining compatible markers.', error);
+      this.renderer?.dispose();
+      this.renderer = undefined;
+      this.map?.triggerRepaint();
+    }
+  }
+
+  private renderFrame(options: CustomRenderMethodInput) {
     if (!this.map || !this.renderer) return;
+    this.syncMotionPreferences();
     const now = performance.now();
     let animating = false;
     const zoom = this.map.getZoom();
@@ -490,8 +525,10 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
     const browserPieces: FormationMiniatureBrowserEvidence['pieces'] = [];
     for (const [id, piece] of this.pieces) {
       const elapsed = now - piece.startedAt;
-      piece.current = this.reducedMotion ? piece.target : interpolateFormationPresentation(piece.from, piece.target, elapsed);
-      animating ||= !this.reducedMotion && elapsed < FORMATION_PRESENTATION_ANIMATION_MS;
+      const travelling = !sameFormationPoint(piece.from, piece.target);
+      const scaledElapsed = this.reducedMotion || this.motionScale === 0 ? FORMATION_PRESENTATION_ANIMATION_MS : elapsed / this.motionScale;
+      piece.current = this.reducedMotion ? piece.target : interpolateFormationPresentation(piece.from, piece.target, scaledElapsed);
+      animating ||= !this.reducedMotion && travelling && scaledElapsed < FORMATION_PRESENTATION_ANIMATION_MS;
       const lngLat: [number, number] = [piece.current[0], piece.current[1]];
       if (needsElevationSample(piece, lngLat)) {
         const sampledElevation = this.map.queryTerrainElevation(lngLat);
@@ -528,6 +565,8 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
       layerId: this.id,
       visualFamily: R3_FUTURE_SOLDIER_VISUAL_FAMILY,
       reducedMotion: this.reducedMotion,
+      motionScale: this.motionScale,
+      animationDurationMs: this.reducedMotion ? 0 : FORMATION_PRESENTATION_ANIMATION_MS * this.motionScale,
       renderCount: this.renderCount,
       presentationWithheld,
       pieces: browserPieces
@@ -540,8 +579,13 @@ export class FormationMiniaturesLayer implements CustomLayerInterface {
     this.renderer = undefined;
     this.map = undefined;
     for (const piece of this.pieces.values()) disposeMiniature(piece.root);
-    for (const child of this.scene.children) if (child instanceof Object3D) child.clear();
     this.pieces.clear();
+    this.scene.clear();
+    this.clusterOffsetById.clear();
+    this.reducedMotion = false;
+    this.motionScale = 1;
+    this.renderCount = 0;
+    this.rendererFailed = false;
     delete window.__r3FormationMiniatures;
     delete window.__r3FormationPortalTargets;
   }

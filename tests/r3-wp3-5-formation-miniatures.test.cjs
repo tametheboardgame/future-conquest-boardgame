@@ -41,7 +41,7 @@ test('co-located formations keep one geographic root but receive deterministic l
 });
 
 test('WP3.5 smoothing remains presentation-only and reduced motion settles immediately', () => {
-  assert.match(layer, /interpolateFormationPresentation\(piece\.from, piece\.target, elapsed\)/);
+  assert.match(layer, /interpolateFormationPresentation\(piece\.from, piece\.target, (?:elapsed|scaledElapsed)\)/);
   assert.match(layer, /FORMATION_PRESENTATION_ANIMATION_MS/);
   assert.match(layer, /this\.map\.triggerRepaint\(\)/);
   assert.doesNotMatch(layer, /state\.taskGroups\[[^\]]+\]\s*=/);

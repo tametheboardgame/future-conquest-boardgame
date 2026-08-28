@@ -1,16 +1,18 @@
 # BG4 Current Position
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 
-BG0 is accepted. BG1A-E, BG2A-E and BG3A-E are merged.
+BG0 is accepted. BG1A-E, BG2A-E and BG3A-E are merged. BG4A-C are merged into `main`.
 
-The active conversion programme is now **BG4 - Physical Board Pieces and Movement**.
+The active conversion programme is **BG4 - Physical Board Pieces and Movement**.
 
-Current package: **BG4A - Authoritative spaces and physical-piece population** on branch `bg4/authoritative-spaces-pieces`.
+Current package: **BG4D - Physical movement presentation and hardening** on branch `agent/bg4d-physical-movement-presentation`, PR #22.
 
-BG4A advances the dedicated board save to schema v3 so BG3 v2 state remains untouched. It populates the retained 15-region Central Front graph with authoritative adjacency and control, mirrors the existing deterministic entry-space rule, places the four retained `TG-*` task-group identities at entry, and creates the opposing `EF-*` identities across the remaining regions.
+BG4A established authoritative Central Front spaces and physical-piece population. BG4B added one-space paid movement legality and activation progression. BG4C connected direct map selection, authoritative legal destination highlights, and move preview/confirm/cancel.
 
-BG4B will add one-space paid movement through the authoritative dispatcher. BG4C will connect direct piece selection, legal destination highlights and move preview/confirm/cancel to the map. BG4D will add safe physical movement presentation and complete repeated-movement/browser/real-hardware hardening.
+BG4D is the final BG4 package. It projects accepted authoritative moves into the retained Three.js miniatures without giving presentation any rules authority, preserves an in-flight journey across selection/status-only visual rebuilds, honours both application and operating-system reduced-motion preferences, and limits repainting to genuine travel. Dedicated regression coverage protects the authoritative board-to-render projection, retargeting, reduced-motion/motion-scale behaviour and renderer cleanup.
+
+BG4 exits only after automated exact-head browser/terrain validation and real-hardware acceptance confirm repeated movement remains stable. After BG4 acceptance, the next roadmap phase is **BG5 - Dice Combat**.
 
 The detailed BG4 sequence is in `docs/roadmap/BG4-PHYSICAL-PIECES-MOVEMENT.md`.
 
