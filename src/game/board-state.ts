@@ -183,6 +183,18 @@ function hasValidBoardSpaces(value: unknown): value is Record<string, BoardSpace
     if (adjacent.some(otherId => typeof otherId !== 'string' || otherId === id || !spaceIds.has(otherId))) return false;
   }
 
+  for (const [id, rawSpace] of Object.entries(value)) {
+    const adjacent = (rawSpace as Record<string, unknown>).adjacentSpaceIds as string[];
+    for (const otherId of adjacent) {
+      const otherSpace = value[otherId];
+      if (
+        !isRecord(otherSpace)
+        || !Array.isArray(otherSpace.adjacentSpaceIds)
+        || !otherSpace.adjacentSpaceIds.includes(id)
+      ) return false;
+    }
+  }
+
   return true;
 }
 
