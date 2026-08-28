@@ -21,10 +21,26 @@ function integrationFixture() {
 
   const board = createInitialBoardState({ seed: 20260826 });
   board.spaces = {
-    [playerDestination]: { id: playerDestination, control: 'seat-1' },
-    [enemyDestination]: { id: enemyDestination, control: 'seat-2' },
-    [playerGroup.location]: { id: playerGroup.location, control: null },
-    'future-space': { id: 'future-space', control: 'seat-1' }
+    [playerDestination]: {
+      id: playerDestination,
+      control: 'seat-1',
+      adjacentSpaceIds: [enemyDestination, playerGroup.location]
+    },
+    [enemyDestination]: {
+      id: enemyDestination,
+      control: 'seat-2',
+      adjacentSpaceIds: [playerDestination, 'future-space']
+    },
+    [playerGroup.location]: {
+      id: playerGroup.location,
+      control: null,
+      adjacentSpaceIds: [playerDestination]
+    },
+    'future-space': {
+      id: 'future-space',
+      control: 'seat-1',
+      adjacentSpaceIds: [enemyDestination]
+    }
   };
   board.pieces = {
     [playerGroup.id]: {
@@ -91,11 +107,11 @@ test('BG2E suppresses matching authoritative pieces that are off-board without m
   assert.ok(legacy.enemyFormations[enemyFormation.id], 'renderer projection must not remove the legacy enemy formation');
 });
 
-test('BG2E leaves the retained renderer state reference untouched while the authoritative board has no populated spaces or pieces', () => {
+test('BG4A leaves the retained renderer state untouched when authoritative and legacy seeds differ', () => {
   const legacy = newGame(17);
-  const emptyBoard = createInitialBoardState({ seed: 17 });
+  const board = createInitialBoardState({ seed: 18 });
 
-  const rendered = applyBoardProjectionToRendererState(legacy, projectBoardStateForRenderer(emptyBoard));
+  const rendered = applyBoardProjectionToRendererState(legacy, projectBoardStateForRenderer(board));
 
   assert.equal(rendered, legacy);
 });
