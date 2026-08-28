@@ -10,6 +10,7 @@ export type SeatId = typeof SEAT_IDS[number];
 export type ControllerType = 'human' | 'computer';
 export type BoardPhase = 'round-start' | 'activation' | 'round-end';
 export type SupplyState = 'supplied' | 'strained' | 'isolated';
+export type BoardCombatStatus = 'declared' | 'resolved';
 
 export interface BoardSaveMetadata {
   schema: typeof BOARD_STATE_SCHEMA;
@@ -27,6 +28,8 @@ export interface BoardSpace {
   id: string;
   control: SeatId | null;
   adjacentSpaceIds: string[];
+  /** Reserved for board-game defensive works. BG5 treats omitted values as zero. */
+  fortification?: number;
 }
 
 export interface BoardPiece {
@@ -36,6 +39,33 @@ export interface BoardPiece {
   readiness: number;
   damage: number;
   supply: SupplyState;
+}
+
+export interface BoardCombatModifiers {
+  supply: number;
+  terrain: number;
+  fortification: number;
+}
+
+export interface BoardCombatRoll {
+  die: number;
+  attackTotal: number;
+  target: number;
+  outcome: 'hit' | 'miss';
+}
+
+export interface BoardCombatState {
+  status: BoardCombatStatus;
+  attackerPieceId: string;
+  defenderPieceId: string;
+  originSpaceId: string;
+  targetSpaceId: string;
+  dieCount: 1;
+  dieSides: 20;
+  baseTarget: number;
+  modifiers: BoardCombatModifiers;
+  roll: BoardCombatRoll | null;
+  log: string[];
 }
 
 export interface DeckState {
@@ -65,6 +95,8 @@ export interface BoardGameState {
     action: DeckState;
   };
   rng: DeterministicRandomState;
+  /** BG5 combat record. Undefined means no combat has yet been declared. */
+  combat?: BoardCombatState;
 }
 
 export interface CreateBoardStateOptions {
