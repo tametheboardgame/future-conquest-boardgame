@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { applyBoardAction, createInitialBoardState } from '../game/board-state';
+import { applyBoardAction } from '../game/board-action-dispatcher';
+import { createInitialBoardState } from '../game/board-state';
 import { inspectStoredBoardState, writeBoardState } from '../game/board-state-persistence';
 import { chooseAutomaticBoardAction } from '../game/board-turn-orchestration';
 import type { BoardAction, BoardActionResult, BoardGameState } from '../game/board-state-types';
@@ -40,8 +41,10 @@ function shouldPreserveExistingBoardSave(): boolean {
 }
 
 /**
- * BG3 state host. The provider stays mounted around the existing application so
- * authoritative board actions never recreate or replace the protected map.
+ * Board-game state host. The provider stays mounted around the retained
+ * application so authoritative board actions never recreate or replace the
+ * protected map. BG5 routes combat through the same runtime dispatcher as all
+ * other paid board actions.
  */
 export function BoardGameStateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BoardGameState>(initialiseBoardState);
