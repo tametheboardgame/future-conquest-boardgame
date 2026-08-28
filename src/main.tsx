@@ -5,6 +5,7 @@ import { StartupExperience } from './components/StartupExperience';
 import { BoardGameStateProvider } from './components/BoardGameStateProvider';
 import { TabletopStatusShell } from './components/TabletopStatusShell';
 import { TabletopActivationPanel } from './components/TabletopActivationPanel';
+import { TabletopCombatPanel } from './components/TabletopCombatPanel';
 import './styles.css';
 import './command-panel-layout.css';
 import './formation-organisation.css';
@@ -64,6 +65,7 @@ createRoot(document.getElementById('root')!).render(
       <BoardGameStateProvider>
         <TabletopStatusShell />
         <App />
+        <TabletopCombatPanel />
         <TabletopActivationPanel />
       </BoardGameStateProvider>
     </StartupExperience>
