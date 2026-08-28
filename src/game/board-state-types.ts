@@ -11,6 +11,7 @@ export type ControllerType = 'human' | 'computer';
 export type BoardPhase = 'round-start' | 'activation' | 'round-end';
 export type SupplyState = 'supplied' | 'strained' | 'isolated';
 export type BoardCombatStatus = 'declared' | 'resolved';
+export type BoardCombatDefenderStatus = 'held' | 'retreated' | 'eliminated';
 
 export interface BoardSaveMetadata {
   schema: typeof BOARD_STATE_SCHEMA;
@@ -28,7 +29,7 @@ export interface BoardSpace {
   id: string;
   control: SeatId | null;
   adjacentSpaceIds: string[];
-  /** Reserved for board-game defensive works. BG5 treats omitted values as zero. */
+  /** Board-game defensive works. BG5 treats omitted values as zero. */
   fortification?: number;
 }
 
@@ -36,7 +37,9 @@ export interface BoardPiece {
   id: string;
   seatId: SeatId;
   spaceId: string | null;
+  /** Visible 0-100 cohesion/readiness track. */
   readiness: number;
+  /** Visible accumulated hit track. Three damage eliminates a piece. */
   damage: number;
   supply: SupplyState;
 }
@@ -54,6 +57,16 @@ export interface BoardCombatRoll {
   outcome: 'hit' | 'miss';
 }
 
+export interface BoardCombatConsequence {
+  critical: boolean;
+  readinessLoss: number;
+  damageInflicted: number;
+  defenderStatus: BoardCombatDefenderStatus;
+  retreatSpaceId: string | null;
+  attackerAdvanced: boolean;
+  controlChanged: boolean;
+}
+
 export interface BoardCombatState {
   status: BoardCombatStatus;
   attackerPieceId: string;
@@ -65,6 +78,8 @@ export interface BoardCombatState {
   baseTarget: number;
   modifiers: BoardCombatModifiers;
   roll: BoardCombatRoll | null;
+  /** Optional for compatibility with BG5A saves created before consequence rules existed. */
+  consequence?: BoardCombatConsequence;
   log: string[];
 }
 
