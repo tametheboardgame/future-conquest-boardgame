@@ -21,6 +21,12 @@ import {
   type SupplyState
 } from './board-state-types';
 
+export interface BoardMoveDestinationEvaluation {
+  spaceId: string;
+  legal: boolean;
+  reason: string | null;
+}
+
 function normaliseSeed(seed: number): number {
   if (!Number.isFinite(seed)) throw new Error('Board state seed must be a finite number.');
   const normalised = Math.trunc(seed) >>> 0;
@@ -405,6 +411,127 @@ export function getNextActivatingSeatId(state: BoardGameState): SeatId | null {
   return null;
 }
 
+function getBoardMoveRejectionReason(
+  state: BoardGameState,
+  pieceId: string,
+  destinationSpaceId: string
+): string | null {
+  if (state.phase !== 'activation') {
+    return `Cannot move a piece during ${state.phase} phase.`;
+  }
+
+  const activeSeat = state.seats[state.activeSeat];
+  if (!activeSeat.participating || activeSeat.commandActionsRemaining <= 0) {
+    return `${state.activeSeat} has no Command Actions remaining.`;
+  }
+
+  const piece = state.pieces[pieceId];
+  if (!piece) return `Unknown board piece: ${pieceId}.`;
+  if (piece.seatId !== state.activeSeat) {
+    return `${pieceId} is owned by ${piece.seatId}, not active seat ${state.activeSeat}.`;
+  }
+  if (!piece.spaceId) return `${pieceId} is not currently on a board space.`;
+
+  const origin = state.spaces[piece.spaceId];
+  if (!origin) return `${pieceId} has an invalid current board space.`;
+
+  const destination = state.spaces[destinationSpaceId];
+  if (!destination) return `Unknown destination space: ${destinationSpaceId}.`;
+  if (destinationSpaceId === piece.spaceId) return `${pieceId} already occupies ${destinationSpaceId}.`;
+  if (!origin.adjacentSpaceIds.includes(destinationSpaceId)) {
+    return `${destinationSpaceId} is not adjacent to ${piece.spaceId}.`;
+  }
+  if (destination.control !== null && destination.control !== piece.seatId) {
+    return `${destinationSpaceId} is controlled by hostile seat ${destination.control}.`;
+  }
+
+  const hostileOccupant = Object.values(state.pieces).find(candidate =>
+    candidate.spaceId === destinationSpaceId && candidate.seatId !== piece.seatId
+  );
+  if (hostileOccupant) {
+    return `${destinationSpaceId} is blocked by hostile piece ${hostileOccupant.id}.`;
+  }
+
+  return null;
+}
+
+/**
+ * Enumerates every board space through the same authoritative legality check
+ * used by paid movement. BG4C can therefore highlight legal destinations and
+ * explain unavailable destinations without reproducing movement rules in UI.
+ */
+export function getBoardMoveDestinations(
+  state: BoardGameState,
+  pieceId: string
+): BoardMoveDestinationEvaluation[] {
+  return Object.keys(state.spaces).map(spaceId => {
+    const reason = getBoardMoveRejectionReason(state, pieceId, spaceId);
+    return {
+      spaceId,
+      legal: reason === null,
+      reason
+    };
+  });
+}
+
+/**
+ * Moves one active-seat piece exactly one adjacent friendly/non-hostile space.
+ * Rejected movement is strictly no-cost/no-mutation. Accepted movement spends
+ * one Command Action and hands activation to the next seat returned by BG3's
+ * deterministic activation-order engine.
+ */
+export function moveBoardPiece(
+  state: BoardGameState,
+  pieceId: string,
+  destinationSpaceId: string
+): BoardActionResult {
+  const rejectionReason = getBoardMoveRejectionReason(state, pieceId, destinationSpaceId);
+  if (rejectionReason) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: rejectionReason
+    };
+  }
+
+  const piece = state.pieces[pieceId];
+  const originSpaceId = piece.spaceId as string;
+  const activeSeatId = state.activeSeat;
+  const seats = {
+    ...state.seats,
+    [activeSeatId]: {
+      ...state.seats[activeSeatId],
+      commandActionsRemaining: state.seats[activeSeatId].commandActionsRemaining - 1
+    }
+  };
+  const pieces = {
+    ...state.pieces,
+    [pieceId]: {
+      ...piece,
+      spaceId: destinationSpaceId
+    }
+  };
+  const paidState: BoardGameState = {
+    ...state,
+    seats,
+    pieces
+  };
+  const nextSeat = getNextActivatingSeatId(paidState);
+  const nextState = nextSeat
+    ? { ...paidState, activeSeat: nextSeat }
+    : paidState;
+
+  return {
+    state: nextState,
+    accepted: true,
+    commandActionsSpent: 1,
+    reason: nextSeat
+      ? `${pieceId} moved from ${originSpaceId} to ${destinationSpaceId}; activation progressed to ${nextSeat}.`
+      : `${pieceId} moved from ${originSpaceId} to ${destinationSpaceId}; all participating seats are exhausted.`
+  };
+}
+
 /**
  * Pass yields only the current activation. It never spends or discards Command
  * Actions, so a seat can act when activation returns later in the round.
@@ -451,14 +578,25 @@ export function passBoardActivation(state: BoardGameState): BoardActionResult {
 }
 
 /**
- * Board actions cross this single authoritative dispatch boundary. BG3 adds
- * handlers incrementally; unsupported actions remain no-cost/no-mutation.
+ * Board actions cross this single authoritative dispatch boundary. Unsupported
+ * actions remain no-cost/no-mutation.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   if (action.type === 'start-round') return startBoardRound(state);
   if (action.type === 'pass-activation') return passBoardActivation(state);
   if (action.type === 'end-round') return endBoardRound(state);
   if (action.type === 'advance-round') return advanceBoardRound(state);
+  if (action.type === 'move-piece') {
+    if (typeof action.pieceId !== 'string' || typeof action.destinationSpaceId !== 'string') {
+      return {
+        state,
+        accepted: false,
+        commandActionsSpent: 0,
+        reason: 'move-piece requires string pieceId and destinationSpaceId values.'
+      };
+    }
+    return moveBoardPiece(state, action.pieceId, action.destinationSpaceId);
+  }
 
   return {
     state,
