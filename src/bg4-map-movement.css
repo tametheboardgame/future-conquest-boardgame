@@ -1,0 +1,194 @@
+.r3-terrain-task-group-marker.bg4c-board-selected {
+  outline: 3px solid rgba(143, 255, 241, .96);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 2px rgba(6, 29, 34, .86), 0 0 22px rgba(105, 235, 218, .72);
+}
+
+.task-group-marker.bg4c-board-selected .marker-body {
+  stroke: #8ffff1;
+  stroke-width: 3.5px;
+  filter: drop-shadow(0 0 7px rgba(105, 235, 218, .86));
+}
+
+.map-label.bg4c-move-legal .territory-centre-label {
+  fill: #8ffff1;
+  stroke: rgba(4, 28, 32, .9);
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+
+.map-label.bg4c-move-blocked .territory-centre-label {
+  fill: #ec8a82;
+  stroke: rgba(35, 9, 10, .88);
+  stroke-width: 3px;
+  paint-order: stroke;
+}
+
+.map-label.bg4c-move-preview .territory-centre-label {
+  fill: #ffe39a;
+  stroke: rgba(47, 31, 5, .9);
+  stroke-width: 4px;
+  paint-order: stroke;
+}
+
+.tabletop-move-destinations,
+.tabletop-move-preview {
+  margin: 0 0 10px;
+  padding: 10px;
+  border: 1px solid #31525b;
+  border-radius: 3px;
+  background: rgba(7, 25, 31, .74);
+}
+
+.tabletop-move-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.tabletop-move-heading strong,
+.tabletop-move-preview > strong {
+  color: #d9f4f1;
+  font: 700 10px IBM Plex Mono, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.tabletop-move-heading span {
+  color: #79ddd5;
+  font: 600 9px IBM Plex Mono, monospace;
+}
+
+.tabletop-move-destination-list,
+.tabletop-move-blocked-list {
+  display: grid;
+  gap: 5px;
+}
+
+.tabletop-move-destination,
+.tabletop-move-destination-list button,
+.tabletop-move-blocked-list button {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid #3b5960;
+  border-radius: 2px;
+  color: #dcebea;
+  background: #102a31;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tabletop-move-destination-list button.legal {
+  border-color: #4d9f91;
+  background: #113b38;
+}
+
+.tabletop-move-destination-list button.preview {
+  border-color: #e6c568;
+  background: #493f22;
+}
+
+.tabletop-move-blocked-list {
+  margin-top: 7px;
+}
+
+.tabletop-move-blocked-list summary {
+  color: #bfa3a2;
+  font: 600 9px IBM Plex Mono, monospace;
+  cursor: pointer;
+}
+
+.tabletop-move-blocked-list button.blocked {
+  border-color: #754b4c;
+  background: #342426;
+}
+
+.tabletop-move-destination-list button span,
+.tabletop-move-blocked-list button span {
+  display: block;
+  font: 600 12px Barlow Condensed, sans-serif;
+}
+
+.tabletop-move-destination-list button small,
+.tabletop-move-blocked-list button small {
+  display: block;
+  margin-top: 2px;
+  color: #8da4a9;
+  font: 500 8px IBM Plex Mono, monospace;
+  line-height: 1.35;
+}
+
+.tabletop-move-empty,
+.tabletop-move-feedback {
+  margin: 7px 0 0;
+  color: #9ab0b5;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.tabletop-move-feedback {
+  min-height: 26px;
+  margin: 0 0 9px;
+  color: #aec5c9;
+}
+
+.tabletop-move-preview {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 5px 8px;
+  align-items: center;
+}
+
+.tabletop-move-preview > strong,
+.tabletop-move-preview > small,
+.tabletop-move-preview > div {
+  grid-column: 1 / -1;
+}
+
+.tabletop-move-preview > span {
+  color: #eef9f8;
+  font: 600 11px Barlow Condensed, sans-serif;
+}
+
+.tabletop-move-preview > b {
+  color: #ffe39a;
+}
+
+.tabletop-move-preview > small {
+  color: #b8a764;
+  font: 600 8px IBM Plex Mono, monospace;
+  text-transform: uppercase;
+}
+
+.tabletop-move-preview > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.tabletop-move-preview button {
+  min-height: 36px;
+  border: 1px solid #49616a;
+  border-radius: 2px;
+  color: #dce9ea;
+  background: #142a32;
+  font: 700 9px IBM Plex Mono, monospace;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tabletop-move-preview button.confirm {
+  border-color: #cdb058;
+  color: #fff5cf;
+  background: #50431f;
+}
+
+.tabletop-activation-panel[data-bg-movement='BG4C'] .tabletop-activation-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.tabletop-activation-panel[data-bg-movement='BG4C'] .tabletop-activation-actions button:nth-child(2) {
+  grid-column: auto;
+}

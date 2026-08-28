@@ -5,11 +5,14 @@ const path = require('node:path');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 
-test('activation panel retains the board-game action hierarchy', () => {
+test('activation panel retains the board-game action hierarchy as Move becomes map-driven', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
 
   assert.match(panel, /Current Activation/);
-  assert.match(panel, />Move<\/button>/);
+  assert.match(panel, /Move destinations/);
+  assert.match(panel, /Move preview/);
+  assert.match(panel, /Confirm Move/);
+  assert.doesNotMatch(panel, />Move<\/button>/);
   assert.match(panel, />Attack<\/button>/);
   assert.match(panel, />Pass Activation<\/button>/);
   assert.match(panel, /Recover/);
@@ -17,26 +20,30 @@ test('activation panel retains the board-game action hierarchy', () => {
   assert.match(panel, /Logistics/);
 });
 
-test('Move and Attack still delegate to retained App controls while Pass uses the board dispatcher', () => {
+test('Move uses the authoritative board dispatcher while Attack retains its temporary adapter', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
 
-  assert.match(panel, /\.map-context-panel \[data-tutorial="move-action"\]/);
+  assert.doesNotMatch(panel, /\.map-context-panel \[data-tutorial="move-action"\]/);
   assert.match(panel, /\.map-context-panel \[data-tutorial="attack-action"\]/);
-  assert.match(panel, /firstEnabledAction/);
-  assert.match(panel, /\.click\(\)/);
+  assert.match(panel, /getBoardMoveDestinations/);
+  assert.match(panel, /type: 'move-piece'/);
+  assert.match(panel, /destinationSpaceId: pendingDestinationSpaceId/);
   assert.match(panel, /useBoardGameDispatch/);
   assert.match(panel, /applyBoardAction\(boardState, \{ type: 'pass-activation' \}\)/);
   assert.match(panel, /dispatchBoardAction\(\{ type: 'pass-activation' \}\)/);
-  assert.doesNotMatch(panel, /Alternating-activation passing becomes authoritative in BG3/);
 });
 
-test('activation panel delegates board legality and does not touch renderer infrastructure', () => {
+test('activation panel keeps board rules authoritative while using retained renderer hooks', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
 
   assert.match(panel, /from ['"]\.\.\/game\/board-state['"]/);
-  assert.doesNotMatch(panel, /MapView|TerrainMapPrototype|maplibre|WebGL|newGame|issueMove|beginOperation/);
-  assert.match(panel, /does not calculate the turn result itself/);
-  assert.match(panel, /protected map\/render lifecycle/);
+  assert.match(panel, /getBoardMoveDestinations\(boardState, pieceId\)/);
+  assert.match(panel, /__r3TerrainMap/);
+  assert.match(panel, /\.r3-terrain-task-group-marker\[data-group-id\]/);
+  assert.match(panel, /\.task-group-marker/);
+  assert.doesNotMatch(panel, /import .*MapView|import .*TerrainMapPrototype|new maplibregl\.Map|newGame|issueMove|beginOperation/);
+  assert.match(panel, /data-bg-package="BG3E"/);
+  assert.match(panel, /data-bg-movement="BG4C"/);
 });
 
 test('activation panel remains mounted adjacent to the retained app under the board provider', () => {
