@@ -5,6 +5,8 @@ import { useBoardGameDispatch, useBoardGameState } from './BoardGameStateProvide
 import '../bg5-dice-combat.css';
 
 const MAP_PIECE_SELECTOR = '.r3-terrain-task-group-marker[data-group-id], .task-group-marker';
+const MAP_ENEMY_CONTACT_SELECTOR = '.r3-terrain-enemy-contact[data-territory-id]';
+const LEGACY_ATTACK_SELECTOR = '[data-tutorial="attack-action"]';
 
 function territoryLabel(spaceId: string | null | undefined): string {
   if (!spaceId) return 'Off board';
@@ -24,8 +26,21 @@ function readMapPieceId(target: Element): string | null {
   return match ? `TG-${match[1]}` : null;
 }
 
+function readEnemyContactSpaceId(target: Element): string | null {
+  const marker = target.closest(MAP_ENEMY_CONTACT_SELECTOR) as HTMLElement | null;
+  return marker?.dataset.territoryId ?? null;
+}
+
 function signed(value: number): string {
   return value >= 0 ? `+${value}` : String(value);
+}
+
+function quarantineLegacySimulationAttackControls() {
+  for (const element of document.querySelectorAll<HTMLButtonElement>(LEGACY_ATTACK_SELECTOR)) {
+    element.disabled = true;
+    element.setAttribute('aria-hidden', 'true');
+    element.dataset.bg5LegacyCombatQuarantined = 'true';
+  }
 }
 
 export function TabletopCombatPanel() {
@@ -56,6 +71,18 @@ export function TabletopCombatPanel() {
   );
 
   useEffect(() => {
+    quarantineLegacySimulationAttackControls();
+    const observer = new MutationObserver(quarantineLegacySimulationAttackControls);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['disabled']
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (boardState.phase !== 'activation' || activeSeat.controller !== 'human') {
       setAttackerPieceId('');
       setDefenderPieceId('');
@@ -67,25 +94,50 @@ export function TabletopCombatPanel() {
   }, [activeSeat.controller, attackerPieceId, boardState.activeSeat, boardState.phase, boardState.pieces]);
 
   useEffect(() => {
-    const onMapPieceClick = (event: MouseEvent) => {
+    const onMapCombatClick = (event: MouseEvent) => {
       if (boardState.phase !== 'activation' || activeSeat.controller !== 'human') return;
       const target = event.target;
-      if (!(target instanceof Element) || !target.closest(MAP_PIECE_SELECTOR)) return;
-      const pieceId = readMapPieceId(target);
-      if (!pieceId) return;
-      const piece = boardState.pieces[pieceId];
-      if (!piece || piece.seatId !== boardState.activeSeat) return;
-      setAttackerPieceId(pieceId);
-      setDefenderPieceId('');
-      const legalTargets = getBoardCombatTargets(boardState, pieceId);
-      setFeedback(legalTargets.length
-        ? `${pieceId} selected for combat. ${legalTargets.length} adjacent enemy ${legalTargets.length === 1 ? 'target is' : 'targets are'} legal.`
-        : `${pieceId} selected. No adjacent enemy piece can currently be attacked.`);
+      if (!(target instanceof Element)) return;
+
+      if (target.closest(MAP_PIECE_SELECTOR)) {
+        const pieceId = readMapPieceId(target);
+        if (!pieceId) return;
+        const piece = boardState.pieces[pieceId];
+        if (!piece || piece.seatId !== boardState.activeSeat) return;
+        setAttackerPieceId(pieceId);
+        setDefenderPieceId('');
+        const legalTargets = getBoardCombatTargets(boardState, pieceId);
+        setFeedback(legalTargets.length
+          ? `${pieceId} selected for combat. ${legalTargets.length} adjacent enemy ${legalTargets.length === 1 ? 'target is' : 'targets are'} legal.`
+          : `${pieceId} selected. No adjacent enemy piece can currently be attacked.`);
+        return;
+      }
+
+      const enemySpaceId = readEnemyContactSpaceId(target);
+      if (!enemySpaceId) return;
+      if (!attackerPieceId) {
+        setFeedback(`Enemy contact at ${territoryLabel(enemySpaceId)} selected. Choose an attacking formation first.`);
+        return;
+      }
+
+      const contactTargets = getBoardCombatTargets(boardState, attackerPieceId)
+        .filter(candidate => candidate.targetSpaceId === enemySpaceId);
+      const directTarget = contactTargets[0];
+      if (!directTarget) {
+        setDefenderPieceId('');
+        setFeedback(`${territoryLabel(enemySpaceId)} contains no legal adjacent board-game target for ${attackerPieceId}.`);
+        return;
+      }
+
+      setDefenderPieceId(directTarget.defenderPieceId);
+      setFeedback(contactTargets.length > 1
+        ? `${directTarget.defenderPieceId} selected from ${contactTargets.length} legal enemy pieces at ${territoryLabel(enemySpaceId)} using stable piece order. Review the D20 preview.`
+        : `${directTarget.defenderPieceId} selected directly at ${territoryLabel(enemySpaceId)}. Review the D20 preview.`);
     };
 
-    document.addEventListener('click', onMapPieceClick, true);
-    return () => document.removeEventListener('click', onMapPieceClick, true);
-  }, [activeSeat.controller, boardState]);
+    document.addEventListener('click', onMapCombatClick, true);
+    return () => document.removeEventListener('click', onMapCombatClick, true);
+  }, [activeSeat.controller, attackerPieceId, boardState]);
 
   const selectAttacker = (pieceId: string) => {
     setAttackerPieceId(pieceId);
@@ -93,7 +145,7 @@ export function TabletopCombatPanel() {
     const legalTargets = pieceId ? getBoardCombatTargets(boardState, pieceId) : [];
     setFeedback(pieceId
       ? legalTargets.length
-        ? `${pieceId} selected. Choose an adjacent enemy target.`
+        ? `${pieceId} selected. Choose an adjacent enemy target on the map or in the target list.`
         : `${pieceId} has no legal adjacent combat target.`
       : 'Select one of your formations, then choose an adjacent enemy piece.');
   };
@@ -124,7 +176,7 @@ export function TabletopCombatPanel() {
   return <aside
     className="tabletop-combat-panel"
     aria-label="Dice combat"
-    data-bg-combat="BG5B"
+    data-bg-combat="BG5C"
   >
     <header>
       <span>Dice Combat</span>
