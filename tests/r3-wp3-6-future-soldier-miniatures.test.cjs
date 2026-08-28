@@ -63,7 +63,7 @@ test('WP3.6 remains procedural, presentation-only and preserves the proven geogr
   assert.match(layer, /queryTerrainElevation\(lngLat\)/);
   assert.match(layer, /defaultProjectionData\.mainMatrix/);
   assert.match(layer, /piece\.root\.position\.set\(coordinate\.x, coordinate\.y, coordinate\.z\)/);
-  assert.match(layer, /interpolateFormationPresentation\(piece\.from, piece\.target, elapsed\)/);
+  assert.match(layer, /interpolateFormationPresentation\(piece\.from, piece\.target, (?:elapsed|scaledElapsed)\)/);
   assert.doesNotMatch(layer, /state\.taskGroups\[[^\]]+\]\s*=/);
   assert.doesNotMatch(layer, /order\.progress\s*=/);
 });
