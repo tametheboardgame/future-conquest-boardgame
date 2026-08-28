@@ -57,6 +57,19 @@ test('authoritative save serialisation round-trips the exact populated state', (
   assert.deepEqual(restored, state);
 });
 
+test('authoritative save loading rejects asymmetric board adjacency', () => {
+  const state = createInitialBoardState({ seed: 778, controllers: { 'seat-1': 'human' } });
+  const space = Object.values(state.spaces).find(candidate => candidate.adjacentSpaceIds.length > 0);
+  assert.ok(space, 'fixture needs a space with at least one adjacent space');
+  const neighbourId = space.adjacentSpaceIds[0];
+  state.spaces[neighbourId].adjacentSpaceIds = state.spaces[neighbourId].adjacentSpaceIds.filter(id => id !== space.id);
+
+  assert.throws(
+    () => deserializeBoardState(serializeBoardState(state)),
+    /Invalid Future Conquest board state metadata/
+  );
+});
+
 test('unsupported actions remain no-cost and no-mutation', () => {
   const state = createInitialBoardState({ seed: 123 });
   const before = serializeBoardState(state);
