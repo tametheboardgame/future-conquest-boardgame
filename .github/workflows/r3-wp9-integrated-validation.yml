@@ -75,7 +75,7 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.62.1
           npx playwright install --with-deps chromium
-      - name: Adapt historical browser probes to BG1D compact navigation
+      - name: Adapt historical browser probes to the board-game shell
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
@@ -105,6 +105,16 @@ jobs:
           if (!polishSource.includes(clickNeedle)) throw new Error('Historical WP6.5 specialist sweep hook missing');
           polishSource = polishSource.replace(clickNeedle, clickReplacement);
           fs.writeFileSync(polishPath, polishSource);
+
+          const battlePath = 'scripts/probe-r3-wp4-battle-feedback.mjs';
+          let battleSource = fs.readFileSync(battlePath, 'utf8');
+          for (const method of ['uncheck', 'check']) {
+            const needle = `  await operationsToggle.${method}();`;
+            const replacement = `  await operationsToggle.${method}({ force: true });`;
+            if (!battleSource.includes(needle)) throw new Error(`Historical WP4 layer-toggle hook missing for ${method}`);
+            battleSource = battleSource.replace(needle, replacement);
+          }
+          fs.writeFileSync(battlePath, battleSource);
           NODE
       - name: Review battle and strategic information presentation
         shell: bash
