@@ -215,17 +215,17 @@ const campaignSettledMs = performance.now() - started;
 // base and head before timing either camera transition. This keeps selection
 // setup outside the measured Theatre/Selected transition windows and removes
 // dependence on incidental campaign UI state. The benchmark owns renderer
-// settlement rather than pointer hit-testing. Resolve and click the marker in
-// one browser-side operation so marker reconciliation cannot invalidate a
-// Playwright locator between a visibility check and the DOM click.
+// settlement rather than pointer hit-testing. Resolve and click the operational
+// marker button in one browser-side operation so marker reconciliation cannot
+// invalidate a Playwright locator or select a non-interactive duplicate label.
 await page.waitForFunction(() => {
-  const node = document.querySelector('.r3-terrain-territory-label[data-territory-id="DE-03"]');
+  const node = document.querySelector('button.r3-terrain-territory-label[data-territory-id="DE-03"]');
   if (!(node instanceof HTMLButtonElement)) return false;
   node.click();
   return true;
 }, undefined, { timeout: 15_000 });
 await page.waitForFunction(
-  () => document.querySelector('.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03',
+  () => document.querySelector('button.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03',
   undefined,
   { timeout: 15_000 }
 );
