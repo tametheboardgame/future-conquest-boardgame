@@ -210,10 +210,12 @@ const campaignSettledMs = performance.now() - started;
 // same deterministic selection through the real terrain label on both exact
 // base and head before timing either camera transition. This keeps selection
 // setup outside the measured Theatre/Selected transition windows and removes
-// dependence on incidental campaign UI state.
+// dependence on incidental campaign UI state. The benchmark owns renderer
+// settlement rather than pointer hit-testing, so invoke the visible marker's
+// DOM click path directly just as the camera controls below are invoked.
 const benchmarkTerritory = page.locator('.r3-terrain-territory-label[data-territory-id="DE-03"]');
 await benchmarkTerritory.waitFor({ state: 'visible', timeout: 15_000 });
-await benchmarkTerritory.click({ force: true });
+await benchmarkTerritory.evaluate(node => node.click());
 await page.waitForFunction(() => document.querySelector('.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03');
 await page.waitForFunction(() => {
   const button = [...document.querySelectorAll('.r3-terrain-prototype-toolbar button')]
