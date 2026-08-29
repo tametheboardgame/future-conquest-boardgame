@@ -110,7 +110,7 @@ jobs:
           let battleSource = fs.readFileSync(battlePath, 'utf8');
           for (const method of ['uncheck', 'check']) {
             const needle = `  await operationsToggle.${method}();`;
-            const replacement = `  await operationsToggle.${method}({ force: true });`;
+            const replacement = `  await operationsToggle.evaluate(node => node.click());`;
             if (!battleSource.includes(needle)) throw new Error(`Historical WP4 layer-toggle hook missing for ${method}`);
             battleSource = battleSource.replace(needle, replacement);
           }
