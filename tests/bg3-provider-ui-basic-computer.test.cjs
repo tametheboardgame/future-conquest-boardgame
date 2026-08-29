@@ -17,14 +17,23 @@ function startedState(options = {}) {
   return startBoardRound(createInitialBoardState({ seed: 0x3345, ...options })).state;
 }
 
+function withoutCombatTargets(state) {
+  state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
+    id,
+    { ...piece, spaceId: null }
+  ]));
+  return state;
+}
+
 test('BG3E automatically starts authoritative round-start states', () => {
   const state = createInitialBoardState({ seed: 1 });
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'start-round' });
 });
 
-test('BG3E basic computer yields through the same Pass dispatcher back to a human seat', () => {
+test('BG3E basic computer yields through the same Pass dispatcher when no paid combat exists', () => {
   let state = startedState({ controllers: { 'seat-1': 'human', 'seat-2': 'computer' } });
   state = applyBoardAction(state, { type: 'pass-activation' }).state;
+  state = withoutCombatTargets(state);
   assert.equal(state.activeSeat, 'seat-2');
   const computerChoice = chooseAutomaticBoardAction(state);
   assert.deepEqual(computerChoice, { type: 'pass-activation' });
@@ -34,11 +43,11 @@ test('BG3E basic computer yields through the same Pass dispatcher back to a huma
   assert.equal(computerPass.commandActionsSpent, 0);
 });
 
-test('BG3E mixed computer chains keep yielding until the next human can activate', () => {
-  let state = startedState({
+test('BG3E mixed computer chains keep yielding until the next human when no paid combat exists', () => {
+  let state = withoutCombatTargets(startedState({
     participatingSeatIds: ['seat-1', 'seat-2', 'seat-3'],
     controllers: { 'seat-1': 'computer', 'seat-2': 'computer', 'seat-3': 'human' }
-  });
+  }));
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'pass-activation' });
   state = applyBoardAction(state, { type: 'pass-activation' }).state;
   assert.equal(state.activeSeat, 'seat-2');
@@ -48,8 +57,8 @@ test('BG3E mixed computer chains keep yielding until the next human can activate
   assert.equal(chooseAutomaticBoardAction(state), null);
 });
 
-test('BG3E computer-v-computer does not create an infinite zero-cost Pass loop before paid actions exist', () => {
-  const state = startedState({ controllers: { 'seat-1': 'computer', 'seat-2': 'computer' } });
+test('BG3E computer-v-computer does not create an infinite zero-cost Pass loop when no paid action exists', () => {
+  const state = withoutCombatTargets(startedState({ controllers: { 'seat-1': 'computer', 'seat-2': 'computer' } }));
   assert.equal(chooseAutomaticBoardAction(state), null);
 });
 

@@ -1,10 +1,29 @@
+import { getBoardCombatTargets } from './board-combat';
 import { applyBoardAction, isBoardRoundExhausted } from './board-state';
 import type { BoardAction, BoardGameState } from './board-state-types';
 
+function chooseComputerCombatAction(state: BoardGameState): BoardAction | null {
+  const attackers = Object.values(state.pieces)
+    .filter(piece => piece.seatId === state.activeSeat && piece.spaceId)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  for (const attacker of attackers) {
+    const target = getBoardCombatTargets(state, attacker.id)[0];
+    if (!target) continue;
+    return {
+      type: 'attack-piece',
+      attackerPieceId: attacker.id,
+      defenderPieceId: target.defenderPieceId
+    };
+  }
+
+  return null;
+}
+
 /**
- * Chooses at most one automatic board action. The provider still executes the
- * returned action through applyBoardAction, so humans and computers share the
- * same authoritative rules boundary.
+ * Chooses at most one automatic board action. The provider executes the
+ * returned action through the unified runtime dispatcher, so humans and
+ * computers share exactly the same authoritative combat/movement rules.
  */
 export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction | null {
   if (state.phase === 'round-start') return { type: 'start-round' };
@@ -20,10 +39,17 @@ export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction |
   const activeSeat = state.seats[state.activeSeat];
   if (state.phase !== 'activation' || activeSeat.controller !== 'computer') return null;
 
-  // BG3 has no paid computer action yet. Computer seats may legally yield
-  // through a mixed seat chain while at least one human can still activate.
-  // An all-computer (or humans-exhausted) position deliberately waits instead
-  // of creating an infinite zero-cost Pass loop. BG4 supplies paid actions.
+  // BG5C gives computer seats the first paid board-game action: attack the
+  // first legal adjacent target in stable attacker/defender ID order. There is
+  // no AI-side roll or outcome calculation here; the returned action still
+  // crosses the same authoritative dispatcher used by human attacks.
+  const combat = chooseComputerCombatAction(state);
+  if (combat) return combat;
+
+  // If combat is unavailable, retain BG3's safe zero-cost yield while another
+  // human can still activate. When no other seat can activate we deliberately
+  // return null rather than create an infinite Pass loop. Computer movement is
+  // a separate future paid-action policy, not a hidden combat fallback.
   const humanCanActivate = Object.values(state.seats).some(seat =>
     seat.participating && seat.controller === 'human' && seat.commandActionsRemaining > 0
   );
