@@ -17,7 +17,7 @@ permissions:
 jobs:
   chromium-performance:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Preserve the head-owned measurement probe
         uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
             export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-base-${sample}.json"
             for attempt in 1 2; do
               set +e
-              node scripts/run-r3-wp2e-performance.mjs
+              timeout 150s node scripts/run-r3-wp2e-performance.mjs
               status=$?
               set -e
               if [ "$status" -eq 0 ]; then
@@ -97,7 +97,7 @@ jobs:
             export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-head-${sample}.json"
             for attempt in 1 2; do
               set +e
-              node scripts/run-r3-wp2e-performance.mjs
+              timeout 150s node scripts/run-r3-wp2e-performance.mjs
               status=$?
               set -e
               if [ "$status" -eq 0 ]; then
@@ -117,12 +117,12 @@ jobs:
           R3_WP2E_EVIDENCE: artifacts/r3-wp2e-performance-head-cancel-pending-tiles.json
         run: |
           set +e
-          node scripts/run-r3-wp2e-performance.mjs
+          timeout 150s node scripts/run-r3-wp2e-performance.mjs
           status=$?
           set -e
           if [ "$status" -ne 0 ]; then
             echo 'WP2E cancellation diagnostic failed once; retrying in a fresh Chromium process.'
-            node scripts/run-r3-wp2e-performance.mjs
+            timeout 150s node scripts/run-r3-wp2e-performance.mjs
           fi
       - name: Assert identities, compare timing medians and enforce unchanged regression budgets
         run: >-
