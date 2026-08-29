@@ -210,25 +210,39 @@ const initialSettlementStarted = performance.now();
 await waitForTerrainSettlement(initialSettlementStarted, INITIAL_SETTLE_MINIMUM_MS);
 const campaignSettledMs = performance.now() - started;
 
-// Selected/local camera requires an actual selected territory. Establish the
-// same deterministic selection through the real terrain label on both exact
-// base and head before timing either camera transition. This keeps selection
-// setup outside the measured Theatre/Selected transition windows and removes
-// dependence on incidental campaign UI state. The benchmark owns renderer
-// settlement rather than pointer hit-testing. Resolve and click the operational
-// marker button in one browser-side operation so marker reconciliation cannot
-// invalidate a Playwright locator or select a non-interactive duplicate label.
-await page.waitForFunction(() => {
-  const node = document.querySelector('button.r3-terrain-territory-label[data-territory-id="DE-03"]');
-  if (!(node instanceof HTMLButtonElement)) return false;
-  node.click();
-  return true;
-}, undefined, { timeout: 15_000 });
-await page.waitForFunction(
-  () => document.querySelector('button.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03',
-  undefined,
-  { timeout: 15_000 }
-);
+// Selected/local camera requires an actual selected territory. Establish that
+// selection through the production MapLibre territory-fill click path on both
+// exact base and head before timing either camera transition. This keeps setup
+// outside the measured Theatre/Selected windows, avoids any dependency on DOM
+// marker decluttering/reconciliation, and still exercises the same onSelect
+// callback used by a real map click.
+const selectedTerritoryId = await page.evaluate(() => {
+  const map = window.__r3TerrainMap;
+  if (!map) throw new Error('Terrain map handle is unavailable for benchmark selection.');
+  const canvas = map.getCanvas();
+  const rect = canvas.getBoundingClientRect();
+  const columns = 16;
+  const rows = 10;
+  for (let row = 1; row < rows; row += 1) {
+    for (let column = 1; column < columns; column += 1) {
+      const x = rect.width * column / columns;
+      const y = rect.height * row / rows;
+      const feature = map.queryRenderedFeatures([x, y], { layers: ['campaign-territories-fill'] })
+        .find(candidate => typeof candidate.properties?.territory_id === 'string');
+      const territoryId = feature?.properties?.territory_id;
+      if (typeof territoryId !== 'string') continue;
+      canvas.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + x,
+        clientY: rect.top + y,
+        view: window
+      }));
+      return territoryId;
+    }
+  }
+  throw new Error('No rendered campaign territory was available for benchmark selection.');
+});
 await page.waitForFunction(() => {
   const button = [...document.querySelectorAll('.r3-terrain-prototype-toolbar button')]
     .find(element => element.textContent?.trim() === 'selected');
@@ -298,6 +312,7 @@ const evidence = {
     peakInFlightTerrainRequests,
     buildNeutral: true
   },
+  selectedTerritoryId,
   timingsMs: { firstUsefulPaintMs, campaignSettledMs, campaignToTheatreMs, theatreToSelectedMs },
   terrainNetwork: {
     totalRequests: requests.length,
