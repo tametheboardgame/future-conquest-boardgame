@@ -153,7 +153,11 @@ if (startupOutcome !== 'terrain') {
 // Define useful paint build-neutrally: renderer ready/warning, Campaign LOD
 // applied, then allow two animation frames for that ready state to be painted.
 await page.locator('.r3-terrain-prototype[data-status="ready"], .r3-terrain-prototype[data-status="warning"]').waitFor({ state: 'visible', timeout: 45_000 });
-await page.waitForFunction(() => document.querySelector('.r3-terrain-prototype')?.getAttribute('data-overlay-lod') === 'campaign');
+await page.waitForFunction(
+  () => document.querySelector('.r3-terrain-prototype')?.getAttribute('data-overlay-lod') === 'campaign',
+  undefined,
+  { timeout: 15_000 }
+);
 await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 const firstUsefulPaintMs = performance.now() - started;
 
@@ -211,17 +215,25 @@ const campaignSettledMs = performance.now() - started;
 // base and head before timing either camera transition. This keeps selection
 // setup outside the measured Theatre/Selected transition windows and removes
 // dependence on incidental campaign UI state. The benchmark owns renderer
-// settlement rather than pointer hit-testing, so invoke the visible marker's
-// DOM click path directly just as the camera controls below are invoked.
-const benchmarkTerritory = page.locator('.r3-terrain-territory-label[data-territory-id="DE-03"]');
-await benchmarkTerritory.waitFor({ state: 'visible', timeout: 15_000 });
-await benchmarkTerritory.evaluate(node => node.click());
-await page.waitForFunction(() => document.querySelector('.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03');
+// settlement rather than pointer hit-testing. Resolve and click the marker in
+// one browser-side operation so marker reconciliation cannot invalidate a
+// Playwright locator between a visibility check and the DOM click.
+await page.waitForFunction(() => {
+  const node = document.querySelector('.r3-terrain-territory-label[data-territory-id="DE-03"]');
+  if (!(node instanceof HTMLButtonElement)) return false;
+  node.click();
+  return true;
+}, undefined, { timeout: 15_000 });
+await page.waitForFunction(
+  () => document.querySelector('.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03',
+  undefined,
+  { timeout: 15_000 }
+);
 await page.waitForFunction(() => {
   const button = [...document.querySelectorAll('.r3-terrain-prototype-toolbar button')]
     .find(element => element.textContent?.trim() === 'selected');
   return button instanceof HTMLButtonElement && !button.disabled;
-});
+}, undefined, { timeout: 15_000 });
 const selectionSettlementStarted = performance.now();
 await waitForTerrainSettlement(selectionSettlementStarted, INITIAL_SETTLE_MINIMUM_MS);
 
@@ -239,7 +251,11 @@ const transition = async (name, expectedLod) => {
     }
     button.click();
   }, name);
-  await page.waitForFunction(lod => document.querySelector('.r3-terrain-prototype')?.getAttribute('data-overlay-lod') === lod, expectedLod);
+  await page.waitForFunction(
+    lod => document.querySelector('.r3-terrain-prototype')?.getAttribute('data-overlay-lod') === lod,
+    expectedLod,
+    { timeout: 15_000 }
+  );
   await waitForTerrainSettlement(before, CAMERA_SETTLE_MINIMUM_MS);
   return performance.now() - before;
 };
