@@ -25,9 +25,9 @@ function withoutCombatTargets(state) {
   return state;
 }
 
-test('BG3E automatically starts authoritative round-start states', () => {
+test('BG3E round-start orchestration yields to the current automatic pre-round action', () => {
   const state = createInitialBoardState({ seed: 1 });
-  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'start-round' });
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'resolve-escalation' });
 });
 
 test('BG3E basic computer yields through the same Pass dispatcher when no paid combat exists', () => {

@@ -1,4 +1,5 @@
 import { attackBoardPiece } from './board-combat';
+import { resolveBoardEscalation } from './board-escalation';
 import { applyBoardAction as applyCoreBoardAction } from './board-state';
 import type { BoardAction, BoardActionResult, BoardGameState } from './board-state-types';
 
@@ -6,8 +7,9 @@ import type { BoardAction, BoardActionResult, BoardGameState } from './board-sta
  * Unified runtime dispatch boundary for the board-game conversion.
  *
  * BG1-BG4 core actions remain implemented in board-state.ts. BG5 combat lives
- * in board-combat.ts, but callers use this dispatcher so presentation never
- * decides outcomes or invokes the retained simulation combat path.
+ * in board-combat.ts and BG6 escalation lives in board-escalation.ts, but
+ * callers use this dispatcher so presentation never decides authoritative
+ * outcomes.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   if (action.type === 'attack-piece') {
@@ -20,6 +22,10 @@ export function applyBoardAction(state: BoardGameState, action: BoardAction): Bo
       };
     }
     return attackBoardPiece(state, action.attackerPieceId, action.defenderPieceId);
+  }
+
+  if (action.type === 'resolve-escalation') {
+    return resolveBoardEscalation(state);
   }
 
   return applyCoreBoardAction(state, action);
