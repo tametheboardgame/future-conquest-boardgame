@@ -1,3 +1,7 @@
+import {
+  playBoardActionCard,
+  prepareBoardActionCardsForRound
+} from './board-action-cards';
 import { attackBoardPiece } from './board-combat';
 import { resolveBoardEscalation } from './board-escalation';
 import { applyBoardAction as applyCoreBoardAction } from './board-state';
@@ -9,14 +13,12 @@ import {
 import type { BoardAction, BoardActionResult, BoardGameState } from './board-state-types';
 
 /**
- * Unified runtime dispatch boundary for the board-game conversion.
- *
- * BG1-BG4 core actions remain implemented in board-state.ts. BG5 combat lives
- * in board-combat.ts, BG6 escalation lives in board-escalation.ts, and BG7
- * support actions live in board-support-actions.ts. Callers still cross this
- * single dispatcher so presentation never decides authoritative outcomes.
+ * Non-card runtime boundary. BG8 card play calls back through this path so the
+ * wrapped movement/support action uses exactly the same authoritative legality
+ * and effect implementation as ordinary play without recursively dispatching
+ * another card action.
  */
-export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
+function applyUnderlyingBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   if (action.type === 'attack-piece') {
     if (typeof action.attackerPieceId !== 'string' || typeof action.defenderPieceId !== 'string') {
       return {
@@ -49,4 +51,24 @@ export function applyBoardAction(state: BoardGameState, action: BoardAction): Bo
   }
 
   return applyCoreBoardAction(state, action);
+}
+
+/**
+ * Unified runtime dispatch boundary for the board-game conversion.
+ *
+ * BG1-BG4 core actions remain implemented in board-state.ts. BG5 combat lives
+ * in board-combat.ts, BG6 escalation in board-escalation.ts, BG7 support in
+ * board-support-actions.ts and BG8 strategic cards in board-action-cards.ts.
+ * Presentation still crosses this one dispatcher for authoritative outcomes.
+ */
+export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
+  if (action.type === 'prepare-action-cards') {
+    return prepareBoardActionCardsForRound(state);
+  }
+
+  if (action.type === 'play-action-card') {
+    return playBoardActionCard(state, action, applyUnderlyingBoardAction);
+  }
+
+  return applyUnderlyingBoardAction(state, action);
 }
