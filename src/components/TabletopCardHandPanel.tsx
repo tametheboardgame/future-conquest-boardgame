@@ -68,7 +68,13 @@ export function TabletopCardHandPanel() {
     setFeedback(result.reason);
   };
 
-  return <section className="tabletop-card-hand" aria-label="Strategic card hand" data-bg-package="BG8">
+  return <section
+    id="tabletop-card-hand"
+    className="tabletop-card-hand"
+    aria-label="Strategic card hand"
+    data-bg-package="BG8"
+    tabIndex={-1}
+  >
     <header>
       <div>
         <span>Strategic cards</span>
