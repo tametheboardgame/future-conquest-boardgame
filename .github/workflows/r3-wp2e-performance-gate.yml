@@ -26,7 +26,7 @@ jobs:
       - run: |
           cp scripts/run-r3-wp2e-performance.mjs /tmp/run-r3-wp2e-performance.mjs
           cp scripts/compare-r3-wp2e-performance.mjs /tmp/compare-r3-wp2e-performance.mjs
-      - name: Adapt benchmark selection to a visible territory control
+      - name: Adapt benchmark selection to a structural territory control
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -36,28 +36,22 @@ jobs:
           start = text.index('// Selected/local camera requires an actual selected territory.')
           end = text.index('await page.waitForFunction(() => {', start)
           replacement = '''// Selected/local camera requires an actual selected territory. Establish that
-          // selection through any currently visible production territory-name control on
-          // both exact base and head before timing either camera transition. Territory
-          // labels are real buttons wired directly to onSelectTerritory; choosing one at
-          // runtime avoids coupling the performance benchmark to decluttering decisions
-          // or to MapLibre queryRenderedFeatures, which can block under headless WebGL.
+          // selection through any production territory-name control on both exact base
+          // and head before timing either camera transition. Territory labels are real
+          // buttons wired directly to onSelectTerritory. Marker visibility is a
+          // decluttering/presentation decision and is intentionally outside this renderer
+          // benchmark; dedicated browser/selection gates cover pointer-visible selection.
           const selectedTerritoryHandle = await page.waitForFunction(() => {
-            const candidates = [...document.querySelectorAll('button.r3-terrain-territory-label[data-territory-id]')];
-            for (const node of candidates) {
-              if (!(node instanceof HTMLButtonElement)) continue;
-              const rect = node.getBoundingClientRect();
-              const style = getComputedStyle(node);
-              if (rect.width <= 0 || rect.height <= 0 || style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) continue;
-              const territoryId = node.dataset.territoryId;
-              if (!territoryId) continue;
-              node.click();
-              return territoryId;
-            }
-            return false;
+            const node = document.querySelector('button.r3-terrain-territory-label[data-territory-id]');
+            if (!(node instanceof HTMLButtonElement)) return false;
+            const territoryId = node.dataset.territoryId;
+            if (!territoryId) return false;
+            node.click();
+            return territoryId;
           }, undefined, { timeout: 15_000 });
           const selectedTerritoryId = await selectedTerritoryHandle.jsonValue();
           if (typeof selectedTerritoryId !== 'string') {
-            throw new Error('No visible territory control was available for benchmark selection.');
+            throw new Error('No structural territory control was available for benchmark selection.');
           }
           '''
           path.write_text(text[:start] + replacement + text[end:])
