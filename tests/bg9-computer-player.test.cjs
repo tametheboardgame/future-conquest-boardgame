@@ -24,10 +24,18 @@ function startedComputerState(seed = 0x9009) {
   })).state;
 }
 
-function removeOpposingPieces(state) {
+function firstActivePiece(state) {
+  const piece = Object.values(state.pieces)
+    .filter(candidate => candidate.seatId === state.activeSeat && candidate.spaceId)
+    .sort((a, b) => a.id.localeCompare(b.id))[0];
+  assert.ok(piece, 'fixture requires one active-seat formation on the board');
+  return piece;
+}
+
+function keepOnlyPieceAndHostileControl(state, pieceId) {
   state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
     id,
-    piece.seatId === state.activeSeat ? piece : { ...piece, spaceId: null }
+    id === pieceId ? piece : { ...piece, spaceId: null }
   ]));
   return state;
 }
@@ -38,9 +46,9 @@ test('BG9 enumerates only dispatcher-legal computer actions without consuming RN
   const candidates = enumerateComputerBoardActions(state);
 
   assert.ok(candidates.length > 0);
-  assert.ok(candidates.some(candidate => candidate.action.type === 'attack-piece'));
   assert.ok(candidates.some(candidate => candidate.action.type === 'engineer-position'));
   assert.ok(candidates.some(candidate => candidate.action.type === 'end-seat-actions'));
+  assert.ok(!candidates.some(candidate => candidate.action.type === 'pass-activation'));
 
   for (const candidate of candidates) {
     const result = applyBoardAction(state, candidate.action);
@@ -61,38 +69,59 @@ test('BG9 chooses the same deterministic action from the same state and policy',
   assert.equal(serializeBoardState(state), before);
 });
 
-test('BG9 movement scoring advances a computer formation toward hostile territory when combat is unavailable', () => {
-  const state = removeOpposingPieces(startedComputerState(0x9011));
-  const piece = state.pieces['TG-1'];
-  const origin = state.spaces[piece.spaceId];
-  const destinationSpaceId = [...origin.adjacentSpaceIds].sort()[0];
+test('BG9 movement scoring advances a computer formation along a friendly corridor toward hostile territory', () => {
+  const state = startedComputerState(0x9011);
+  const piece = firstActivePiece(state);
+  const originSpaceId = piece.spaceId;
+  keepOnlyPieceAndHostileControl(state, piece.id);
 
-  state.spaces[piece.spaceId] = { ...origin, fortification: 3 };
+  const origin = state.spaces[originSpaceId];
+  const destinationSpaceId = [...origin.adjacentSpaceIds].sort((a, b) => a.localeCompare(b))[0];
+  assert.ok(destinationSpaceId, 'fixture requires an adjacent space');
+
+  state.spaces[originSpaceId] = { ...origin, fortification: 3 };
   state.spaces[destinationSpaceId] = {
     ...state.spaces[destinationSpaceId],
     control: state.activeSeat
   };
 
+  const legalMoves = enumerateComputerBoardActions(state)
+    .filter(candidate => candidate.action.type === 'move-piece');
+  assert.equal(legalMoves.length, 1);
+
   const choice = chooseComputerBoardAction(state);
-  assert.equal(choice.type, 'move-piece');
-  assert.equal(typeof choice.pieceId, 'string');
-  assert.equal(choice.destinationSpaceId, destinationSpaceId);
+  assert.deepEqual(choice, {
+    type: 'move-piece',
+    pieceId: piece.id,
+    destinationSpaceId
+  });
   assert.equal(applyBoardAction(state, choice).accepted, true);
 });
 
 test('BG9 values a legal free card effect above the equivalent paid recovery action', () => {
-  const state = removeOpposingPieces(startedComputerState(0x9012));
-  const piece = state.pieces['TG-1'];
-  state.pieces['TG-1'] = { ...piece, damage: 1, readiness: 75 };
+  const state = startedComputerState(0x9012);
+  const piece = firstActivePiece(state);
+  const pieceId = piece.id;
+  keepOnlyPieceAndHostileControl(state, pieceId);
+  state.pieces[pieceId] = { ...state.pieces[pieceId], damage: 1, readiness: 75 };
   state.spaces[piece.spaceId] = { ...state.spaces[piece.spaceId], fortification: 3 };
   state.decks.action.handBySeat[state.activeSeat] = ['action-03-field-repair-teams'];
 
+  assert.equal(applyBoardAction(state, { type: 'recover-piece', pieceId }).accepted, true);
+  assert.equal(applyBoardAction(state, {
+    type: 'play-action-card',
+    cardId: 'action-03-field-repair-teams',
+    pieceId
+  }).accepted, true);
+
   const candidates = enumerateComputerBoardActions(state);
   const paidRecover = candidates.find(candidate =>
-    candidate.action.type === 'recover-piece' && candidate.action.pieceId === 'TG-1'
+    candidate.action.type === 'recover-piece' && candidate.action.pieceId === pieceId
   );
   const cardRecover = candidates.find(candidate =>
-    candidate.action.type === 'play-action-card' && candidate.action.cardId === 'action-03-field-repair-teams'
+    candidate.action.type === 'play-action-card'
+      && candidate.action.cardId === 'action-03-field-repair-teams'
+      && candidate.action.pieceId === pieceId
   );
 
   assert.ok(paidRecover);
@@ -102,12 +131,14 @@ test('BG9 values a legal free card effect above the equivalent paid recovery act
 });
 
 test('BG9 End Actions exhausts a computer seat instead of creating a zero-cost Pass loop', () => {
-  let state = removeOpposingPieces(startedComputerState(0x9013));
+  let state = startedComputerState(0x9013);
   state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
     id,
     { ...piece, spaceId: null }
   ]));
 
+  const firstCandidates = enumerateComputerBoardActions(state);
+  assert.deepEqual(firstCandidates.map(candidate => candidate.action.type), ['end-seat-actions']);
   const firstChoice = chooseComputerBoardAction(state);
   assert.deepEqual(firstChoice, { type: 'end-seat-actions' });
   const first = applyBoardAction(state, firstChoice);
@@ -159,6 +190,7 @@ test('BG9 policy stays deterministic and shares the ordinary rules dispatcher', 
   assert.match(policy, /applyBoardAction\(state, action\)/);
   assert.match(policy, /BoardComputerDifficulty/);
   assert.match(policy, /BoardComputerPersonality/);
+  assert.doesNotMatch(policy, /addValidatedCandidate\(state, actions, \{ type: 'pass-activation' \}\)/);
   assert.match(orchestration, /chooseComputerBoardAction\(state\)/);
   assert.match(dispatcher, /endBoardSeatActions\(state\)/);
 });

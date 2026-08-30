@@ -103,7 +103,6 @@ function scoreBasicAction(action: BoardAction): number {
   if (action.type === 'move-piece') return 50;
   if (action.type === 'engineer-position') return 44;
   if (action.type === 'end-seat-actions') return -500;
-  if (action.type === 'pass-activation') return -600;
   return 0;
 }
 
@@ -155,8 +154,6 @@ function scoreStandardAction(
       + hostileAdjacencyCount(state, piece.spaceId, piece.seatId) * 7;
   } else if (action.type === 'end-seat-actions') {
     score = -500;
-  } else if (action.type === 'pass-activation') {
-    score = -600;
   }
 
   return score + personalityAdjustment(action, personality);
@@ -208,8 +205,13 @@ function addValidatedCandidate(
 /**
  * Enumerates the active computer seat's legal choices without consuming RNG.
  * Combat uses the authoritative preview/target API rather than resolving a
- * speculative attack, while movement, support, cards, Pass and End Actions are
- * accepted only when the shared dispatcher says they are legal.
+ * speculative attack. Movement, support, cards and End Actions are admitted
+ * only when the shared dispatcher says they are legal.
+ *
+ * Pass Activation intentionally remains a human/shared rule but is not an AI
+ * policy candidate: repeated zero-cost Pass choices can never exhaust a fully
+ * computer-controlled round. A computer with no useful paid/card action ends
+ * its remaining actions instead.
  */
 export function enumerateComputerBoardActions(
   state: BoardGameState,
@@ -283,7 +285,6 @@ export function enumerateComputerBoardActions(
   }
 
   addValidatedCandidate(state, actions, { type: 'end-seat-actions' });
-  addValidatedCandidate(state, actions, { type: 'pass-activation' });
 
   return actions
     .map(action => ({

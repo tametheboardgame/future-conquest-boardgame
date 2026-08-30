@@ -16,10 +16,11 @@ It considers:
 - Logistics
 - Engineer
 - strategic action cards
-- Pass Activation
 - End Actions
 
-Combat enumeration uses the authoritative combat preview/target API and does **not** resolve speculative dice. Support, card, Pass and End Actions candidates are admitted only when the shared dispatcher accepts them. The policy therefore cannot consume RNG or mutate state while deciding what to do.
+Combat enumeration uses the authoritative combat preview/target API and does **not** resolve speculative dice. Support, card and End Actions candidates are admitted only when the shared dispatcher accepts them. The policy therefore cannot consume RNG or mutate state while deciding what to do.
+
+Pass Activation remains an ordinary human/shared rules action, but it is intentionally not an AI policy candidate. Two computer seats repeatedly choosing a zero-cost Pass could never exhaust a round; a computer that has no useful paid/card action instead uses End Actions.
 
 ## Deterministic baseline policy
 
@@ -75,9 +76,9 @@ Focused BG9 tests cover:
 - every enumerated candidate is legal through the shared dispatcher
 - enumeration consumes no RNG and mutates no state
 - identical state/policy chooses the same action
-- movement advances toward hostile territory when combat is unavailable
+- movement advances through a friendly corridor toward hostile territory when combat is unavailable
 - a free card effect is valued above its equivalent paid action
-- End Actions prevents zero-cost Pass loops
+- the AI policy excludes zero-cost Pass loops and uses End Actions when no useful action remains
 - a deterministic computer-v-computer game runs unattended through the complete eight-round campaign boundary
 - no `Math.random` or alternative AI dispatcher is introduced
 
