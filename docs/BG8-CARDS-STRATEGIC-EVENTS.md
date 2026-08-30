@@ -26,11 +26,11 @@ BG8 runs at round start after BG6 escalation and before Command Actions are gran
 - a new or pre-BG8 migrated v3 save receives a two-card opening hand for each participating seat in its current round
 - later rounds draw one card per participating seat
 - hand limit is three cards
-- draw order is deterministic from the authoritative board RNG
-- when the draw pile empties, the saved discard pile is deterministically reshuffled
+- draw order is deterministic from the saved campaign seed through a card-only shuffle stream that does not consume the global board/combat RNG
+- when the draw pile empties, the saved discard pile is deterministically reshuffled through the same isolated card shuffle
 - `actionCardsPreparedRound` prevents duplicate draws in the same round
 
-No historical draws are replayed when an older save is first opened in a later round.
+No historical draws are replayed when an older save is first opened in a later round. A mid-activation pre-BG8 save only takes the migration path when the current round's BG6 escalation has already resolved, so fresh authoritative states that deliberately start a round directly are not mistaken for legacy saves.
 
 ## Playing a card
 
@@ -98,7 +98,7 @@ It exposes only:
 - legal destination selector when the card wraps movement
 - authoritative play legality and feedback
 
-The existing map-first layout therefore keeps the same viewport geometry.
+On desktop the panel begins to the right of the compact command rail; on compact/mobile layouts it switches to the existing full-width overlay treatment. The map-first layout therefore keeps the same viewport geometry while all navigation targets remain reachable.
 
 ## Extraction boundary
 
@@ -113,13 +113,14 @@ Focused tests cover:
 - all six roadmap card families
 - deterministic deck order and seed variation
 - opening deal, later-round draw and hand cap
-- deterministic discard reshuffle
+- deterministic discard reshuffle with no global board/combat RNG mutation
 - round-start orchestration order
 - free wrapped Recover / Logistics / Engineer / Move effects
 - ordinary legality retained under card play
 - no-cost/no-mutation rejection
 - save/load continuity
-- later-round pre-BG8 v3 migration
+- later-round and mid-activation pre-BG8 v3 migration
 - fixed-overlay UI and authoritative preview/dispatch contracts
+- the BG8 Cards navigation target remaining enabled, visible and reachable without covering the command rail
 
 Full exact-head repository CI remains the merge gate.

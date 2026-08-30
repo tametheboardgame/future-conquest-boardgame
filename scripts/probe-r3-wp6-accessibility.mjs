@@ -62,8 +62,8 @@ try {
       height: Math.round(box.height)
     };
   });
-  assert(reservedCards?.disabled && reservedCards.label === 'Cards', `reserved Cards control is not clearly unavailable: ${JSON.stringify(reservedCards)}`);
-  assert((reservedCards?.width ?? 0) >= 54 && (reservedCards?.height ?? 0) >= 54, `reserved Cards target is too small: ${JSON.stringify(reservedCards)}`);
+  assert(reservedCards && !reservedCards.disabled && reservedCards.label === 'Cards', `BG8 Cards control is not clearly available: ${JSON.stringify(reservedCards)}`);
+  assert((reservedCards?.width ?? 0) >= 54 && (reservedCards?.height ?? 0) >= 54, `BG8 Cards target is too small: ${JSON.stringify(reservedCards)}`);
 
   const more = page.locator('.command-nav-legacy summary');
   const moreTarget = await more.evaluate(node => {
