@@ -8,7 +8,6 @@ type ActivationSnapshot = {
   visible: boolean;
   formation: string;
   target: string;
-  canAttack: boolean;
 };
 
 type TerrainMapClickEvent = {
@@ -42,8 +41,7 @@ type MoveVisualState = {
 const EMPTY: ActivationSnapshot = {
   visible: false,
   formation: 'Select a formation',
-  target: 'Select a highlighted region',
-  canAttack: false
+  target: 'Select a highlighted region'
 };
 
 const TERRAIN_SOURCE_ID = 'campaign-territories';
@@ -53,11 +51,6 @@ const BG4C_MOVE_FILL_LAYER_ID = 'bg4c-move-destinations-fill';
 const BG4C_MOVE_OUTLINE_LAYER_ID = 'bg4c-move-destinations-outline';
 const MAP_PIECE_SELECTOR = '.r3-terrain-task-group-marker[data-group-id], .task-group-marker';
 
-function firstEnabledAction(selector: string): HTMLButtonElement | null {
-  return [...document.querySelectorAll<HTMLButtonElement>(selector)]
-    .find(button => !button.disabled) ?? null;
-}
-
 function readActivationSnapshot(): ActivationSnapshot {
   const contextPanel = document.querySelector<HTMLElement>('.map-context-panel');
   if (!contextPanel) return EMPTY;
@@ -65,20 +58,14 @@ function readActivationSnapshot(): ActivationSnapshot {
   const formationSelect = contextPanel.querySelector<HTMLSelectElement>('.quick-command select');
   const formation = formationSelect?.selectedOptions[0]?.textContent?.trim() || 'Select a formation';
   const territoryHeading = contextPanel.querySelector<HTMLElement>('.territory-card h3')?.textContent?.trim();
-  const attack = firstEnabledAction('.map-context-panel [data-tutorial="attack-action"]');
 
   return {
     visible: true,
     formation,
     target: territoryHeading && territoryHeading !== 'No territory selected'
       ? territoryHeading
-      : 'Select a highlighted region',
-    canAttack: Boolean(attack)
+      : 'Select a highlighted region'
   };
-}
-
-function invokeLegacyAttack() {
-  firstEnabledAction('.map-context-panel [data-tutorial="attack-action"]')?.click();
 }
 
 function territoryLabel(spaceId: string | null | undefined): string {
@@ -197,8 +184,8 @@ function clearTerrainMoveHighlights(map: TerrainMapHandle, spaceIds: string[]) {
 /**
  * BG4C turns retained map pieces into the authoritative Move interaction.
  * The UI only asks BG4B for destination legality and rejection reasons; the
- * confirmed move is still executed by the shared board dispatcher. Attack is
- * intentionally left on the retained simulation adapter until BG5.
+ * confirmed move is still executed by the shared board dispatcher. BG5 combat
+ * is owned separately by the authoritative board-combat path.
  */
 export function TabletopActivationPanel() {
   const [snapshot, setSnapshot] = useState<ActivationSnapshot>(EMPTY);
@@ -475,9 +462,7 @@ export function TabletopActivationPanel() {
       ? 'Confirm move'
       : selectedPieceId
         ? 'Choose destination'
-        : snapshot.canAttack
-          ? 'Choose piece or attack'
-          : 'Choose piece';
+        : 'Choose piece';
 
   return <aside
     className="tabletop-activation-panel"
@@ -546,13 +531,12 @@ export function TabletopActivationPanel() {
     <p className="tabletop-move-feedback" role="status">{moveFeedback}</p>
 
     <div className="tabletop-activation-actions" aria-label="Activation actions">
-      <button type="button" className="attack" disabled={!snapshot.canAttack || activeSeat.controller !== 'human'} onClick={invokeLegacyAttack}>Attack</button>
       <button type="button" disabled={!canPass} title={canPass ? 'Yield this activation without spending a Command Action' : passPreview.reason} onClick={passActivation}>Pass Activation</button>
     </div>
 
     <div className="tabletop-later-actions" aria-label="Later board game actions">
       <span>Recover</span><span>Engineer</span><span>Logistics</span>
     </div>
-    <p>Move is now map-driven through the authoritative board dispatcher. Attack remains connected to the retained simulation controls until BG5.</p>
+    <p>Move is map-driven through the authoritative board dispatcher. Combat is handled separately by the authoritative dice-combat controls.</p>
   </aside>;
 }

@@ -41,11 +41,11 @@ test('BG4C previews, confirms and cancels movement before dispatch', () => {
   assert.match(panel, /dispatchBoardAction\(\{/);
 });
 
-test('BG4C removes legacy Move delegation while retaining the pre-BG5 Attack adapter', () => {
+test('BG4C keeps legacy Move delegation removed after BG5 combat extraction', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
 
   assert.doesNotMatch(panel, /data-tutorial="move-action"/);
-  assert.match(panel, /data-tutorial="attack-action"/);
+  assert.doesNotMatch(panel, /data-tutorial="attack-action"/);
   assert.match(panel, /data-bg-package="BG3E"/);
   assert.match(panel, /data-bg-movement="BG4C"/);
 });

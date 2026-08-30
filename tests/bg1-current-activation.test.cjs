@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 
-test('activation panel retains the board-game action hierarchy as Move becomes map-driven', () => {
+test('activation panel retains the board-game action hierarchy as Move becomes map-driven and combat moves to its own panel', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
 
   assert.match(panel, /Current Activation/);
@@ -13,18 +13,18 @@ test('activation panel retains the board-game action hierarchy as Move becomes m
   assert.match(panel, /Move preview/);
   assert.match(panel, /Confirm Move/);
   assert.doesNotMatch(panel, />Move<\/button>/);
-  assert.match(panel, />Attack<\/button>/);
+  assert.doesNotMatch(panel, />Attack<\/button>/);
   assert.match(panel, />Pass Activation<\/button>/);
   assert.match(panel, /Recover/);
   assert.match(panel, /Engineer/);
   assert.match(panel, /Logistics/);
 });
 
-test('Move uses the authoritative board dispatcher while Attack retains its temporary adapter', () => {
+test('Move and Pass use the authoritative board dispatcher without a temporary combat adapter', () => {
   const panel = read('src/components/TabletopActivationPanel.tsx');
 
   assert.doesNotMatch(panel, /\.map-context-panel \[data-tutorial="move-action"\]/);
-  assert.match(panel, /\.map-context-panel \[data-tutorial="attack-action"\]/);
+  assert.doesNotMatch(panel, /\.map-context-panel \[data-tutorial="attack-action"\]/);
   assert.match(panel, /getBoardMoveDestinations/);
   assert.match(panel, /type: 'move-piece'/);
   assert.match(panel, /destinationSpaceId: pendingDestinationSpaceId/);
