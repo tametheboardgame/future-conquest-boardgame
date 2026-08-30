@@ -4,6 +4,7 @@ import {
 } from './board-action-cards';
 import { attackBoardPiece } from './board-combat';
 import { resolveBoardEscalation } from './board-escalation';
+import { endBoardSeatActions } from './board-seat-actions';
 import { applyBoardAction as applyCoreBoardAction } from './board-state';
 import {
   engineerBoardPosition,
@@ -35,6 +36,10 @@ function applyUnderlyingBoardAction(state: BoardGameState, action: BoardAction):
     return resolveBoardEscalation(state);
   }
 
+  if (action.type === 'end-seat-actions') {
+    return endBoardSeatActions(state);
+  }
+
   if (action.type === 'recover-piece' || action.type === 'logistics-piece' || action.type === 'engineer-position') {
     if (typeof action.pieceId !== 'string') {
       return {
@@ -58,8 +63,9 @@ function applyUnderlyingBoardAction(state: BoardGameState, action: BoardAction):
  *
  * BG1-BG4 core actions remain implemented in board-state.ts. BG5 combat lives
  * in board-combat.ts, BG6 escalation in board-escalation.ts, BG7 support in
- * board-support-actions.ts and BG8 strategic cards in board-action-cards.ts.
- * Presentation still crosses this one dispatcher for authoritative outcomes.
+ * board-support-actions.ts, BG8 strategic cards in board-action-cards.ts and
+ * BG9's shared End Actions rule in board-seat-actions.ts. Humans and computers
+ * still cross this same dispatcher for every authoritative outcome.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
   if (action.type === 'prepare-action-cards') {

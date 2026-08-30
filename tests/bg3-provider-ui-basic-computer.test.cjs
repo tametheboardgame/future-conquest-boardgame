@@ -4,11 +4,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const {
-  applyBoardAction,
   createInitialBoardState,
   endBoardRound,
   startBoardRound
 } = require('../.test-dist/board-state.js');
+const { applyBoardAction } = require('../.test-dist/board-action-dispatcher.js');
 const { chooseAutomaticBoardAction } = require('../.test-dist/board-turn-orchestration.js');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
@@ -30,36 +30,43 @@ test('BG3E round-start orchestration yields to the current automatic pre-round a
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'resolve-escalation' });
 });
 
-test('BG3E basic computer yields through the same Pass dispatcher when no paid combat exists', () => {
+test('BG3E computer can end unusable remaining actions through the shared dispatcher', () => {
   let state = startedState({ controllers: { 'seat-1': 'human', 'seat-2': 'computer' } });
   state = applyBoardAction(state, { type: 'pass-activation' }).state;
   state = withoutCombatTargets(state);
   assert.equal(state.activeSeat, 'seat-2');
   const computerChoice = chooseAutomaticBoardAction(state);
-  assert.deepEqual(computerChoice, { type: 'pass-activation' });
-  const computerPass = applyBoardAction(state, computerChoice);
-  assert.equal(computerPass.accepted, true);
-  assert.equal(computerPass.state.activeSeat, 'seat-1');
-  assert.equal(computerPass.commandActionsSpent, 0);
+  assert.deepEqual(computerChoice, { type: 'end-seat-actions' });
+  const ended = applyBoardAction(state, computerChoice);
+  assert.equal(ended.accepted, true);
+  assert.equal(ended.state.activeSeat, 'seat-1');
+  assert.equal(ended.state.seats['seat-2'].commandActionsRemaining, 0);
+  assert.equal(ended.commandActionsSpent, 0);
 });
 
-test('BG3E mixed computer chains keep yielding until the next human when no paid combat exists', () => {
+test('BG3E mixed computer chains end unusable actions until the next human', () => {
   let state = withoutCombatTargets(startedState({
     participatingSeatIds: ['seat-1', 'seat-2', 'seat-3'],
     controllers: { 'seat-1': 'computer', 'seat-2': 'computer', 'seat-3': 'human' }
   }));
-  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'pass-activation' });
-  state = applyBoardAction(state, { type: 'pass-activation' }).state;
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-seat-actions' });
+  state = applyBoardAction(state, { type: 'end-seat-actions' }).state;
   assert.equal(state.activeSeat, 'seat-2');
-  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'pass-activation' });
-  state = applyBoardAction(state, { type: 'pass-activation' }).state;
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-seat-actions' });
+  state = applyBoardAction(state, { type: 'end-seat-actions' }).state;
   assert.equal(state.activeSeat, 'seat-3');
   assert.equal(chooseAutomaticBoardAction(state), null);
 });
 
-test('BG3E computer-v-computer does not create an infinite zero-cost Pass loop when no paid action exists', () => {
-  const state = withoutCombatTargets(startedState({ controllers: { 'seat-1': 'computer', 'seat-2': 'computer' } }));
-  assert.equal(chooseAutomaticBoardAction(state), null);
+test('BG3E computer-v-computer exits a no-action position without a zero-cost Pass loop', () => {
+  let state = withoutCombatTargets(startedState({ controllers: { 'seat-1': 'computer', 'seat-2': 'computer' } }));
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-seat-actions' });
+  state = applyBoardAction(state, { type: 'end-seat-actions' }).state;
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-seat-actions' });
+  state = applyBoardAction(state, { type: 'end-seat-actions' }).state;
+  assert.equal(state.seats['seat-1'].commandActionsRemaining, 0);
+  assert.equal(state.seats['seat-2'].commandActionsRemaining, 0);
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-round' });
 });
 
 test('BG3E automatic orchestration closes exhausted rounds and advances completed non-terminal rounds', () => {
