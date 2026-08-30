@@ -92,13 +92,13 @@ jobs:
           npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/r3-wp2e-vite.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/r3-wp2e-vite.log; exit 1
-      - name: Record three exact base timing samples
+      - name: Record five exact base timing samples
         env:
           R3_WP2E_BUILD_SHA: ${{ github.event.pull_request.base.sha }}
           R3_WP2E_VARIANT: base
           R3_WP2E_TILE_CANCELLATION: cancel
         run: |
-          for sample in 1 2 3; do
+          for sample in 1 2 3 4 5; do
             export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-base-${sample}.json"
             for attempt in 1 2; do
               set +e
@@ -135,12 +135,13 @@ jobs:
           npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/r3-wp2e-vite.log 2>&1 &
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/r3-wp2e-vite.log; exit 1
-      - name: Record three exact head timing samples
+      - name: Record five exact head timing samples
         env:
           R3_WP2E_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
           R3_WP2E_VARIANT: head
+          R3_WP2E_TILE_CANCELLATION: cancel
         run: |
-          for sample in 1 2 3; do
+          for sample in 1 2 3 4 5; do
             export R3_WP2E_EVIDENCE="artifacts/r3-wp2e-performance-head-${sample}.json"
             for attempt in 1 2; do
               set +e
@@ -174,8 +175,8 @@ jobs:
       - name: Assert identities, compare timing medians and enforce unchanged regression budgets
         run: >-
           node scripts/compare-r3-wp2e-performance.mjs
-          artifacts/r3-wp2e-performance-base-1.json,artifacts/r3-wp2e-performance-base-2.json,artifacts/r3-wp2e-performance-base-3.json
-          artifacts/r3-wp2e-performance-head-1.json,artifacts/r3-wp2e-performance-head-2.json,artifacts/r3-wp2e-performance-head-3.json
+          artifacts/r3-wp2e-performance-base-1.json,artifacts/r3-wp2e-performance-base-2.json,artifacts/r3-wp2e-performance-base-3.json,artifacts/r3-wp2e-performance-base-4.json,artifacts/r3-wp2e-performance-base-5.json
+          artifacts/r3-wp2e-performance-head-1.json,artifacts/r3-wp2e-performance-head-2.json,artifacts/r3-wp2e-performance-head-3.json,artifacts/r3-wp2e-performance-head-4.json,artifacts/r3-wp2e-performance-head-5.json
           artifacts/r3-wp2e-performance-comparison.json
           '${{ github.event.pull_request.base.sha }}'
           '${{ github.event.pull_request.head.sha }}'
