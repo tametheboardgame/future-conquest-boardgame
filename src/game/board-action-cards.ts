@@ -1,12 +1,10 @@
 import { isBoardEscalationResolvedForRound } from './board-escalation';
-import { nextBoardRandom } from './board-state';
 import {
   SEAT_IDS,
   type BoardAction,
   type BoardActionResult,
   type BoardGameState,
   type DeckState,
-  type DeterministicRandomState,
   type SeatId
 } from './board-state-types';
 
@@ -152,42 +150,74 @@ function actionDeckIsEmpty(deck: DeckState): boolean {
     && SEAT_IDS.every(id => deck.handBySeat[id].length === 0);
 }
 
+/**
+ * Only a pre-BG8 save already inside an activation needs the migration path.
+ * Fresh direct-start states used by the authoritative engine have not resolved
+ * the round's escalation, so they must not be mistaken for legacy saves.
+ */
 export function needsBoardActionCardMigration(state: BoardGameState): boolean {
-  return state.actionCardsPreparedRound === undefined && actionDeckIsEmpty(state.decks.action);
+  return state.phase === 'activation'
+    && state.actionCardsPreparedRound === undefined
+    && actionDeckIsEmpty(state.decks.action)
+    && isBoardEscalationResolvedForRound(state);
 }
 
+function deriveCardShuffleSeed(
+  state: BoardGameState,
+  cardIds: readonly string[],
+  salt: string
+): number {
+  let hash = (state.rng.seed ^ 0x8b8c2d51) >>> 0;
+  const material = `${salt}|${cardIds.join('|')}`;
+
+  for (let index = 0; index < material.length; index += 1) {
+    hash ^= material.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+
+  return hash || 0x6d2b79f5;
+}
+
+/**
+ * Action-card order is deterministic but deliberately isolated from the global
+ * board RNG. Preparing or reshuffling cards must never alter a later combat
+ * roll or any other seeded authoritative outcome.
+ */
 function shuffleCardIds(
   cardIds: readonly string[],
-  rng: DeterministicRandomState
-): { cardIds: string[]; rng: DeterministicRandomState } {
+  seed: number
+): string[] {
   const shuffled = [...cardIds];
-  let nextRng = rng;
+  let randomState = seed >>> 0 || 0x6d2b79f5;
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const random = nextBoardRandom(nextRng);
-    nextRng = random.rng;
-    const swapIndex = Math.floor(random.value * (index + 1));
+    randomState ^= randomState << 13;
+    randomState ^= randomState >>> 17;
+    randomState ^= randomState << 5;
+    randomState >>>= 0;
+    const value = randomState / 0x100000000;
+    const swapIndex = Math.floor(value * (index + 1));
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
 
-  return { cardIds: shuffled, rng: nextRng };
+  return shuffled;
 }
 
 /** Lazily initialises the saved action deck so pre-BG8 v3 saves stay loadable. */
 export function initialiseBoardActionDeck(state: BoardGameState): BoardGameState {
   if (!actionDeckIsEmpty(state.decks.action)) return state;
 
-  const shuffled = shuffleCardIds(BOARD_ACTION_CARDS.map(card => card.id), state.rng);
+  const cardIds = BOARD_ACTION_CARDS.map(card => card.id);
+  const shuffled = shuffleCardIds(cardIds, deriveCardShuffleSeed(state, cardIds, 'initial'));
   return {
     ...state,
     decks: {
       ...state.decks,
       action: {
         ...state.decks.action,
-        draw: shuffled.cardIds
+        draw: shuffled
       }
-    },
-    rng: shuffled.rng
+    }
   };
 }
 
@@ -195,18 +225,18 @@ function reshuffleActionDiscard(state: BoardGameState): BoardGameState {
   const deck = state.decks.action;
   if (deck.draw.length > 0 || deck.discard.length === 0) return state;
 
-  const shuffled = shuffleCardIds(deck.discard, state.rng);
+  const salt = `reshuffle-round-${state.round}`;
+  const shuffled = shuffleCardIds(deck.discard, deriveCardShuffleSeed(state, deck.discard, salt));
   return {
     ...state,
     decks: {
       ...state.decks,
       action: {
         ...deck,
-        draw: shuffled.cardIds,
+        draw: shuffled,
         discard: []
       }
-    },
-    rng: shuffled.rng
+    }
   };
 }
 
@@ -247,7 +277,7 @@ export function isBoardActionCardsPreparedForRound(state: BoardGameState): boole
  * phase, activation, Command Actions or replaying historical round draws.
  */
 export function prepareBoardActionCardsForRound(state: BoardGameState): BoardActionResult {
-  const migratingDuringActivation = state.phase === 'activation' && needsBoardActionCardMigration(state);
+  const migratingDuringActivation = needsBoardActionCardMigration(state);
   if (state.phase !== 'round-start' && !migratingDuringActivation) {
     return reject(state, `Cannot prepare action cards during ${state.phase} phase.`);
   }
@@ -258,9 +288,9 @@ export function prepareBoardActionCardsForRound(state: BoardGameState): BoardAct
     return reject(state, `Action cards are already prepared for round ${state.round}.`);
   }
 
-  const migratingFreshDeck = needsBoardActionCardMigration(state);
+  const freshDeck = state.actionCardsPreparedRound === undefined && actionDeckIsEmpty(state.decks.action);
   let nextState = initialiseBoardActionDeck(state);
-  const drawsPerSeat = migratingFreshDeck ? BOARD_ACTION_OPENING_HAND_SIZE : BOARD_ACTION_ROUND_DRAW_COUNT;
+  const drawsPerSeat = freshDeck ? BOARD_ACTION_OPENING_HAND_SIZE : BOARD_ACTION_ROUND_DRAW_COUNT;
   let drawn = 0;
 
   for (const seatId of SEAT_IDS) {

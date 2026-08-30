@@ -147,7 +147,7 @@ test('BG8 later rounds draw one card per participating seat and respect the thre
   assert.equal(state.decks.action.handBySeat['seat-2'].length, BOARD_ACTION_HAND_LIMIT);
 });
 
-test('BG8 reshuffles the saved discard pile deterministically when the draw pile is empty', () => {
+test('BG8 reshuffles the saved discard pile deterministically without perturbing the global board RNG', () => {
   let state = createInitialBoardState({ seed: 0x8806 });
   state = { ...state, round: 2 };
   state = applyBoardAction(state, { type: 'resolve-escalation' }).state;
@@ -168,14 +168,14 @@ test('BG8 reshuffles the saved discard pile deterministically when the draw pile
       }
     }
   };
-  const callsBefore = state.rng.calls;
+  const rngBefore = { ...state.rng };
 
   const prepared = prepareBoardActionCardsForRound(state);
   assert.equal(prepared.accepted, true);
   assert.equal(prepared.state.decks.action.handBySeat['seat-1'].length, 3);
   assert.equal(prepared.state.decks.action.handBySeat['seat-2'].length, 3);
   assert.equal(prepared.state.decks.action.discard.length, 0);
-  assert.ok(prepared.state.rng.calls > callsBefore);
+  assert.deepEqual(prepared.state.rng, rngBefore);
 });
 
 test('BG8 Recover card uses the authoritative support effect for free and retains activation', () => {
