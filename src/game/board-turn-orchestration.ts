@@ -1,4 +1,5 @@
 import { getBoardCombatTargets } from './board-combat';
+import { isBoardEscalationResolvedForRound } from './board-escalation';
 import { applyBoardAction, isBoardRoundExhausted } from './board-state';
 import type { BoardAction, BoardGameState } from './board-state-types';
 
@@ -23,10 +24,14 @@ function chooseComputerCombatAction(state: BoardGameState): BoardAction | null {
 /**
  * Chooses at most one automatic board action. The provider executes the
  * returned action through the unified runtime dispatcher, so humans and
- * computers share exactly the same authoritative combat/movement rules.
+ * computers share exactly the same authoritative rules.
  */
 export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction | null {
-  if (state.phase === 'round-start') return { type: 'start-round' };
+  if (state.phase === 'round-start') {
+    return isBoardEscalationResolvedForRound(state)
+      ? { type: 'start-round' }
+      : { type: 'resolve-escalation' };
+  }
 
   if (state.phase === 'activation' && isBoardRoundExhausted(state)) {
     return { type: 'end-round' };
