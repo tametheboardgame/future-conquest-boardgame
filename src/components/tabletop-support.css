@@ -1,0 +1,117 @@
+.tabletop-support-panel {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(95, 144, 151, .4);
+  background: rgba(7, 24, 29, .72);
+}
+
+.tabletop-support-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tabletop-support-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.tabletop-support-heading span {
+  color: #d9f4f1;
+  font: 700 9px IBM Plex Mono, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.tabletop-support-heading strong,
+.tabletop-support-panel p {
+  color: #91aeb3;
+  font: 500 8px IBM Plex Mono, monospace;
+}
+
+.tabletop-support-heading select {
+  min-width: 92px;
+  border: 1px solid #42636a;
+  border-radius: 2px;
+  color: #e8f2f2;
+  background: #10272d;
+  padding: 5px 6px;
+  font: 600 9px IBM Plex Mono, monospace;
+}
+
+.tabletop-support-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin: 7px 0;
+}
+
+.tabletop-support-status span {
+  display: grid;
+  gap: 1px;
+  padding: 5px 6px;
+  border: 1px solid #29454c;
+  border-radius: 2px;
+  background: #0d2228;
+}
+
+.tabletop-support-status small {
+  color: #7e9aa0;
+  font: 500 7px IBM Plex Mono, monospace;
+  text-transform: uppercase;
+}
+
+.tabletop-support-status b {
+  overflow: hidden;
+  color: #e7f4f3;
+  font: 700 10px IBM Plex Mono, monospace;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
+.tabletop-support-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.tabletop-support-actions button {
+  min-height: 32px;
+  border: 1px solid #47706f;
+  border-radius: 2px;
+  color: #dff5ef;
+  background: #12332f;
+  font: 700 8px IBM Plex Mono, monospace;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tabletop-support-actions button:disabled {
+  border-color: #334248;
+  color: #64767a;
+  background: #162227;
+  cursor: not-allowed;
+}
+
+.tabletop-support-panel p {
+  min-height: 20px;
+  margin: 6px 0 0;
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .tabletop-support-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tabletop-support-heading select {
+    width: 100%;
+  }
+
+  .tabletop-support-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
