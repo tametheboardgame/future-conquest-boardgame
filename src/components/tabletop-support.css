@@ -5,6 +5,11 @@
   background: rgba(7, 24, 29, .72);
 }
 
+/* BG7 replaces the old non-interactive activation-panel placeholders. */
+.tabletop-later-actions {
+  display: none;
+}
+
 .tabletop-support-heading {
   display: flex;
   align-items: center;
