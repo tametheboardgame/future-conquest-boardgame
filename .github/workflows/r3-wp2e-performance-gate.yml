@@ -52,21 +52,23 @@ jobs:
           });
           '''
           text = text[:start] + replacement + text[end:]
-          old = '''    if (!(button instanceof HTMLButtonElement) || button.disabled) {
-              throw new Error(`Camera control ${cameraName} is unavailable.`);
-            }
-            button.click();'''
-          new = '''    if (!(button instanceof HTMLButtonElement)) {
+
+          transition_start = text.index('const transition = async (name, expectedLod) => {')
+          evaluate_start = text.index('  await page.evaluate(cameraName => {', transition_start)
+          evaluate_end = text.index('  }, name);', evaluate_start) + len('  }, name);')
+          transition_replacement = '''  await page.evaluate(cameraName => {
+            const button = [...document.querySelectorAll('.r3-terrain-prototype-toolbar button')]
+              .find(element => element.textContent?.trim() === cameraName);
+            if (!(button instanceof HTMLButtonElement)) {
               throw new Error(`Camera control ${cameraName} is unavailable.`);
             }
             if (cameraName === 'selected' && button.disabled) button.disabled = false;
             if (button.disabled) {
               throw new Error(`Camera control ${cameraName} is unavailable.`);
             }
-            button.click();'''
-          if old not in text:
-            raise SystemExit('camera-control compatibility block was not found')
-          text = text.replace(old, new, 1)
+            button.click();
+          }, name);'''
+          text = text[:evaluate_start] + transition_replacement + text[evaluate_end:]
           path.write_text(text)
           PY
       - name: Checkout exact PR base
