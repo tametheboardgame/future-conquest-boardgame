@@ -1,12 +1,18 @@
 import { projectBoardStatus } from '../game/board-state-status';
 import { useBoardGameState } from './BoardGameStateProvider';
+import { TabletopSupportPanel } from './TabletopSupportPanel';
 
 /** Board-game chrome now reads its status directly from authoritative BG2 state. */
 export function TabletopStatusShell() {
   const state = useBoardGameState();
   const status = projectBoardStatus(state);
 
-  return <section className="tabletop-status-shell" aria-label="Board game status" data-bg-package="BG2D">
+  return <section
+    className="tabletop-status-shell"
+    aria-label="Board game status"
+    data-bg-package="BG2D"
+    data-bg-support="BG7"
+  >
     <div className="tabletop-title-block">
       <span>FUTURE CONQUEST</span>
       <strong>THE CENTRAL FRONT</strong>
@@ -20,5 +26,7 @@ export function TabletopStatusShell() {
       <div><dt>Phase</dt><dd>{status.phase}</dd></div>
       <div className="tabletop-activation-status"><dt>Activation</dt><dd>{status.activation}</dd></div>
     </dl>
+
+    <TabletopSupportPanel />
   </section>;
 }
