@@ -152,6 +152,10 @@ function actionDeckIsEmpty(deck: DeckState): boolean {
     && SEAT_IDS.every(id => deck.handBySeat[id].length === 0);
 }
 
+export function needsBoardActionCardMigration(state: BoardGameState): boolean {
+  return state.actionCardsPreparedRound === undefined && actionDeckIsEmpty(state.decks.action);
+}
+
 function shuffleCardIds(
   cardIds: readonly string[],
   rng: DeterministicRandomState
@@ -237,19 +241,24 @@ export function isBoardActionCardsPreparedForRound(state: BoardGameState): boole
  * Runs once at round-start after BG6 escalation. New and migrated pre-BG8
  * saves receive a two-card opening hand in their current round; later rounds
  * draw one card per participating seat up to the three-card hand limit.
+ *
+ * A pre-BG8 v3 save loaded during activation is the one deliberate phase
+ * exception: it receives the same opening hand immediately, without changing
+ * phase, activation, Command Actions or replaying historical round draws.
  */
 export function prepareBoardActionCardsForRound(state: BoardGameState): BoardActionResult {
-  if (state.phase !== 'round-start') {
+  const migratingDuringActivation = state.phase === 'activation' && needsBoardActionCardMigration(state);
+  if (state.phase !== 'round-start' && !migratingDuringActivation) {
     return reject(state, `Cannot prepare action cards during ${state.phase} phase.`);
   }
-  if (!isBoardEscalationResolvedForRound(state)) {
+  if (state.phase === 'round-start' && !isBoardEscalationResolvedForRound(state)) {
     return reject(state, 'Resolve escalation before preparing action cards.');
   }
   if (isBoardActionCardsPreparedForRound(state)) {
     return reject(state, `Action cards are already prepared for round ${state.round}.`);
   }
 
-  const migratingFreshDeck = state.actionCardsPreparedRound === undefined && actionDeckIsEmpty(state.decks.action);
+  const migratingFreshDeck = needsBoardActionCardMigration(state);
   let nextState = initialiseBoardActionDeck(state);
   const drawsPerSeat = migratingFreshDeck ? BOARD_ACTION_OPENING_HAND_SIZE : BOARD_ACTION_ROUND_DRAW_COUNT;
   let drawn = 0;
@@ -272,7 +281,7 @@ export function prepareBoardActionCardsForRound(state: BoardGameState): BoardAct
     state: nextState,
     accepted: true,
     commandActionsSpent: 0,
-    reason: `Prepared round ${state.round} action cards; drew ${drawn} card${drawn === 1 ? '' : 's'}.`
+    reason: `${migratingDuringActivation ? 'Migrated' : 'Prepared'} round ${state.round} action cards; drew ${drawn} card${drawn === 1 ? '' : 's'}.`
   };
 }
 
