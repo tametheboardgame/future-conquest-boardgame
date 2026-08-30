@@ -7,7 +7,12 @@ export function TabletopStatusShell() {
   const state = useBoardGameState();
   const status = projectBoardStatus(state);
 
-  return <section className="tabletop-status-shell" aria-label="Board game status" data-bg-package="BG7">
+  return <section
+    className="tabletop-status-shell"
+    aria-label="Board game status"
+    data-bg-package="BG2D"
+    data-bg-support="BG7"
+  >
     <div className="tabletop-title-block">
       <span>FUTURE CONQUEST</span>
       <strong>THE CENTRAL FRONT</strong>
