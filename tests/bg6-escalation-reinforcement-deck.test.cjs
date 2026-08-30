@@ -75,7 +75,7 @@ test('BG6 different seeds materially vary deck order while retaining the same pr
   }
 });
 
-test('BG6 orchestration resolves escalation before starting each round', () => {
+test('BG6 orchestration still resolves escalation before later pre-round systems and round start', () => {
   const state = createInitialBoardState({ seed: 11264 });
 
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'resolve-escalation' });
@@ -83,9 +83,13 @@ test('BG6 orchestration resolves escalation before starting each round', () => {
   const escalation = applyBoardAction(state, { type: 'resolve-escalation' });
   assert.equal(escalation.accepted, true);
   assert.equal(escalation.commandActionsSpent, 0);
-  assert.deepEqual(chooseAutomaticBoardAction(escalation.state), { type: 'start-round' });
+  assert.deepEqual(chooseAutomaticBoardAction(escalation.state), { type: 'prepare-action-cards' });
 
-  const started = applyBoardAction(escalation.state, { type: 'start-round' });
+  const cards = applyBoardAction(escalation.state, { type: 'prepare-action-cards' });
+  assert.equal(cards.accepted, true);
+  assert.deepEqual(chooseAutomaticBoardAction(cards.state), { type: 'start-round' });
+
+  const started = applyBoardAction(cards.state, { type: 'start-round' });
   assert.equal(started.accepted, true);
   assert.equal(started.state.phase, 'activation');
   assert.equal(started.state.seats['seat-1'].commandActionsRemaining, 4);

@@ -110,6 +110,8 @@ export interface BoardGameState {
     action: DeckState;
   };
   rng: DeterministicRandomState;
+  /** BG8 marker. Optional so pre-BG8 v3 saves migrate lazily in their current round. */
+  actionCardsPreparedRound?: number;
   /** BG5 combat record. Undefined means no combat has yet been declared. */
   combat?: BoardCombatState;
 }

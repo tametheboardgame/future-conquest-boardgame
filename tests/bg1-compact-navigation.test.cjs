@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 
-test('BG1D promotes only the board-game primary navigation', () => {
+test('BG1D promotes the board-game primary navigation and BG8 activates its reserved Cards control', () => {
   const navigation = read('src/components/CommandNavigation.tsx');
 
   assert.match(navigation, /const PRIMARY_ITEMS/);
@@ -14,7 +14,9 @@ test('BG1D promotes only the board-game primary navigation', () => {
   assert.match(navigation, /label: 'Combat'/);
   assert.match(navigation, /label: 'Rules & Save'/);
   assert.match(navigation, />Cards<\/span>/);
-  assert.match(navigation, /Cards become playable in BG8/);
+  assert.match(navigation, /aria-controls="tabletop-card-hand"/);
+  assert.match(navigation, /Focus strategic card hand/);
+  assert.doesNotMatch(navigation, /Cards become playable in BG8/);
 });
 
 test('BG1D demotes simulation-era workspaces without deleting their routes', () => {
@@ -29,7 +31,7 @@ test('BG1D demotes simulation-era workspaces without deleting their routes', () 
   assert.match(navigation, />More<\/b>/);
 });
 
-test('BG1D remains a presentation-only navigation change', () => {
+test('BG1D remains presentation-only navigation and does not import board authority', () => {
   const navigation = read('src/components/CommandNavigation.tsx');
   const css = read('src/bg1-compact-navigation.css');
   const main = read('src/main.tsx');

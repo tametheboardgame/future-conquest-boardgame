@@ -1,3 +1,7 @@
+import {
+  isBoardActionCardsPreparedForRound,
+  needsBoardActionCardMigration
+} from './board-action-cards';
 import { getBoardCombatTargets } from './board-combat';
 import { isBoardEscalationResolvedForRound } from './board-escalation';
 import { applyBoardAction, isBoardRoundExhausted } from './board-state';
@@ -28,9 +32,16 @@ function chooseComputerCombatAction(state: BoardGameState): BoardAction | null {
  */
 export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction | null {
   if (state.phase === 'round-start') {
-    return isBoardEscalationResolvedForRound(state)
-      ? { type: 'start-round' }
-      : { type: 'resolve-escalation' };
+    if (!isBoardEscalationResolvedForRound(state)) return { type: 'resolve-escalation' };
+    if (!isBoardActionCardsPreparedForRound(state)) return { type: 'prepare-action-cards' };
+    return { type: 'start-round' };
+  }
+
+  // Pre-BG8 v3 saves can legitimately resume in the middle of activation.
+  // Migrate the empty reserved action deck before any further automatic turn
+  // progression so the current round receives its opening hand immediately.
+  if (state.phase === 'activation' && needsBoardActionCardMigration(state)) {
+    return { type: 'prepare-action-cards' };
   }
 
   if (state.phase === 'activation' && isBoardRoundExhausted(state)) {

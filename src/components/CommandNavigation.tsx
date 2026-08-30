@@ -38,6 +38,10 @@ function CardsIcon() {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="3" width="12" height="16" rx="1.5"/><path d="m8 7 6 0M8 11h6M8 15h4"/><path d="m17 6 2 1v13H8l-1-1"/></svg>;
 }
 
+function focusStrategicCards() {
+  document.getElementById('tabletop-card-hand')?.focus();
+}
+
 export function CommandNavigation({ active, onChange, badges }: Props) {
   const renderItem = (item: NavigationItem) => {
     const badge = badges[item.id];
@@ -51,7 +55,14 @@ export function CommandNavigation({ active, onChange, badges }: Props) {
     <div className="command-brand" aria-hidden="true"><strong>FC</strong><span>CENTRAL FRONT</span></div>
     <div className="command-nav-items command-nav-primary">
       {PRIMARY_ITEMS.slice(0, 3).map(renderItem)}
-      <button type="button" className="command-nav-cards" disabled title="Cards become playable in BG8" aria-label="Cards, coming later">
+      <button
+        type="button"
+        className="command-nav-cards"
+        title="Focus strategic card hand"
+        aria-label="Strategic cards"
+        aria-controls="tabletop-card-hand"
+        onClick={focusStrategicCards}
+      >
         <span className="command-nav-icon"><CardsIcon /></span><span className="command-nav-code" aria-hidden="true">CRD</span><span className="command-nav-label">Cards</span>
       </button>
       {PRIMARY_ITEMS.slice(3).map(renderItem)}
