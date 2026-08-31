@@ -34,7 +34,7 @@ function computerCombatState(seed = 11264) {
   return { state, attacker, defender };
 }
 
-test('BG5C computer activation chooses the canonical legal attack before Pass', () => {
+test('BG5C computer activation chooses the canonical legal attack before other actions', () => {
   const { state, attacker, defender } = computerCombatState();
 
   const action = chooseAutomaticBoardAction(state);
@@ -74,17 +74,20 @@ test('BG5C identical computer positions choose the same attack without consuming
   assert.equal(second.rng.calls, 0);
 });
 
-test('BG5C computer falls back to safe Pass when no attack exists and a human can still activate', () => {
+test('BG5C no-attack fallback remains dispatcher-legal after BG9 expands computer actions', () => {
   const { state } = computerCombatState();
   state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
     id,
     piece.seatId === 'seat-1' ? { ...piece, spaceId: null } : piece
   ]));
 
-  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'pass-activation' });
+  const action = chooseAutomaticBoardAction(state);
+  assert.ok(action);
+  assert.notEqual(action.type, 'pass-activation');
+  assert.equal(applyBoardAction(state, action).accepted, true);
 });
 
-test('BG5C computer does not create a zero-cost Pass loop when nobody else can activate', () => {
+test('BG5C computer cannot create a zero-cost Pass loop when nobody else can activate', () => {
   const { state } = computerCombatState();
   state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
     id,
@@ -92,5 +95,11 @@ test('BG5C computer does not create a zero-cost Pass loop when nobody else can a
   ]));
   state.seats['seat-1'] = { ...state.seats['seat-1'], commandActionsRemaining: 0 };
 
-  assert.equal(chooseAutomaticBoardAction(state), null);
+  const action = chooseAutomaticBoardAction(state);
+  assert.ok(action);
+  assert.notEqual(action.type, 'pass-activation');
+
+  const result = applyBoardAction(state, action);
+  assert.equal(result.accepted, true);
+  assert.ok(result.commandActionsSpent > 0 || action.type === 'end-seat-actions');
 });
