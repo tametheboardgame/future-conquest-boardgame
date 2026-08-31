@@ -19,11 +19,13 @@ const median = values => {
   const middle = Math.floor(ordered.length / 2);
   return ordered.length % 2 === 1 ? ordered[middle] : (ordered[middle - 1] + ordered[middle]) / 2;
 };
-const aggregateTimings = evidenceSet => Object.fromEntries(timingFields.map(field => {
-  const values = evidenceSet.map(evidence => evidence.timingsMs[field]);
-  if (!values.every(Number.isFinite)) throw new Error(`performance evidence missing numeric timingsMs.${field}`);
+const aggregateGroup = (evidenceSet, group, fields) => Object.fromEntries(fields.map(field => {
+  const values = evidenceSet.map(evidence => evidence[group][field]);
+  if (!values.every(Number.isFinite)) throw new Error(`performance evidence missing numeric ${group}.${field}`);
   return [field, median(values)];
 }));
+const aggregateTimings = evidenceSet => aggregateGroup(evidenceSet, 'timingsMs', timingFields);
+const aggregateNetwork = evidenceSet => aggregateGroup(evidenceSet, 'terrainNetwork', networkFields);
 
 const baseSamples = readEvidenceSet(basePathSpec);
 const headSamples = readEvidenceSet(headPathSpec);
@@ -31,16 +33,19 @@ if (baseSamples.length < 1 || headSamples.length < 1) throw new Error('performan
 baseSamples.forEach(evidence => assertIdentity(evidence, 'base', expectedBaseSha));
 headSamples.forEach(evidence => assertIdentity(evidence, 'head', expectedHeadSha));
 
-// Timing metrics are scheduler-sensitive on shared runners. Compare medians when
-// repeated samples are supplied, while retaining the first exact sample for all
-// network/payload checks so the existing non-timing guardrails are unchanged.
+// Chromium terrain timing and request counts are both scheduler/camera-settlement
+// sensitive on shared runners. Repeated exact samples therefore use medians for
+// both groups. Regression thresholds remain unchanged, so persistent increases
+// still fail while one noisy request burst cannot decide the gate by itself.
 const base = {
   ...baseSamples[0],
-  timingsMs: aggregateTimings(baseSamples)
+  timingsMs: aggregateTimings(baseSamples),
+  terrainNetwork: aggregateNetwork(baseSamples)
 };
 const head = {
   ...headSamples[0],
-  timingsMs: aggregateTimings(headSamples)
+  timingsMs: aggregateTimings(headSamples),
+  terrainNetwork: aggregateNetwork(headSamples)
 };
 
 // These are regression guardrails, not optimisation targets. The relative and
@@ -93,7 +98,7 @@ const comparison = {
     baseSamples: baseSamples.length,
     headSamples: headSamples.length,
     timingAggregation: 'median',
-    networkAggregation: 'first-exact-sample'
+    networkAggregation: 'median'
   },
   timingsMs: Object.fromEntries(timingFields.map(field => [field, {
     base: base.timingsMs[field], head: head.timingsMs[field], delta: head.timingsMs[field] - base.timingsMs[field],
@@ -101,7 +106,9 @@ const comparison = {
     headSamples: headSamples.map(evidence => evidence.timingsMs[field])
   }])),
   terrainNetwork: Object.fromEntries(networkFields.map(field => [field, {
-    base: base.terrainNetwork[field], head: head.terrainNetwork[field], delta: head.terrainNetwork[field] - base.terrainNetwork[field]
+    base: base.terrainNetwork[field], head: head.terrainNetwork[field], delta: head.terrainNetwork[field] - base.terrainNetwork[field],
+    baseSamples: baseSamples.map(evidence => evidence.terrainNetwork[field]),
+    headSamples: headSamples.map(evidence => evidence.terrainNetwork[field])
   }])),
   regressionBudget: {
     passed: failedBudgetChecks.length === 0,

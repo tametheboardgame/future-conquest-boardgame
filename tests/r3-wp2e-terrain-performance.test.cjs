@@ -91,7 +91,8 @@ test('exact-head Chromium gate waits for useful paint, completed terrain bodies 
   assert.match(comparison, /maximumHeadValue/);
   assert.match(comparison, /timingMeasurementEpsilonMs = 5/);
   assert.match(comparison, /timingAggregation: 'median'/);
-  assert.match(comparison, /networkAggregation: 'first-exact-sample'/);
+  assert.match(comparison, /networkAggregation: 'median'/);
+  assert.match(comparison, /aggregateNetwork/);
   assert.match(comparison, /performance regression budget exceeded/);
   for (const field of ['firstUsefulPaintMs', 'campaignSettledMs', 'campaignToTheatreMs', 'theatreToSelectedMs']) {
     assert.match(comparison, new RegExp(field));
@@ -158,12 +159,12 @@ test('performance comparator absorbs timer-boundary jitter but still fails a mat
   }
 });
 
-test('performance comparator uses timing medians to reject persistent regressions without failing one noisy sample', () => {
+test('performance comparator uses repeated-sample medians without hiding persistent timing or network regressions', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'r3-wp2e-median-'));
   const comparator = path.resolve('scripts/compare-r3-wp2e-performance.mjs');
   const baseSha = 'base-sha';
   const headSha = 'head-sha';
-  const makeEvidence = (variant, buildSha, campaignToTheatreMs) => ({
+  const makeEvidence = (variant, buildSha, campaignToTheatreMs, totalRequests = 64, uniqueRequests = 54) => ({
     variant,
     buildSha,
     timingsMs: {
@@ -173,8 +174,8 @@ test('performance comparator uses timing medians to reject persistent regression
       theatreToSelectedMs: 9000
     },
     terrainNetwork: {
-      totalRequests: 64,
-      uniqueRequests: 54,
+      totalRequests,
+      uniqueRequests,
       duplicateRequestCount: 10,
       declaredBytes: 5_200_000,
       transferredBytes: 5_220_000,
@@ -189,10 +190,20 @@ test('performance comparator uses timing medians to reject persistent regression
 
   try {
     const basePaths = [1000, 1100, 1200].map((value, index) => write(`base-${index}.json`, makeEvidence('base', baseSha, value)));
-    const noisyHeadPaths = [1200, 2900, 1300].map((value, index) => write(`head-noisy-${index}.json`, makeEvidence('head', headSha, value)));
+    const noisyHeadPaths = [
+      makeEvidence('head', headSha, 1200, 100, 90),
+      makeEvidence('head', headSha, 2900, 65, 55),
+      makeEvidence('head', headSha, 1300, 64, 54)
+    ].map((evidence, index) => write(`head-noisy-${index}.json`, evidence));
     const slowHeadPaths = [2800, 2900, 3000].map((value, index) => write(`head-slow-${index}.json`, makeEvidence('head', headSha, value)));
+    const networkRegressionPaths = [
+      makeEvidence('head', headSha, 1200, 90, 80),
+      makeEvidence('head', headSha, 1300, 92, 82),
+      makeEvidence('head', headSha, 1400, 94, 84)
+    ].map((evidence, index) => write(`head-network-${index}.json`, evidence));
     const noisyOutput = path.join(tempDir, 'noisy-output.json');
     const slowOutput = path.join(tempDir, 'slow-output.json');
+    const networkOutput = path.join(tempDir, 'network-output.json');
 
     const noisy = spawnSync(process.execPath, [comparator, basePaths.join(','), noisyHeadPaths.join(','), noisyOutput, baseSha, headSha], { encoding: 'utf8' });
     assert.equal(noisy.status, 0, noisy.stderr || noisy.stdout);
@@ -200,8 +211,12 @@ test('performance comparator uses timing medians to reject persistent regression
     assert.equal(noisyComparison.sampling.baseSamples, 3);
     assert.equal(noisyComparison.sampling.headSamples, 3);
     assert.equal(noisyComparison.sampling.timingAggregation, 'median');
+    assert.equal(noisyComparison.sampling.networkAggregation, 'median');
     assert.equal(noisyComparison.timingsMs.campaignToTheatreMs.base, 1100);
     assert.equal(noisyComparison.timingsMs.campaignToTheatreMs.head, 1300);
+    assert.equal(noisyComparison.terrainNetwork.totalRequests.head, 65);
+    assert.equal(noisyComparison.terrainNetwork.uniqueRequests.head, 55);
+    assert.deepEqual(noisyComparison.terrainNetwork.uniqueRequests.headSamples, [90, 55, 54]);
     assert.equal(noisyComparison.regressionBudget.passed, true);
 
     const slow = spawnSync(process.execPath, [comparator, basePaths.join(','), slowHeadPaths.join(','), slowOutput, baseSha, headSha], { encoding: 'utf8' });
@@ -210,6 +225,14 @@ test('performance comparator uses timing medians to reject persistent regression
     const slowComparison = JSON.parse(fs.readFileSync(slowOutput, 'utf8'));
     assert.equal(slowComparison.timingsMs.campaignToTheatreMs.head, 2900);
     assert.equal(slowComparison.regressionBudget.passed, false);
+
+    const networkRegression = spawnSync(process.execPath, [comparator, basePaths.join(','), networkRegressionPaths.join(','), networkOutput, baseSha, headSha], { encoding: 'utf8' });
+    assert.notEqual(networkRegression.status, 0);
+    assert.match(`${networkRegression.stderr}\n${networkRegression.stdout}`, /terrainNetwork\.(totalRequests|uniqueRequests)/);
+    const networkComparison = JSON.parse(fs.readFileSync(networkOutput, 'utf8'));
+    assert.equal(networkComparison.terrainNetwork.totalRequests.head, 92);
+    assert.equal(networkComparison.terrainNetwork.uniqueRequests.head, 82);
+    assert.equal(networkComparison.regressionBudget.passed, false);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

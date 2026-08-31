@@ -28,12 +28,14 @@ test('BG5C actively disables retained simulation attack controls even if legacy 
   assert.match(panel, /attributeFilter: \['disabled'\]/);
 });
 
-test('BG5C automatic turn policy considers authoritative combat before zero-cost Pass', () => {
+test('BG5C automatic turn policy still considers authoritative combat without restoring zero-cost Pass', () => {
   const orchestration = read('src/game/board-turn-orchestration.ts');
+  const policy = read('src/game/board-computer-player.ts');
 
-  assert.match(orchestration, /getBoardCombatTargets/);
-  assert.match(orchestration, /chooseComputerCombatAction/);
-  assert.match(orchestration, /if \(combat\) return combat/);
-  assert.match(orchestration, /type: 'attack-piece'/);
+  assert.match(orchestration, /chooseComputerBoardAction\(state\)/);
+  assert.match(policy, /getBoardCombatTargets/);
+  assert.match(policy, /type: 'attack-piece'/);
+  assert.doesNotMatch(policy, /addValidatedCandidate\(state, actions, \{ type: 'pass-activation' \}\)/);
   assert.doesNotMatch(orchestration, /Math\.random/);
+  assert.doesNotMatch(policy, /Math\.random/);
 });

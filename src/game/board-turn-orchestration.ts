@@ -2,28 +2,10 @@ import {
   isBoardActionCardsPreparedForRound,
   needsBoardActionCardMigration
 } from './board-action-cards';
-import { getBoardCombatTargets } from './board-combat';
+import { chooseComputerBoardAction } from './board-computer-player';
 import { isBoardEscalationResolvedForRound } from './board-escalation';
-import { applyBoardAction, isBoardRoundExhausted } from './board-state';
+import { isBoardRoundExhausted } from './board-state';
 import type { BoardAction, BoardGameState } from './board-state-types';
-
-function chooseComputerCombatAction(state: BoardGameState): BoardAction | null {
-  const attackers = Object.values(state.pieces)
-    .filter(piece => piece.seatId === state.activeSeat && piece.spaceId)
-    .sort((a, b) => a.id.localeCompare(b.id));
-
-  for (const attacker of attackers) {
-    const target = getBoardCombatTargets(state, attacker.id)[0];
-    if (!target) continue;
-    return {
-      type: 'attack-piece',
-      attackerPieceId: attacker.id,
-      defenderPieceId: target.defenderPieceId
-    };
-  }
-
-  return null;
-}
 
 /**
  * Chooses at most one automatic board action. The provider executes the
@@ -55,22 +37,8 @@ export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction |
   const activeSeat = state.seats[state.activeSeat];
   if (state.phase !== 'activation' || activeSeat.controller !== 'computer') return null;
 
-  // BG5C gives computer seats the first paid board-game action: attack the
-  // first legal adjacent target in stable attacker/defender ID order. There is
-  // no AI-side roll or outcome calculation here; the returned action still
-  // crosses the same authoritative dispatcher used by human attacks.
-  const combat = chooseComputerCombatAction(state);
-  if (combat) return combat;
-
-  // If combat is unavailable, retain BG3's safe zero-cost yield while another
-  // human can still activate. When no other seat can activate we deliberately
-  // return null rather than create an infinite Pass loop. Computer movement is
-  // a separate future paid-action policy, not a hidden combat fallback.
-  const humanCanActivate = Object.values(state.seats).some(seat =>
-    seat.participating && seat.controller === 'human' && seat.commandActionsRemaining > 0
-  );
-  if (!humanCanActivate) return null;
-
-  const pass = applyBoardAction(state, { type: 'pass-activation' });
-  return pass.accepted ? { type: 'pass-activation' } : null;
+  // BG9 owns computer policy only. The selected action still crosses the same
+  // authoritative dispatcher as a human action and is chosen without hidden
+  // dice rolls, state mutation or an alternative legality path.
+  return chooseComputerBoardAction(state);
 }
