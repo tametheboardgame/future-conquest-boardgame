@@ -2,6 +2,11 @@ import {
   playBoardActionCard,
   prepareBoardActionCardsForRound
 } from './board-action-cards';
+import {
+  isBoardCampaignResolved,
+  resolveBoardCampaign,
+  scoreBoardCampaignRound
+} from './board-campaign';
 import { attackBoardPiece } from './board-combat';
 import { resolveBoardEscalation } from './board-escalation';
 import { endBoardSeatActions } from './board-seat-actions';
@@ -63,11 +68,29 @@ function applyUnderlyingBoardAction(state: BoardGameState, action: BoardAction):
  *
  * BG1-BG4 core actions remain implemented in board-state.ts. BG5 combat lives
  * in board-combat.ts, BG6 escalation in board-escalation.ts, BG7 support in
- * board-support-actions.ts, BG8 strategic cards in board-action-cards.ts and
- * BG9's shared End Actions rule in board-seat-actions.ts. Humans and computers
- * still cross this same dispatcher for every authoritative outcome.
+ * board-support-actions.ts, BG8 strategic cards in board-action-cards.ts,
+ * BG9's shared End Actions rule in board-seat-actions.ts and BG10 campaign
+ * scoring/resolution in board-campaign.ts. Humans and computers still cross
+ * this same dispatcher for every authoritative outcome.
  */
 export function applyBoardAction(state: BoardGameState, action: BoardAction): BoardActionResult {
+  if (isBoardCampaignResolved(state)) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: 'Campaign is already resolved.'
+    };
+  }
+
+  if (action.type === 'score-campaign-round') {
+    return scoreBoardCampaignRound(state);
+  }
+
+  if (action.type === 'resolve-campaign') {
+    return resolveBoardCampaign(state);
+  }
+
   if (action.type === 'prepare-action-cards') {
     return prepareBoardActionCardsForRound(state);
   }

@@ -2,6 +2,11 @@ import {
   isBoardActionCardsPreparedForRound,
   needsBoardActionCardMigration
 } from './board-action-cards';
+import {
+  isBoardCampaignResolved,
+  isBoardCampaignRoundScored,
+  shouldResolveBoardCampaign
+} from './board-campaign';
 import { chooseComputerBoardAction } from './board-computer-player';
 import { isBoardEscalationResolvedForRound } from './board-escalation';
 import { isBoardRoundExhausted } from './board-state';
@@ -13,6 +18,19 @@ import type { BoardAction, BoardGameState } from './board-state-types';
  * computers share exactly the same authoritative rules.
  */
 export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction | null {
+  if (isBoardCampaignResolved(state)) return null;
+
+  if (state.phase === 'round-end') {
+    if (!isBoardCampaignRoundScored(state)) return { type: 'score-campaign-round' };
+    if (shouldResolveBoardCampaign(state)) return { type: 'resolve-campaign' };
+    if (state.round < state.roundLimit) return { type: 'advance-round' };
+    return { type: 'resolve-campaign' };
+  }
+
+  // Sudden BG10 victory/defeat resolves before any further round, card or AI
+  // progression. The resolver itself still validates the terminal condition.
+  if (shouldResolveBoardCampaign(state)) return { type: 'resolve-campaign' };
+
   if (state.phase === 'round-start') {
     if (!isBoardEscalationResolvedForRound(state)) return { type: 'resolve-escalation' };
     if (!isBoardActionCardsPreparedForRound(state)) return { type: 'prepare-action-cards' };
@@ -28,10 +46,6 @@ export function chooseAutomaticBoardAction(state: BoardGameState): BoardAction |
 
   if (state.phase === 'activation' && isBoardRoundExhausted(state)) {
     return { type: 'end-round' };
-  }
-
-  if (state.phase === 'round-end') {
-    return state.round < state.roundLimit ? { type: 'advance-round' } : null;
   }
 
   const activeSeat = state.seats[state.activeSeat];

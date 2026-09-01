@@ -12,6 +12,7 @@ export type BoardPhase = 'round-start' | 'activation' | 'round-end';
 export type SupplyState = 'supplied' | 'strained' | 'isolated';
 export type BoardCombatStatus = 'declared' | 'resolved';
 export type BoardCombatDefenderStatus = 'held' | 'retreated' | 'eliminated';
+export type BoardCampaignOutcome = 'in-progress' | 'attacker-victory' | 'defender-victory';
 
 export interface BoardSaveMetadata {
   schema: typeof BOARD_STATE_SCHEMA;
@@ -83,6 +84,18 @@ export interface BoardCombatState {
   log: string[];
 }
 
+export interface BoardCampaignState {
+  attackerSeatId: SeatId;
+  defenderSeatId: SeatId;
+  /** Cumulative BG10 score: one point per strategic objective held at each round end. */
+  breakthroughPoints: number;
+  /** Last round whose objective control has been added to breakthroughPoints. */
+  scoredThroughRound: number;
+  outcome: BoardCampaignOutcome;
+  resolvedRound: number | null;
+  reason: string | null;
+}
+
 export interface DeckState {
   draw: string[];
   handBySeat: Record<SeatId, string[]>;
@@ -114,6 +127,8 @@ export interface BoardGameState {
   actionCardsPreparedRound?: number;
   /** BG5 combat record. Undefined means no combat has yet been declared. */
   combat?: BoardCombatState;
+  /** BG10 campaign score/outcome. Optional so existing v3 saves migrate lazily without a version reset. */
+  campaign?: BoardCampaignState;
 }
 
 export interface CreateBoardStateOptions {
