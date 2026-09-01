@@ -8,11 +8,11 @@ import {
   type SeatId
 } from './board-state-types';
 
-export const CENTRAL_FRONT_CAMPAIGN_OBJECTIVES = [
+export const CENTRAL_FRONT_CAMPAIGN_OBJECTIVES: readonly { spaceId: string; label: string }[] = [
   { spaceId: 'FR-02', label: 'Paris' },
   { spaceId: 'BE-01', label: 'Brussels' },
   { spaceId: 'DE-02', label: 'Rhine-Ruhr' }
-] as const;
+];
 
 export const CENTRAL_FRONT_BREAKTHROUGH_TARGET = 10;
 export const CENTRAL_FRONT_FINAL_OBJECTIVE_TARGET = 2;
