@@ -2,8 +2,10 @@ import { projectBoardCampaignStatus } from '../game/board-campaign';
 import { projectBoardStatus } from '../game/board-state-status';
 import { useBoardGameState } from './BoardGameStateProvider';
 import { TabletopCardHandPanel } from './TabletopCardHandPanel';
+import { TabletopContextHint } from './TabletopContextHint';
 import { TabletopOnboarding } from './TabletopOnboarding';
 import { TabletopPassReason } from './TabletopPassReason';
+import { TabletopRulesReference } from './TabletopRulesReference';
 import { TabletopSupportPanel } from './TabletopSupportPanel';
 import '../bg10-campaign-status.css';
 
@@ -21,6 +23,7 @@ export function TabletopStatusShell() {
     data-bg-cards="BG8"
     data-bg-campaign="BG10"
     data-bg-onboarding="BG11A"
+    data-bg-guidance="BG11B"
   >
     <div className="tabletop-title-block">
       <span>FUTURE CONQUEST</span>
@@ -54,9 +57,11 @@ export function TabletopStatusShell() {
       <p>{campaign.reason}</p>
     </aside>}
 
+    <TabletopContextHint />
     <TabletopCardHandPanel />
     <TabletopSupportPanel />
     <TabletopPassReason />
+    <TabletopRulesReference />
     <TabletopOnboarding />
   </section>;
 }
