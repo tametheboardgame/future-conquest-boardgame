@@ -13,23 +13,48 @@ BG12A established a deterministic production-rules board-game playtest matrix. I
 
 The high attack count in BG12A is not sufficient evidence of an AI bug. Paid movement cannot enter hostile-controlled spaces, so combat is required to open the map, and the Defender is rationally rewarded for eliminating the Expedition.
 
-## Calibration
+## Calibration path
 
 BG12B changes one opening variable only: Expedition formation count.
 
-The first experiment increased the Expedition from four to six task groups. Across the same 24-seed matrix it produced:
+### Four task groups — baseline
 
-- Expedition: 2 wins (8.3%).
-- Defenders: 22 wins (91.7%).
-- Defender victories before round 8 fell from 20 to 8.
+- Expedition: 1/24 wins (4.2%).
+- Defenders: 23/24 wins (95.8%).
+- Defender victories before round 8: 20/24.
+- Balance signal: Defender-dominant.
+
+### Six task groups — intermediate experiment
+
+- Expedition: 2/24 wins (8.3%).
+- Defenders: 22/24 wins (91.7%).
+- Defender victories before round 8: 8/24.
 - Median resolution moved from round 5 to round 8.
-- 24/24 campaigns remained mechanically resolved with the integrity gate passing.
+- 24/24 campaigns remained mechanically resolved.
+- Balance signal: Defender-dominant.
 
-That result confirmed opening force size is a useful survivability lever, but six task groups remained clearly Defender-dominant. The current experiment therefore changes the same single variable again:
+This confirmed that formation count is a useful opening-survivability lever, but six formations remained clearly insufficient.
 
-- Expedition task groups increase from four to eight: `TG-1` through `TG-8`.
+### Eight task groups — accepted automated calibration
 
-The following stay unchanged:
+The current scenario uses eight Expedition task groups: `TG-1` through `TG-8`.
+
+Across the canonical 24-seed BG12 matrix:
+
+- Expedition: 6/24 wins (25.0%).
+- Defenders: 18/24 wins (75.0%).
+- Defender victories before round 8: 1/24.
+- Median resolution round: 8.
+- 24/24 campaigns resolved cleanly.
+- Rejected campaigns: 0.
+- Safety-limit campaigns: 0.
+- Balance signal: mixed; neither side crosses the matrix's 85% dominance threshold.
+
+The game remains intentionally asymmetric and Defender-favoured in this automated sample, but the original unwinnable-opening signal has been removed: almost every campaign now survives to the final round and the Expedition wins a material minority of deterministic games.
+
+## Rule boundaries kept unchanged
+
+The accepted eight-task-group calibration does **not** change:
 
 - four Command Actions per participating seat per round;
 - one initial Defender EF formation in every non-entry space;
@@ -40,16 +65,16 @@ The following stay unchanged:
 - campaign objectives, breakthrough scoring and victory thresholds;
 - renderer and presentation systems.
 
-The additional formations increase the Expedition survival pool without increasing its per-round action economy. This directly targets the observed early-elimination failure mode while avoiding a simultaneous offensive-power buff.
+The additional formations increase the Expedition survival pool without increasing its per-round action economy. This directly addresses the early-elimination failure mode without applying a simultaneous offensive-power buff.
 
-## Evaluation
+## Acceptance envelope
 
-The exact-head BG12 board playtest workflow remains the authority for the experiment. Compare the eight-task-group 24-seed result with both prior samples, especially:
+BG12B locks the canonical automated sample to these release-oriented properties rather than an exact win percentage:
 
-- Defender victories before round 8;
-- Expedition/Defender win split;
-- median resolution round;
-- campaign integrity failures;
-- action mix and progression to strategic objectives.
+- mechanical integrity passes;
+- all 24 canonical campaigns resolve;
+- neither side is classified as dominant by the existing 85% signal;
+- the Expedition wins at least one campaign;
+- widespread early Defender elimination does not return (no more than four early Defender victories in the canonical sample).
 
-Do not merge merely because survivability improves. The eight-task-group experiment should materially reduce the severe Defender bias without flipping the same deterministic sample into obvious Expedition dominance. If games regularly reach round 8 but the Defender still wins overwhelmingly on objectives/breakthrough scoring, opening formation count has reached the limit of what it should solve and the next calibration should use a separate, explicitly measured strategic-balance lever.
+This is an automated balance guard, not a claim that human play is fully tuned. Human playtesting remains authoritative for whether the 75/25 automated split feels appropriately difficult, whether meaningful strategic choices are frequent enough, and whether later scoring needs further adjustment.
