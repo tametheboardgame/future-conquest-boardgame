@@ -43,3 +43,12 @@ test('BG11D card identity is not colour-only and preserves the fixed map overlay
   assert.match(css, /button\[data-card-family="scenario"\]::before/);
   assert.match(css, /:focus-visible/);
 });
+
+test('BG11D decorative card chrome cannot intercept unrelated shell controls', () => {
+  const css = read('src/components/tabletop-card-hand.css');
+
+  assert.match(css, /\.tabletop-card-hand\s*\{[^}]*pointer-events:\s*none/s);
+  assert.match(css, /\.tabletop-card-list > button\s*\{[^}]*pointer-events:\s*auto/s);
+  assert.match(css, /\.tabletop-card-targets select\s*\{[^}]*pointer-events:\s*auto/s);
+  assert.match(css, /\.tabletop-card-play-button\s*\{[^}]*pointer-events:\s*auto/s);
+});
