@@ -88,7 +88,7 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025), 0 2px 4px rgba(0, 0, 0, .22);
   text-align: left;
   cursor: pointer;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .tabletop-card-list > button::before,
@@ -272,7 +272,7 @@
   background: #17242c;
   padding: 5px;
   font: 600 8px IBM Plex Mono, monospace;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .tabletop-card-play-button {
@@ -285,6 +285,15 @@
   letter-spacing: .04em;
   text-transform: uppercase;
   cursor: pointer;
+  pointer-events: none;
+}
+
+.tabletop-card-hand:focus .tabletop-card-list > button:not(:disabled),
+.tabletop-card-hand:focus-within .tabletop-card-list > button:not(:disabled),
+.tabletop-card-hand:focus .tabletop-card-targets select:not(:disabled),
+.tabletop-card-hand:focus-within .tabletop-card-targets select:not(:disabled),
+.tabletop-card-hand:focus .tabletop-card-play-button:not(:disabled),
+.tabletop-card-hand:focus-within .tabletop-card-play-button:not(:disabled) {
   pointer-events: auto;
 }
 
