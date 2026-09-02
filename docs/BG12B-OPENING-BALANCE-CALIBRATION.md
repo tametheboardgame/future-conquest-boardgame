@@ -15,9 +15,19 @@ The high attack count in BG12A is not sufficient evidence of an AI bug. Paid mov
 
 ## Calibration
 
-BG12B changes one opening variable only:
+BG12B changes one opening variable only: Expedition formation count.
 
-- Expedition task groups increase from four to six: `TG-1` through `TG-6`.
+The first experiment increased the Expedition from four to six task groups. Across the same 24-seed matrix it produced:
+
+- Expedition: 2 wins (8.3%).
+- Defenders: 22 wins (91.7%).
+- Defender victories before round 8 fell from 20 to 8.
+- Median resolution moved from round 5 to round 8.
+- 24/24 campaigns remained mechanically resolved with the integrity gate passing.
+
+That result confirmed opening force size is a useful survivability lever, but six task groups remained clearly Defender-dominant. The current experiment therefore changes the same single variable again:
+
+- Expedition task groups increase from four to eight: `TG-1` through `TG-8`.
 
 The following stay unchanged:
 
@@ -34,7 +44,7 @@ The additional formations increase the Expedition survival pool without increasi
 
 ## Evaluation
 
-The exact-head BG12 board playtest workflow remains the authority for the experiment. Compare its 24-seed result with the BG12A baseline, especially:
+The exact-head BG12 board playtest workflow remains the authority for the experiment. Compare the eight-task-group 24-seed result with both prior samples, especially:
 
 - Defender victories before round 8;
 - Expedition/Defender win split;
@@ -42,4 +52,4 @@ The exact-head BG12 board playtest workflow remains the authority for the experi
 - campaign integrity failures;
 - action mix and progression to strategic objectives.
 
-Do not lock a win-rate acceptance threshold until the six-task-group sample exists. If early elimination remains dominant, adjust only the opening formation count in the next iteration before considering a second balance lever.
+Do not merge merely because survivability improves. The eight-task-group experiment should materially reduce the severe Defender bias without flipping the same deterministic sample into obvious Expedition dominance. If games regularly reach round 8 but the Defender still wins overwhelmingly on objectives/breakthrough scoring, opening formation count has reached the limit of what it should solve and the next calibration should use a separate, explicitly measured strategic-balance lever.
