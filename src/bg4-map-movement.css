@@ -2,7 +2,6 @@
   outline: 3px solid rgba(143, 255, 241, .96);
   outline-offset: 4px;
   box-shadow: 0 0 0 2px rgba(6, 29, 34, .86), 0 0 22px rgba(105, 235, 218, .72);
-  animation: bg11e-selection-pulse 1.5s ease-in-out infinite;
 }
 
 .r3-terrain-task-group-marker.bg4c-board-selected::after {
@@ -136,7 +135,6 @@
   border-color: #e6c568;
   background: #493f22;
   box-shadow: inset 3px 0 0 #ffe39a;
-  animation: bg11e-preview-pulse 1.5s ease-in-out infinite;
 }
 
 .tabletop-move-destination-list button.preview::after {
@@ -285,19 +283,6 @@
   grid-column: auto;
 }
 
-@keyframes bg11e-selection-pulse {
-  50% {
-    box-shadow: 0 0 0 3px rgba(6, 29, 34, .92), 0 0 28px rgba(105, 235, 218, .88);
-  }
-}
-
-@keyframes bg11e-preview-pulse {
-  50% {
-    border-color: #ffe39a;
-    box-shadow: inset 4px 0 0 #ffe39a, 0 0 0 1px rgba(255, 227, 154, .18);
-  }
-}
-
 @media (max-width: 900px) {
   .tabletop-move-destination-list button,
   .tabletop-move-blocked-list button,
@@ -307,12 +292,5 @@
 
   .tabletop-move-preview {
     padding: 9px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .r3-terrain-task-group-marker.bg4c-board-selected,
-  .tabletop-move-destination-list button.preview {
-    animation: none;
   }
 }
