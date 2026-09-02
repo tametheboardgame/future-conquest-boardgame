@@ -9,6 +9,7 @@
     "dev": "vite",
     "test": "node scripts/run-engine-tests.mjs",
     "simulate:current-balance": "node scripts/simulate-current-engine-balance.mjs",
+    "simulate:board-playtest": "node scripts/simulate-board-playtest-matrix.mjs",
     "benchmark:r3-renderer": "node scripts/benchmark-r3-renderer-spike.mjs",
     "performance:r3-wp2e": "node scripts/run-r3-wp2e-performance.mjs",
     "build:slice-map": "node scripts/build-vertical-slice-map.mjs",

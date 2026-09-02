@@ -46,7 +46,10 @@ try{
 
   const layerControl=page.locator('details.r3-terrain-layer-control');
   await layerControl.evaluate(el=>{el.open=true;});
-  for(const label of ['Friendly formations','Operations, threats and fronts','Ports']){const toggle=layerControl.getByLabel(label,{exact:true});if(await toggle.isChecked())await toggle.uncheck();}
+  // These historical landmark probes validate layer state, not pointer hit-testing.
+  // Use the checkbox's own DOM click so unrelated notification overlays cannot
+  // prevent the probe from reaching the landmark assertions.
+  for(const label of ['Friendly formations','Operations, threats and fronts','Ports']){const toggle=layerControl.getByLabel(label,{exact:true});if(await toggle.isChecked())await toggle.evaluate(element=>element.click());}
   await layerControl.evaluate(el=>{el.open=false;});
   await page.addStyleTag({content:'[data-r3-marker-id] { visibility: hidden !important; }'});
 

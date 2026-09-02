@@ -1,0 +1,67 @@
+name: BG12 board playtest matrix
+
+on:
+  pull_request:
+    paths:
+      - 'src/game/board-**'
+      - 'scripts/simulate-board-playtest-matrix.mjs'
+      - 'tests/bg12a-board-playtest-matrix.test.cjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/bg12-board-playtest.yml'
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 'Deterministic board campaigns'
+        required: true
+        default: '48'
+      seed_offset:
+        description: 'First deterministic seed'
+        required: true
+        default: '1'
+      max_steps:
+        description: 'Automatic-action safety limit per campaign'
+        required: true
+        default: '1000'
+
+permissions:
+  contents: read
+
+jobs:
+  board-playtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FC_BOARD_PLAYTEST_RUNS: ${{ inputs.runs || '24' }}
+      FC_BOARD_PLAYTEST_SEED_OFFSET: ${{ inputs.seed_offset || '1' }}
+      FC_BOARD_PLAYTEST_MAX_STEPS: ${{ inputs.max_steps || '1000' }}
+    steps:
+      - name: Checkout exact board playtest head
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run board playtest matrix
+        run: npm run simulate:board-playtest
+
+      - name: Publish board playtest summary
+        if: always()
+        run: |
+          if [ -f board-playtest-output/board-playtest-matrix.md ]; then
+            cat board-playtest-output/board-playtest-matrix.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload board playtest evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12-board-playtest-matrix
+          path: board-playtest-output/
+          if-no-files-found: warn
