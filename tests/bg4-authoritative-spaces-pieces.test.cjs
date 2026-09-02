@@ -13,7 +13,7 @@ function entryFor(seed) {
   return SLICE_IDS[normalised % SLICE_IDS.length];
 }
 
-const EXPEDITION_TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4', 'TG-5', 'TG-6'];
+const EXPEDITION_TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4', 'TG-5', 'TG-6', 'TG-7', 'TG-8'];
 
 test('BG4A populates all retained Central Front spaces with authoritative adjacency', () => {
   const state = createInitialBoardState({ seed: 42 });
