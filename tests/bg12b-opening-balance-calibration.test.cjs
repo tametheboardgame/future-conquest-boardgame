@@ -40,10 +40,19 @@ test('BG12B leaves combat and escalation rule constants untouched', () => {
   assert.match(escalation, /REINFORCEMENT_COUNT_BY_ROUND = \[1, 1, 1, 1, 2, 2, 2, 2\]/);
 });
 
-test('BG12B opening calibration remains mechanically complete across deterministic campaigns', () => {
-  const report = runBoardPlaytestMatrix({ runs: 12, seedOffset: 0x12b0, maxSteps: 1000 });
+test('BG12B accepted canonical sample is mechanically complete and no longer dominant', () => {
+  const report = runBoardPlaytestMatrix({ runs: 24, seedOffset: 1, maxSteps: 1000 });
+  const earlyDefenderWins = report.results.filter(result =>
+    result.outcome === 'defender-victory' &&
+    result.resolvedRound !== null &&
+    result.resolvedRound < 8
+  ).length;
+
   assert.equal(report.integrityGate, 'pass');
-  assert.equal(report.resolvedCampaigns, 12);
+  assert.equal(report.resolvedCampaigns, 24);
   assert.equal(report.rejectedCampaigns, 0);
   assert.equal(report.safetyLimitCampaigns, 0);
+  assert.equal(report.balanceSignal, 'mixed');
+  assert.ok(report.attackerWins > 0);
+  assert.ok(earlyDefenderWins <= 4, `Expected at most four early Defender wins, got ${earlyDefenderWins}`);
 });
