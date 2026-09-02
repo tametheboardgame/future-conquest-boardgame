@@ -68,11 +68,16 @@ export function TabletopCardHandPanel() {
     setFeedback(result.reason);
   };
 
+  const availabilityReason = humanActivation && playAction && preview && !preview.accepted
+    ? preview.reason
+    : null;
+
   return <section
     id="tabletop-card-hand"
     className="tabletop-card-hand"
     aria-label="Strategic card hand"
     data-bg-package="BG8"
+    data-bg-feedback="BG11A"
     tabIndex={-1}
   >
     <header>
@@ -140,6 +145,10 @@ export function TabletopCardHandPanel() {
       >
         Play card · free action
       </button>
+
+      {availabilityReason && <p className="tabletop-card-availability" role="status">
+        Unavailable: {availabilityReason}
+      </p>}
     </div>}
 
     <p className="tabletop-card-feedback" role="status">{feedback}</p>
