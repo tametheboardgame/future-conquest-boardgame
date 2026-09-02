@@ -39,6 +39,7 @@ test('BG11A exposes disabled action reasons as visible status content', () => {
   const passReason = read('src/components/TabletopPassReason.tsx');
   const support = read('src/components/TabletopSupportPanel.tsx');
   const cards = read('src/components/TabletopCardHandPanel.tsx');
+  const cardCss = read('src/components/tabletop-card-hand.css');
   const shell = read('src/components/TabletopStatusShell.tsx');
 
   assert.match(passReason, /Pass unavailable:/);
@@ -51,8 +52,12 @@ test('BG11A exposes disabled action reasons as visible status content', () => {
   assert.match(support, /preview\.reason/);
 
   assert.match(cards, /availabilityReason/);
-  assert.match(cards, /Unavailable: \{availabilityReason\}/);
-  assert.match(cards, /role="status"/);
+  assert.match(cards, /statusFeedback/);
+  assert.match(cards, /`Unavailable: \$\{availabilityReason\}`/);
+  assert.match(cards, /className="tabletop-card-feedback" role="status"/);
+  assert.doesNotMatch(cards, /className="tabletop-card-availability"/);
+  assert.match(cardCss, /\.tabletop-card-feedback[\s\S]*max-height: 30px/);
+  assert.match(cardCss, /\.tabletop-card-feedback[\s\S]*overflow: auto/);
 });
 
 test('BG11A remains presentation-only and provides non-colour accessibility cues', () => {
