@@ -60,6 +60,11 @@ export function TabletopOnboarding() {
   const step = STEPS[stepIndex];
 
   useEffect(() => {
+    document.documentElement.classList.add('bg11-boardgame-onboarding-installed');
+    return () => document.documentElement.classList.remove('bg11-boardgame-onboarding-installed');
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
     const target = document.querySelector<HTMLElement>(step.selector);
     target?.classList.add('bg11-onboarding-focus');
