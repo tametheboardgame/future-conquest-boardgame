@@ -224,6 +224,44 @@ function hasValidBoardPieces(value: unknown, spaces: Record<string, BoardSpace>)
   return true;
 }
 
+function hasValidBoardCampaign(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (!isSeatId(value.attackerSeatId) || !isSeatId(value.defenderSeatId)) return false;
+  if (value.attackerSeatId === value.defenderSeatId) return false;
+  if (
+    typeof value.breakthroughPoints !== 'number'
+    || !Number.isFinite(value.breakthroughPoints)
+    || !Number.isInteger(value.breakthroughPoints)
+    || value.breakthroughPoints < 0
+    || typeof value.scoredThroughRound !== 'number'
+    || !Number.isFinite(value.scoredThroughRound)
+    || !Number.isInteger(value.scoredThroughRound)
+    || value.scoredThroughRound < 0
+    || value.scoredThroughRound > BOARD_ROUND_LIMIT
+  ) return false;
+  if (
+    value.outcome !== 'in-progress'
+    && value.outcome !== 'attacker-victory'
+    && value.outcome !== 'defender-victory'
+  ) return false;
+  if (
+    value.resolvedRound !== null
+    && (
+      typeof value.resolvedRound !== 'number'
+      || !Number.isFinite(value.resolvedRound)
+      || !Number.isInteger(value.resolvedRound)
+      || value.resolvedRound < 1
+      || value.resolvedRound > BOARD_ROUND_LIMIT
+    )
+  ) return false;
+  if (value.reason !== null && typeof value.reason !== 'string') return false;
+
+  if (value.outcome === 'in-progress') {
+    return value.resolvedRound === null && value.reason === null;
+  }
+  return value.resolvedRound !== null && typeof value.reason === 'string' && value.reason.length > 0;
+}
+
 export function deserializeBoardState(serialized: string): BoardGameState {
   const parsed: unknown = JSON.parse(serialized);
   if (!isRecord(parsed) || !isRecord(parsed.save)) {
@@ -243,6 +281,7 @@ export function deserializeBoardState(serialized: string): BoardGameState {
     || !hasValidSeatConfiguration(parsed.seats, parsed.activeSeat as SeatId)
     || !hasValidBoardSpaces(parsed.spaces)
     || !hasValidBoardPieces(parsed.pieces, parsed.spaces)
+    || (parsed.campaign !== undefined && !hasValidBoardCampaign(parsed.campaign))
   ) {
     throw new Error('Invalid Future Conquest board state metadata.');
   }
