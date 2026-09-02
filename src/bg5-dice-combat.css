@@ -131,16 +131,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 9px 10px;
   border: 1px solid #895142;
   background: rgba(97, 42, 34, .42);
 }
 
-.tabletop-combat-die strong {
+.tabletop-combat-die > strong {
   font: 800 22px Barlow Condensed, sans-serif;
 }
 
-.tabletop-combat-die span {
+.tabletop-combat-die > span {
   color: #ffc3ad;
   font: 700 12px IBM Plex Mono, monospace;
 }
@@ -210,12 +211,12 @@
   border-color: #52636a;
 }
 
-.tabletop-combat-result strong {
+.tabletop-combat-result > div > strong {
   color: #fff0ea;
   font: 800 17px Barlow Condensed, sans-serif;
 }
 
-.tabletop-combat-result span {
+.tabletop-combat-result > div > span {
   color: #d9b2a5;
   font: 700 10px IBM Plex Mono, monospace;
 }
@@ -223,6 +224,205 @@
 .tabletop-combat-result p {
   margin: 7px 0 3px;
   font-size: 11px;
+}
+
+/* BG11C — physical-die hierarchy and explicit roll equation. */
+.tabletop-d20-face {
+  position: relative;
+  flex: 0 0 58px;
+  width: 58px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 22%, 100% 67%, 72% 100%, 28% 100%, 0 67%, 8% 22%);
+  background:
+    linear-gradient(30deg, transparent 47%, rgba(255, 235, 224, .18) 48% 51%, transparent 52%),
+    linear-gradient(150deg, transparent 47%, rgba(255, 235, 224, .13) 48% 51%, transparent 52%),
+    linear-gradient(180deg, #9b513e, #4f2724);
+  color: #fff5ef;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .34));
+}
+
+.tabletop-d20-face::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  clip-path: polygon(50% 0, 96% 72%, 4% 72%);
+  border: 1px solid rgba(255, 232, 218, .3);
+}
+
+.tabletop-d20-face strong {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  font: 800 20px Barlow Condensed, sans-serif;
+  letter-spacing: .04em;
+}
+
+.tabletop-d20-face small {
+  position: absolute;
+  z-index: 1;
+  bottom: 9px;
+  color: rgba(255, 244, 237, .72);
+  font: 700 6px IBM Plex Mono, monospace;
+  letter-spacing: .1em;
+}
+
+.tabletop-d20-face.preview strong {
+  font-size: 16px;
+}
+
+.tabletop-combat-die-copy {
+  min-width: 0;
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  text-align: right;
+}
+
+.tabletop-combat-die-copy span {
+  color: #e9b3a2;
+  font: 700 9px IBM Plex Mono, monospace;
+  text-transform: uppercase;
+}
+
+.tabletop-combat-die-copy b {
+  color: #fff0dc;
+  font: 800 16px Barlow Condensed, sans-serif;
+  letter-spacing: .03em;
+}
+
+.tabletop-roll-equation {
+  display: grid;
+  grid-template-columns: 1fr auto auto 1fr;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  padding: 6px 8px;
+  border: 1px solid rgba(116, 76, 67, .75);
+  background: rgba(15, 10, 12, .45);
+  font-family: IBM Plex Mono, monospace;
+  text-align: center;
+}
+
+.tabletop-roll-equation span,
+.tabletop-roll-equation b,
+.tabletop-roll-equation strong {
+  font-size: 10px;
+}
+
+.tabletop-roll-equation span {
+  color: #f1d2c7;
+}
+
+.tabletop-roll-equation b {
+  color: #e7a68f;
+}
+
+.tabletop-roll-equation em {
+  color: #8e7773;
+  font-size: 8px;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.tabletop-roll-equation strong {
+  color: #fff0dc;
+}
+
+.tabletop-combat-result {
+  overflow: hidden;
+  animation: tabletop-combat-result-reveal 360ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.tabletop-combat-result.critical {
+  border-width: 2px;
+  box-shadow: inset 0 0 26px rgba(234, 153, 91, .14), 0 0 22px rgba(234, 153, 91, .12);
+}
+
+.tabletop-combat-result-roll {
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.tabletop-combat-result .tabletop-d20-face {
+  flex-basis: 68px;
+  width: 68px;
+  height: 72px;
+  animation: tabletop-d20-reveal 420ms cubic-bezier(.18, .84, .31, 1.2);
+}
+
+.tabletop-combat-result.miss .tabletop-d20-face {
+  background:
+    linear-gradient(30deg, transparent 47%, rgba(226, 239, 242, .14) 48% 51%, transparent 52%),
+    linear-gradient(150deg, transparent 47%, rgba(226, 239, 242, .1) 48% 51%, transparent 52%),
+    linear-gradient(180deg, #56656a, #28363b);
+}
+
+.tabletop-combat-result.critical .tabletop-d20-face {
+  background:
+    linear-gradient(30deg, transparent 47%, rgba(255, 248, 205, .28) 48% 51%, transparent 52%),
+    linear-gradient(150deg, transparent 47%, rgba(255, 248, 205, .2) 48% 51%, transparent 52%),
+    linear-gradient(180deg, #c17b3e, #6b3428);
+}
+
+.tabletop-combat-result-summary {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.tabletop-combat-result-summary .tabletop-combat-outcome {
+  color: #f4c2ae;
+  font: 800 9px IBM Plex Mono, monospace;
+  letter-spacing: .09em;
+}
+
+.tabletop-combat-result.miss .tabletop-combat-outcome {
+  color: #b9c8cc;
+}
+
+.tabletop-combat-result.critical .tabletop-combat-outcome {
+  color: #ffe29c;
+}
+
+.tabletop-combat-result-summary > strong {
+  color: #fff0ea;
+  font: 800 21px Barlow Condensed, sans-serif;
+  line-height: 1;
+}
+
+.tabletop-combat-result-summary > small {
+  color: #b69c96;
+  font: 600 8px IBM Plex Mono, monospace;
+}
+
+.tabletop-combat-consequences {
+  display: flex !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap;
+  gap: 4px !important;
+  margin-top: 7px;
+}
+
+.tabletop-combat-consequences b {
+  padding: 3px 5px;
+  border: 1px solid #57403c;
+  background: rgba(62, 39, 38, .55);
+  color: #d7c4be;
+  font: 700 7px IBM Plex Mono, monospace;
+  text-transform: uppercase;
+}
+
+@keyframes tabletop-d20-reveal {
+  0% { opacity: .25; transform: rotate(-16deg) scale(.72); }
+  70% { opacity: 1; transform: rotate(3deg) scale(1.06); }
+  100% { opacity: 1; transform: rotate(0) scale(1); }
+}
+
+@keyframes tabletop-combat-result-reveal {
+  from { opacity: .4; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 1180px) {
@@ -235,5 +435,26 @@
 @media (max-width: 900px) {
   .tabletop-combat-panel {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabletop-combat-result,
+  .tabletop-combat-result .tabletop-d20-face {
+    animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .tabletop-d20-face {
+    border: 2px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    filter: none;
+  }
+
+  .tabletop-roll-equation,
+  .tabletop-combat-consequences b {
+    border-color: CanvasText;
   }
 }

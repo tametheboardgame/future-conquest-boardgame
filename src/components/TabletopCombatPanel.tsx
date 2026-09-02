@@ -35,6 +35,15 @@ function signed(value: number): string {
   return value >= 0 ? `+${value}` : String(value);
 }
 
+function hitChance(target: number, attackModifier: number): { minimumDie: number; percent: number } {
+  const minimumDie = target - attackModifier;
+  const successfulFaces = Math.max(0, Math.min(20, 21 - Math.max(1, minimumDie)));
+  return {
+    minimumDie,
+    percent: successfulFaces * 5
+  };
+}
+
 function quarantineLegacySimulationAttackControls() {
   for (const element of document.querySelectorAll<HTMLButtonElement>(LEGACY_ATTACK_SELECTOR)) {
     element.disabled = true;
@@ -69,6 +78,7 @@ export function TabletopCombatPanel() {
       : null,
     [attackerPieceId, boardState, defenderPieceId]
   );
+  const chance = preview?.legal ? hitChance(preview.target, preview.attackModifier) : null;
 
   useEffect(() => {
     quarantineLegacySimulationAttackControls();
@@ -172,11 +182,13 @@ export function TabletopCombatPanel() {
   const latestCombat = boardState.combat?.status === 'resolved' ? boardState.combat : null;
   const result = latestCombat?.roll;
   const consequence = latestCombat?.consequence;
+  const resultModifier = latestCombat?.modifiers.supply ?? 0;
 
   return <aside
     className="tabletop-combat-panel"
     aria-label="Dice combat"
     data-bg-combat="BG5C"
+    data-bg-dice-presentation="BG11C"
   >
     <header>
       <span>Dice Combat</span>
@@ -223,14 +235,20 @@ export function TabletopCombatPanel() {
         : <p>No legal adjacent enemy target.</p>}
     </section>}
 
-    {preview?.legal && <section className="tabletop-combat-preview" aria-label="Combat preview">
+    {preview?.legal && chance && <section className="tabletop-combat-preview" aria-label="Combat preview">
       <div className="tabletop-combat-die">
-        <strong>1D20</strong>
-        <span>Target {preview.target}+</span>
+        <div className="tabletop-d20-face preview" aria-hidden="true"><strong>D20</strong></div>
+        <div className="tabletop-combat-die-copy">
+          <span>Need {chance.minimumDie}+ on die</span>
+          <b>{chance.percent}% hit chance</b>
+        </div>
+      </div>
+      <div className="tabletop-roll-equation" aria-label={`Roll one D20 ${signed(preview.attackModifier)} against target ${preview.target}`}>
+        <span>1D20</span><b>{signed(preview.attackModifier)}</b><em>vs</em><strong>{preview.target}</strong>
       </div>
       <dl>
         <div><dt>Base target</dt><dd>{preview.baseTarget}</dd></div>
-        <div><dt>Supply</dt><dd>{signed(preview.modifiers.supply)}</dd></div>
+        <div><dt>Supply attack</dt><dd>{signed(preview.modifiers.supply)}</dd></div>
         <div><dt>Terrain defence</dt><dd>+{preview.modifiers.terrain}</dd></div>
         <div><dt>Fortification</dt><dd>+{preview.modifiers.fortification}</dd></div>
       </dl>
@@ -238,22 +256,34 @@ export function TabletopCombatPanel() {
         <summary>Possible outcomes</summary>
         <ul>{preview.possibleOutcomes.map(outcome => <li key={outcome}>{outcome}</li>)}</ul>
       </details>
-      <button type="button" className="confirm" onClick={confirmAttack}>Confirm and Roll</button>
+      <button type="button" className="confirm" onClick={confirmAttack}>Roll D20 · 1 Command Action</button>
     </section>}
 
     <p className="tabletop-combat-feedback" role="status">{feedback}</p>
 
-    {result && consequence && <section className={`tabletop-combat-result ${result.outcome}`} aria-label="Latest combat result">
-      <div>
-        <strong>D20 {result.die}</strong>
-        <span>{result.attackTotal} vs {result.target} · {result.outcome.toUpperCase()}</span>
+    {result && consequence && <section
+      key={`${latestCombat?.attackerPieceId}-${latestCombat?.defenderPieceId}-${result.die}-${result.attackTotal}`}
+      className={`tabletop-combat-result ${result.outcome}${consequence.critical ? ' critical' : ''}`}
+      aria-label="Latest combat result"
+      aria-live="polite"
+    >
+      <div className="tabletop-combat-result-roll">
+        <div className="tabletop-d20-face resolved" aria-label={`D20 rolled ${result.die}`}>
+          <strong>{result.die}</strong><small>D20</small>
+        </div>
+        <div className="tabletop-combat-result-summary">
+          <span className="tabletop-combat-outcome">{consequence.critical ? '★ CRITICAL HIT' : result.outcome === 'hit' ? '✓ HIT' : '× MISS'}</span>
+          <strong>{result.attackTotal} vs {result.target}</strong>
+          <small>{result.die} {signed(resultModifier)} = {result.attackTotal}</small>
+        </div>
       </div>
       <p>{latestCombat?.attackerPieceId} → {latestCombat?.defenderPieceId}: {consequence.critical ? 'critical ' : ''}{consequence.defenderStatus}.</p>
-      <small>
-        Damage +{consequence.damageInflicted} · readiness -{consequence.readinessLoss}
-        {consequence.retreatSpaceId ? ` · retreat ${territoryLabel(consequence.retreatSpaceId)}` : ''}
-        {consequence.controlChanged ? ' · territory captured' : ''}
-      </small>
+      <div className="tabletop-combat-consequences" aria-label="Combat consequences">
+        <b>Damage +{consequence.damageInflicted}</b>
+        <b>Readiness -{consequence.readinessLoss}</b>
+        {consequence.retreatSpaceId && <b>Retreat {territoryLabel(consequence.retreatSpaceId)}</b>}
+        {consequence.controlChanged && <b>Control changed</b>}
+      </div>
     </section>}
   </aside>;
 }
