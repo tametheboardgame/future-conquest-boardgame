@@ -44,11 +44,14 @@ test('BG11D card identity is not colour-only and preserves the fixed map overlay
   assert.match(css, /:focus-visible/);
 });
 
-test('BG11D decorative card chrome cannot intercept unrelated shell controls', () => {
+test('BG11D card controls capture pointers only while the hand is focused', () => {
   const css = read('src/components/tabletop-card-hand.css');
 
   assert.match(css, /\.tabletop-card-hand\s*\{[^}]*pointer-events:\s*none/s);
-  assert.match(css, /\.tabletop-card-list > button\s*\{[^}]*pointer-events:\s*auto/s);
-  assert.match(css, /\.tabletop-card-targets select\s*\{[^}]*pointer-events:\s*auto/s);
-  assert.match(css, /\.tabletop-card-play-button\s*\{[^}]*pointer-events:\s*auto/s);
+  assert.match(css, /\.tabletop-card-list > button\s*\{[^}]*pointer-events:\s*none/s);
+  assert.match(css, /\.tabletop-card-targets select\s*\{[^}]*pointer-events:\s*none/s);
+  assert.match(css, /\.tabletop-card-play-button\s*\{[^}]*pointer-events:\s*none/s);
+  assert.match(css, /\.tabletop-card-hand:focus-within \.tabletop-card-list > button:not\(:disabled\)/);
+  assert.match(css, /\.tabletop-card-hand:focus-within \.tabletop-card-targets select:not\(:disabled\)/);
+  assert.match(css, /\.tabletop-card-hand:focus-within \.tabletop-card-play-button:not\(:disabled\)[^{]*\{[^}]*pointer-events:\s*auto/s);
 });
