@@ -92,6 +92,23 @@ test('BG10 resolves immediate expedition victory when all three objectives are c
   assert.equal(chooseAutomaticBoardAction(resolved.state), null);
 });
 
+test('BG10 blocks ordinary actions while a sudden campaign result is pending', () => {
+  const state = createInitialBoardState({ seed: 0x1017 });
+  setObjectiveControl(state, 'seat-1', 3);
+  const before = serializeBoardState(state);
+
+  const rejected = applyBoardAction(state, { type: 'start-round' });
+  assert.equal(rejected.accepted, false);
+  assert.equal(rejected.commandActionsSpent, 0);
+  assert.equal(rejected.state, state);
+  assert.match(rejected.reason, /sudden resolution/i);
+  assert.equal(serializeBoardState(state), before);
+
+  const resolved = applyBoardAction(state, { type: 'resolve-campaign' });
+  assert.equal(resolved.accepted, true);
+  assert.equal(resolved.state.campaign.outcome, 'attacker-victory');
+});
+
 test('BG10 resolves immediate defender victory when the expedition has been eliminated', () => {
   const state = createInitialBoardState({ seed: 0x1013 });
   state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
@@ -180,6 +197,29 @@ test('BG10 campaign state survives save/load and pre-BG10 v3 saves migrate lazil
   const migrated = getBoardCampaignState(deserializeBoardState(serializeBoardState(legacy)));
   assert.equal(migrated.breakthroughPoints, 0);
   assert.equal(migrated.scoredThroughRound, 3);
+});
+
+test('BG10 rejects malformed persisted campaign payloads while accepting an absent legacy payload', () => {
+  const state = createInitialBoardState({ seed: 0x1018 });
+  const legacy = JSON.parse(serializeBoardState(state));
+  delete legacy.campaign;
+  assert.doesNotThrow(() => deserializeBoardState(JSON.stringify(legacy)));
+
+  const malformed = JSON.parse(serializeBoardState(state));
+  malformed.campaign = { outcome: 'attacker-victory' };
+  assert.throws(() => deserializeBoardState(JSON.stringify(malformed)), /Invalid Future Conquest board state metadata/);
+
+  const inconsistent = JSON.parse(serializeBoardState(state));
+  inconsistent.campaign = {
+    attackerSeatId: 'seat-1',
+    defenderSeatId: 'seat-2',
+    breakthroughPoints: 1,
+    scoredThroughRound: 1,
+    outcome: 'attacker-victory',
+    resolvedRound: null,
+    reason: null
+  };
+  assert.throws(() => deserializeBoardState(JSON.stringify(inconsistent)), /Invalid Future Conquest board state metadata/);
 });
 
 test('BG10 computer-v-computer autoplay resolves to a terminal campaign result', () => {
