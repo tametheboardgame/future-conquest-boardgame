@@ -35,7 +35,7 @@ try{
   const host=page.locator('.r3-terrain-prototype');await host.waitFor({state:'visible',timeout:45000});
   await page.waitForFunction(()=>document.querySelector('.r3-terrain-prototype')?.getAttribute('data-status')==='ready'&&Boolean(window.__r3WorldMiniatures)&&Boolean(window.__r3TerrainMap),null,{timeout:45000});
   const layerControl=page.locator('details.r3-terrain-layer-control');await layerControl.evaluate(element=>{element.open=true;});
-  for(const label of ['Friendly formations','Operations, threats and fronts','Ports']){const toggle=layerControl.getByLabel(label,{exact:true});if(await toggle.isChecked())await toggle.uncheck();}
+  for(const label of ['Friendly formations','Operations, threats and fronts','Ports']){const toggle=layerControl.getByLabel(label,{exact:true});if(await toggle.isChecked())await toggle.evaluate(element=>element.click());}
   await layerControl.evaluate(element=>{element.open=false;});await page.addStyleTag({content:'[data-r3-marker-id] { visibility: hidden !important; }'});
 
   const evidence={schemaVersion:3,cities:{}};
