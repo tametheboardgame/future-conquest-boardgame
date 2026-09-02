@@ -9,7 +9,7 @@ const { SLICE_IDS } = require('../.test-dist/data.js');
 const { runBoardPlaytestMatrix } = require('../.test-dist/board-playtest-simulation.js');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
-const TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4', 'TG-5', 'TG-6'];
+const TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4', 'TG-5', 'TG-6', 'TG-7', 'TG-8'];
 
 test('BG12B expands only the Expedition opening formation pool', () => {
   const state = createInitialBoardState({ seed: 1179992911 });
@@ -34,7 +34,7 @@ test('BG12B leaves combat and escalation rule constants untouched', () => {
   const combat = read('src/game/board-combat.ts');
   const escalation = read('src/game/board-escalation.ts');
 
-  assert.match(scenario, /'TG-5', 'TG-6'/);
+  assert.match(scenario, /'TG-7', 'TG-8'/);
   assert.match(combat, /BOARD_COMBAT_BASE_TARGET = 11/);
   assert.match(combat, /BOARD_COMBAT_ELIMINATION_DAMAGE = 3/);
   assert.match(escalation, /REINFORCEMENT_COUNT_BY_ROUND = \[1, 1, 1, 1, 2, 2, 2, 2\]/);
