@@ -2,6 +2,7 @@ import { projectBoardCampaignStatus } from '../game/board-campaign';
 import { projectBoardStatus } from '../game/board-state-status';
 import { useBoardGameState } from './BoardGameStateProvider';
 import { TabletopCardHandPanel } from './TabletopCardHandPanel';
+import { TabletopOnboarding } from './TabletopOnboarding';
 import { TabletopSupportPanel } from './TabletopSupportPanel';
 import '../bg10-campaign-status.css';
 
@@ -18,6 +19,7 @@ export function TabletopStatusShell() {
     data-bg-support="BG7"
     data-bg-cards="BG8"
     data-bg-campaign="BG10"
+    data-bg-onboarding="BG11A"
   >
     <div className="tabletop-title-block">
       <span>FUTURE CONQUEST</span>
@@ -53,5 +55,6 @@ export function TabletopStatusShell() {
 
     <TabletopCardHandPanel />
     <TabletopSupportPanel />
+    <TabletopOnboarding />
   </section>;
 }
