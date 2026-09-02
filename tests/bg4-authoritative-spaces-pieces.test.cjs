@@ -13,6 +13,8 @@ function entryFor(seed) {
   return SLICE_IDS[normalised % SLICE_IDS.length];
 }
 
+const EXPEDITION_TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4', 'TG-5', 'TG-6'];
+
 test('BG4A populates all retained Central Front spaces with authoritative adjacency', () => {
   const state = createInitialBoardState({ seed: 42 });
   assert.deepEqual(Object.keys(state.spaces), [...SLICE_IDS]);
@@ -26,13 +28,13 @@ test('BG4A populates all retained Central Front spaces with authoritative adjace
   }
 });
 
-test('BG4A mirrors the retained portal rule and creates four player task-group miniatures', () => {
+test('BG4A mirrors the retained portal rule and creates the calibrated player task-group miniatures', () => {
   const seed = 1179992911;
   const state = createInitialBoardState({ seed });
   const entry = entryFor(seed);
 
   assert.equal(state.spaces[entry].control, 'seat-1');
-  for (const id of ['TG-1', 'TG-2', 'TG-3', 'TG-4']) {
+  for (const id of EXPEDITION_TASK_GROUP_IDS) {
     assert.deepEqual(state.pieces[id], {
       id,
       seatId: 'seat-1',
@@ -65,7 +67,7 @@ test('BG4A assigns scenario pieces to the first two canonical participating seat
   });
 
   assert.equal(state.activeSeat, 'seat-1');
-  assert.ok(['TG-1', 'TG-2', 'TG-3', 'TG-4'].every(id => state.pieces[id].seatId === 'seat-1'));
+  assert.ok(EXPEDITION_TASK_GROUP_IDS.every(id => state.pieces[id].seatId === 'seat-1'));
   assert.ok(Object.values(state.pieces).filter(piece => piece.id.startsWith('EF-')).every(piece => piece.seatId === 'seat-3'));
 });
 
