@@ -18,7 +18,8 @@ test('BG11A first-turn guide teaches the authoritative board game and is replaya
   }
 
   assert.match(onboarding, /future-conquest-bg11-onboarding-v1/);
-  assert.match(onboarding, />Guide</);
+  assert.match(onboarding, /Replay the board-game guide/);
+  assert.match(onboarding, /\{open \? 'Close guide' : 'Guide'\}/);
   assert.match(onboarding, /Start playing/);
   assert.match(shell, /<TabletopOnboarding \/>/);
   assert.match(shell, /data-bg-onboarding="BG11A"/);
