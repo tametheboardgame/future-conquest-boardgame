@@ -71,6 +71,7 @@ export function TabletopCardHandPanel() {
   const availabilityReason = humanActivation && playAction && preview && !preview.accepted
     ? preview.reason
     : null;
+  const statusFeedback = availabilityReason ? `Unavailable: ${availabilityReason}` : feedback;
 
   return <section
     id="tabletop-card-hand"
@@ -145,12 +146,8 @@ export function TabletopCardHandPanel() {
       >
         Play card · free action
       </button>
-
-      {availabilityReason && <p className="tabletop-card-availability" role="status">
-        Unavailable: {availabilityReason}
-      </p>}
     </div>}
 
-    <p className="tabletop-card-feedback" role="status">{feedback}</p>
+    <p className="tabletop-card-feedback" role="status" title={statusFeedback}>{statusFeedback}</p>
   </section>;
 }
