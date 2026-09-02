@@ -18,10 +18,27 @@ function startedState(options = {}) {
 }
 
 function withoutCombatTargets(state) {
+  const attacker = Object.values(state.pieces)
+    .filter(piece => piece.seatId === 'seat-1' && piece.spaceId)
+    .sort((a, b) => a.id.localeCompare(b.id))[0];
+  assert.ok(attacker?.spaceId, 'fixture requires one surviving expedition formation');
+
+  const attackerSpaceId = attacker.spaceId;
   state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
     id,
-    { ...piece, spaceId: null }
+    id === attacker.id ? piece : { ...piece, spaceId: null }
   ]));
+  state.spaces[attackerSpaceId] = {
+    ...state.spaces[attackerSpaceId],
+    control: 'seat-1',
+    fortification: 3
+  };
+  for (const adjacentSpaceId of state.spaces[attackerSpaceId].adjacentSpaceIds) {
+    state.spaces[adjacentSpaceId] = {
+      ...state.spaces[adjacentSpaceId],
+      control: 'seat-2'
+    };
+  }
   return state;
 }
 
@@ -69,23 +86,31 @@ test('BG3E computer-v-computer exits a no-action position without a zero-cost Pa
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-round' });
 });
 
-test('BG3E automatic orchestration closes exhausted rounds and advances completed non-terminal rounds', () => {
+test('BG3E automatic orchestration closes exhausted rounds, scores objectives and advances completed non-terminal rounds', () => {
   let state = startedState();
   state.seats['seat-1'].commandActionsRemaining = 0;
   state.seats['seat-2'].commandActionsRemaining = 0;
   assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'end-round' });
   const ended = endBoardRound(state);
   assert.equal(ended.accepted, true);
-  assert.deepEqual(chooseAutomaticBoardAction(ended.state), { type: 'advance-round' });
+  const scoreAction = chooseAutomaticBoardAction(ended.state);
+  assert.deepEqual(scoreAction, { type: 'score-campaign-round' });
+  const scored = applyBoardAction(ended.state, scoreAction);
+  assert.equal(scored.accepted, true);
+  assert.deepEqual(chooseAutomaticBoardAction(scored.state), { type: 'advance-round' });
 });
 
-test('BG3E stops automatic advancement at the round-eight boundary', () => {
+test('BG3E resolves the campaign instead of advancing beyond the round-eight boundary', () => {
   let state = startedState();
   state.round = state.roundLimit;
   state.seats['seat-1'].commandActionsRemaining = 0;
   state.seats['seat-2'].commandActionsRemaining = 0;
   state = endBoardRound(state).state;
   assert.equal(state.phase, 'round-end');
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'score-campaign-round' });
+  state = applyBoardAction(state, { type: 'score-campaign-round' }).state;
+  assert.deepEqual(chooseAutomaticBoardAction(state), { type: 'resolve-campaign' });
+  state = applyBoardAction(state, { type: 'resolve-campaign' }).state;
   assert.equal(chooseAutomaticBoardAction(state), null);
 });
 

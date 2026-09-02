@@ -40,6 +40,33 @@ function keepOnlyPieceAndHostileControl(state, pieceId) {
   return state;
 }
 
+function keepOneActionlessExpeditionFormation(state) {
+  const expedition = Object.values(state.pieces)
+    .filter(piece => piece.seatId === 'seat-1' && piece.spaceId)
+    .sort((a, b) => a.id.localeCompare(b.id))[0];
+  assert.ok(expedition?.spaceId, 'fixture requires one surviving expedition formation');
+
+  const spaceId = expedition.spaceId;
+  state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
+    id,
+    id === expedition.id
+      ? { ...piece, readiness: 100, damage: 0, supply: 'supplied' }
+      : { ...piece, spaceId: null }
+  ]));
+  state.spaces[spaceId] = {
+    ...state.spaces[spaceId],
+    control: 'seat-1',
+    fortification: 3
+  };
+  for (const adjacentSpaceId of state.spaces[spaceId].adjacentSpaceIds) {
+    state.spaces[adjacentSpaceId] = {
+      ...state.spaces[adjacentSpaceId],
+      control: 'seat-2'
+    };
+  }
+  return state;
+}
+
 test('BG9 enumerates only dispatcher-legal computer actions without consuming RNG', () => {
   const state = startedComputerState();
   const before = serializeBoardState(state);
@@ -131,11 +158,7 @@ test('BG9 values a legal free card effect above the equivalent paid recovery act
 });
 
 test('BG9 End Actions exhausts a computer seat instead of creating a zero-cost Pass loop', () => {
-  let state = startedComputerState(0x9013);
-  state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
-    id,
-    { ...piece, spaceId: null }
-  ]));
+  let state = keepOneActionlessExpeditionFormation(startedComputerState(0x9013));
 
   const firstCandidates = enumerateComputerBoardActions(state);
   assert.deepEqual(firstCandidates.map(candidate => candidate.action.type), ['end-seat-actions']);

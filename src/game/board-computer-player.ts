@@ -1,4 +1,5 @@
 import { getBoardActionCard, type BoardActionCardDefinition } from './board-action-cards';
+import { CENTRAL_FRONT_CAMPAIGN_OBJECTIVES } from './board-campaign';
 import { applyBoardAction } from './board-action-dispatcher';
 import { getBoardCombatPreview, getBoardCombatTargets } from './board-combat';
 import { getBoardMoveDestinations } from './board-state';
@@ -74,6 +75,39 @@ function distanceToNearestHostileSpace(state: BoardGameState, fromSpaceId: strin
   return Number.POSITIVE_INFINITY;
 }
 
+function isCampaignObjective(spaceId: string): boolean {
+  return CENTRAL_FRONT_CAMPAIGN_OBJECTIVES.some(objective => objective.spaceId === spaceId);
+}
+
+function distanceToNearestUncontrolledObjective(state: BoardGameState, fromSpaceId: string, seatId: SeatId): number {
+  const targets = new Set(CENTRAL_FRONT_CAMPAIGN_OBJECTIVES
+    .filter(objective => state.spaces[objective.spaceId]?.control !== seatId)
+    .map(objective => objective.spaceId));
+  if (targets.size === 0) return Number.POSITIVE_INFINITY;
+  if (targets.has(fromSpaceId)) return 0;
+
+  const visited = new Set<string>([fromSpaceId]);
+  let frontier = [fromSpaceId];
+  let distance = 0;
+
+  while (frontier.length > 0) {
+    distance += 1;
+    const next: string[] = [];
+    for (const spaceId of frontier) {
+      const adjacent = [...(state.spaces[spaceId]?.adjacentSpaceIds ?? [])].sort((a, b) => a.localeCompare(b));
+      for (const candidate of adjacent) {
+        if (visited.has(candidate)) continue;
+        if (targets.has(candidate)) return distance;
+        visited.add(candidate);
+        next.push(candidate);
+      }
+    }
+    frontier = next;
+  }
+
+  return Number.POSITIVE_INFINITY;
+}
+
 function hostileAdjacencyCount(state: BoardGameState, spaceId: string, seatId: SeatId): number {
   return (state.spaces[spaceId]?.adjacentSpaceIds ?? [])
     .filter(candidate => isHostileSpace(state, candidate, seatId)).length;
@@ -122,11 +156,13 @@ function scoreStandardAction(
     const requiredDie = preview.target - preview.attackModifier;
     const successfulFaces = Math.max(0, Math.min(20, 21 - requiredDie));
     const hitChance = successfulFaces / 20;
+    const objectiveBonus = defender?.spaceId && isCampaignObjective(defender.spaceId) ? 26 : 0;
     score = 70
       + hitChance * 36
       + (defender?.damage ?? 0) * 12
       + (100 - (defender?.readiness ?? 100)) * 0.22
-      - preview.defenceModifier * 2.5;
+      - preview.defenceModifier * 2.5
+      + objectiveBonus;
   } else if (action.type === 'move-piece'
     && typeof action.pieceId === 'string'
     && typeof action.destinationSpaceId === 'string') {
@@ -137,21 +173,34 @@ function scoreStandardAction(
     const beforeValue = Number.isFinite(before) ? before : 8;
     const afterValue = Number.isFinite(after) ? after : 8;
     const progress = beforeValue - afterValue;
-    score = 38 + progress * 12 + hostileAdjacencyCount(state, action.destinationSpaceId, piece.seatId) * 8;
+    const objectiveBefore = distanceToNearestUncontrolledObjective(state, piece.spaceId, piece.seatId);
+    const objectiveAfter = distanceToNearestUncontrolledObjective(state, action.destinationSpaceId, piece.seatId);
+    const objectiveProgress = Number.isFinite(objectiveBefore) && Number.isFinite(objectiveAfter)
+      ? objectiveBefore - objectiveAfter
+      : 0;
+    const objectiveDestinationBonus = isCampaignObjective(action.destinationSpaceId) ? 14 : 0;
+    score = 38
+      + progress * 12
+      + hostileAdjacencyCount(state, action.destinationSpaceId, piece.seatId) * 8
+      + objectiveProgress * 10
+      + objectiveDestinationBonus;
   } else if (action.type === 'recover-piece' && typeof action.pieceId === 'string') {
     const piece = state.pieces[action.pieceId];
     if (!piece) return Number.NEGATIVE_INFINITY;
-    score = 38 + piece.damage * 18 + (100 - piece.readiness) * 0.28;
+    score = 38 + piece.damage * 18 + (100 - piece.readiness) * 0.28
+      + (piece.spaceId && isCampaignObjective(piece.spaceId) ? 6 : 0);
   } else if (action.type === 'logistics-piece' && typeof action.pieceId === 'string') {
     const piece = state.pieces[action.pieceId];
     if (!piece) return Number.NEGATIVE_INFINITY;
-    score = 38 + (piece.supply === 'isolated' ? 28 : piece.supply === 'strained' ? 14 : 0);
+    score = 38 + (piece.supply === 'isolated' ? 28 : piece.supply === 'strained' ? 14 : 0)
+      + (piece.spaceId && isCampaignObjective(piece.spaceId) ? 6 : 0);
   } else if (action.type === 'engineer-position' && typeof action.pieceId === 'string') {
     const piece = state.pieces[action.pieceId];
     if (!piece?.spaceId) return Number.NEGATIVE_INFINITY;
     const fortification = Math.max(0, Math.trunc(state.spaces[piece.spaceId]?.fortification ?? 0));
     score = 28 + (3 - Math.min(3, fortification)) * 4
-      + hostileAdjacencyCount(state, piece.spaceId, piece.seatId) * 7;
+      + hostileAdjacencyCount(state, piece.spaceId, piece.seatId) * 7
+      + (isCampaignObjective(piece.spaceId) ? 10 : 0);
   } else if (action.type === 'end-seat-actions') {
     score = -500;
   }
@@ -291,8 +340,8 @@ export function enumerateComputerBoardActions(
       action,
       score: scoreAction(state, action, policy),
       rationale: action.type === 'play-action-card'
-        ? 'Card tempo plus its underlying authoritative board action.'
-        : 'Deterministic board position, readiness, supply and combat valuation.'
+        ? 'Card tempo plus its underlying authoritative board action and strategic-objective value.'
+        : 'Deterministic board position, objectives, readiness, supply and combat valuation.'
     }))
     .filter(candidate => Number.isFinite(candidate.score))
     .sort((a, b) => b.score - a.score || actionKey(a.action).localeCompare(actionKey(b.action)));
