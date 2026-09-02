@@ -34,8 +34,29 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run engine tests
-        run: npm test
+      - name: Compile engine tests
+        run: |
+          rm -rf .test-dist
+          npx tsc -p tsconfig.test.json
+          printf '{"type":"commonjs"}\n' > .test-dist/package.json
+      - name: Run BG1-BG2 tests
+        if: always()
+        run: node --test tests/bg1-*.test.cjs tests/bg2-*.test.cjs
+      - name: Run BG3-BG5 tests
+        if: always()
+        run: node --test tests/bg3-*.test.cjs tests/bg4-*.test.cjs tests/bg5*.test.cjs
+      - name: Run BG6-BG7 tests
+        if: always()
+        run: node --test tests/bg6-*.test.cjs tests/bg7-*.test.cjs
+      - name: Run BG8-BG9 tests
+        if: always()
+        run: node --test tests/bg8-*.test.cjs tests/bg9-*.test.cjs
+      - name: Run BG10 tests
+        if: always()
+        run: node --test tests/bg10-*.test.cjs
+      - name: Run remaining engine tests
+        if: always()
+        run: node --test tests/engine.test.cjs
       - name: Validate deployment verifier
         run: node --check scripts/verify-pages-deployment.mjs
       - name: Build game
