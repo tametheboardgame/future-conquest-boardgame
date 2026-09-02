@@ -38,13 +38,19 @@ export function TabletopSupportPanel() {
       : null
   ])) as Record<SupportActionType, ReturnType<typeof previewBoardAction> | null>, [selectedPieceId, state]);
 
+  const unavailableReasons = useMemo(() => ACTIONS.flatMap(action => {
+    const preview = previews[action.type];
+    if (!humanActivation || !preview || preview.accepted) return [];
+    return [`${action.label}: ${preview.reason}`];
+  }), [humanActivation, previews]);
+
   const runAction = (type: SupportActionType) => {
     if (!selectedPieceId) return;
     const result = dispatch({ type, pieceId: selectedPieceId });
     setFeedback(result.reason);
   };
 
-  return <section className="tabletop-support-panel" aria-label="Support actions" data-bg-package="BG7">
+  return <section className="tabletop-support-panel" aria-label="Support actions" data-bg-package="BG7" data-bg-feedback="BG11A">
     <div className="tabletop-support-heading">
       <div>
         <span>Support actions</span>
@@ -83,6 +89,10 @@ export function TabletopSupportPanel() {
         </button>;
       })}
     </div>
+
+    {unavailableReasons.length > 0 && <ul className="tabletop-support-reasons" aria-label="Unavailable support action reasons">
+      {unavailableReasons.map(reason => <li key={reason}>{reason}</li>)}
+    </ul>}
 
     <p role="status">{feedback}</p>
   </section>;

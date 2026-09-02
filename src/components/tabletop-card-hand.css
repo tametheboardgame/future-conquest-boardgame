@@ -175,7 +175,10 @@
 
 .tabletop-card-feedback {
   min-height: 20px;
+  max-height: 30px;
   margin-top: 6px;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 900px) {

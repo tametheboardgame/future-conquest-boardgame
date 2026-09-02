@@ -144,6 +144,50 @@ async function specialistSweep() {
   return results;
 }
 
+async function prepareGuidancePresentation() {
+  await page.evaluate(() => document.querySelector('[data-command-view="map"]')?.click());
+  const boardGuideInstalled = await page.evaluate(() => document.documentElement.classList.contains('bg11-boardgame-onboarding-installed'));
+
+  if (boardGuideInstalled) {
+    const card = page.locator('.tabletop-onboarding-card');
+    if (!await card.isVisible()) await page.getByRole('button', { name: 'Guide', exact: true }).click();
+    await card.waitFor({ state: 'visible', timeout: 10000 });
+    return 'board-game';
+  }
+
+  await page.getByRole('button', { name: 'Restart tutorial', exact: true }).click();
+  await page.locator('.tutorial-overlay').waitFor({ state: 'visible', timeout: 10000 });
+  return 'legacy';
+}
+
+async function guidanceEvidence(mode) {
+  return page.evaluate(currentMode => {
+    const selector = currentMode === 'board-game' ? '.tabletop-onboarding-card' : '.tutorial-overlay';
+    const overlay = document.querySelector(selector);
+    const box = overlay?.getBoundingClientRect();
+    const style = overlay ? getComputedStyle(overlay) : null;
+    if (!box || !overlay || !style) return null;
+
+    const visibleButtons = [...overlay.querySelectorAll('button')]
+      .filter(button => getComputedStyle(button).display !== 'none')
+      .map(button => button.textContent?.trim() ?? '');
+    const forward = visibleButtons.filter(label => label === 'Forward');
+
+    return {
+      mode: currentMode,
+      top: box.top,
+      bottom: box.bottom,
+      height: box.height,
+      clientHeight: overlay.clientHeight,
+      scrollHeight: overlay.scrollHeight,
+      overflowY: style.overflowY,
+      visibleForwardButtons: forward.length,
+      visibleButtons,
+      horizontalOverflow: document.documentElement.scrollWidth - innerWidth
+    };
+  }, mode);
+}
+
 try {
   await page.addInitScript(() => {
     localStorage.setItem('future-conquest:intro-seen:v3', 'true');
@@ -157,7 +201,7 @@ try {
   await page.waitForFunction(() => ['ready', 'warning'].includes(document.querySelector('.r3-terrain-prototype')?.getAttribute('data-status') ?? ''), null, { timeout: 45000 });
   await page.waitForTimeout(900);
 
-  const evidence = { schemaVersion: 2, head: process.env.GITHUB_SHA ?? null, captures: {}, shell: {}, specialistSweep: {}, tutorial: {} };
+  const evidence = { schemaVersion: 3, head: process.env.GITHUB_SHA ?? null, captures: {}, shell: {}, specialistSweep: {}, tutorial: {} };
 
   evidence.shell.large = await capture('command-map-1900x829', 1900, 829);
   evidence.captures.large = 'command-map-1900x829.png';
@@ -177,50 +221,39 @@ try {
 
   evidence.specialistSweep = await specialistSweep();
 
-  await page.getByRole('button', { name: 'Restart tutorial', exact: true }).click();
-  await page.evaluate(() => document.querySelector('[data-command-view="map"]')?.click());
-  await page.locator('.tutorial-overlay').waitFor({ state: 'visible', timeout: 10000 });
+  const guidanceMode = await prepareGuidancePresentation();
   await page.waitForTimeout(180);
 
-  evidence.tutorial.desktop = await page.evaluate(() => {
-    const overlay = document.querySelector('.tutorial-overlay');
-    const box = overlay?.getBoundingClientRect();
-    const style = overlay ? getComputedStyle(overlay) : null;
-    const forward = [...document.querySelectorAll('.tutorial-actions button')].filter(button => button.textContent?.trim() === 'Forward').filter(button => getComputedStyle(button).display !== 'none');
-    return box && overlay && style ? {
-      top: box.top, bottom: box.bottom, height: box.height,
-      clientHeight: overlay.clientHeight, scrollHeight: overlay.scrollHeight,
-      overflowY: style.overflowY, visibleForwardButtons: forward.length
-    } : null;
-  });
-  assert(evidence.tutorial.desktop, 'desktop tutorial overlay missing');
-  assert(evidence.tutorial.desktop.visibleForwardButtons === 0, 'tutorial still presents a Forward button');
-  assert(evidence.tutorial.desktop.bottom <= 768 + 2 && evidence.tutorial.desktop.top >= -2, `desktop tutorial escapes viewport: ${JSON.stringify(evidence.tutorial.desktop)}`);
-  assert(evidence.tutorial.desktop.scrollHeight <= evidence.tutorial.desktop.clientHeight + 2, `normal desktop tutorial has unnecessary internal scrolling: ${JSON.stringify(evidence.tutorial.desktop)}`);
+  evidence.tutorial.desktop = await guidanceEvidence(guidanceMode);
+  assert(evidence.tutorial.desktop, 'desktop guidance presentation missing');
+  assert(evidence.tutorial.desktop.visibleForwardButtons === 0, 'guidance presentation exposes a legacy Forward button');
+  assert(evidence.tutorial.desktop.bottom <= 768 + 2 && evidence.tutorial.desktop.top >= -2, `desktop guidance escapes viewport: ${JSON.stringify(evidence.tutorial.desktop)}`);
+  assert(evidence.tutorial.desktop.horizontalOverflow <= 2, `desktop guidance introduces horizontal overflow: ${evidence.tutorial.desktop.horizontalOverflow}px`);
+  if (guidanceMode === 'board-game') {
+    assert(evidence.tutorial.desktop.visibleButtons.includes('Skip guide'), `board-game guide is missing Skip guide: ${JSON.stringify(evidence.tutorial.desktop)}`);
+    assert(evidence.tutorial.desktop.visibleButtons.some(label => label === 'Next' || label === 'Start playing'), `board-game guide is missing progression control: ${JSON.stringify(evidence.tutorial.desktop)}`);
+  } else {
+    assert(evidence.tutorial.desktop.scrollHeight <= evidence.tutorial.desktop.clientHeight + 2, `normal desktop tutorial has unnecessary internal scrolling: ${JSON.stringify(evidence.tutorial.desktop)}`);
+  }
   await page.screenshot({ path: `${outputDir}/tutorial-1366x768.png`, fullPage: false });
   evidence.captures.tutorialDesktop = 'tutorial-1366x768.png';
 
   await page.setViewportSize({ width: 640, height: 900 });
   await page.waitForTimeout(280);
-  evidence.tutorial.compact = await page.evaluate(() => {
-    const overlay = document.querySelector('.tutorial-overlay');
-    const box = overlay?.getBoundingClientRect();
-    const forward = [...document.querySelectorAll('.tutorial-actions button')].filter(button => button.textContent?.trim() === 'Forward').filter(button => getComputedStyle(button).display !== 'none');
-    return box && overlay ? {
-      top: box.top, bottom: box.bottom, height: box.height,
-      clientHeight: overlay.clientHeight, scrollHeight: overlay.scrollHeight,
-      visibleForwardButtons: forward.length,
-      horizontalOverflow: document.documentElement.scrollWidth - innerWidth
-    } : null;
-  });
-  assert(evidence.tutorial.compact, '640x900 tutorial overlay missing');
-  assert(evidence.tutorial.compact.visibleForwardButtons === 0, 'compact tutorial presents a Forward button');
-  assert(evidence.tutorial.compact.top >= -2 && evidence.tutorial.compact.bottom <= 900 + 2, `compact tutorial escapes viewport: ${JSON.stringify(evidence.tutorial.compact)}`);
-  assert(evidence.tutorial.compact.horizontalOverflow <= 2, `compact tutorial introduces horizontal overflow: ${evidence.tutorial.compact.horizontalOverflow}px`);
+  evidence.tutorial.compact = await guidanceEvidence(guidanceMode);
+  assert(evidence.tutorial.compact, '640x900 guidance presentation missing');
+  assert(evidence.tutorial.compact.visibleForwardButtons === 0, 'compact guidance presents a legacy Forward button');
+  assert(evidence.tutorial.compact.top >= -2 && evidence.tutorial.compact.bottom <= 900 + 2, `compact guidance escapes viewport: ${JSON.stringify(evidence.tutorial.compact)}`);
+  assert(evidence.tutorial.compact.horizontalOverflow <= 2, `compact guidance introduces horizontal overflow: ${evidence.tutorial.compact.horizontalOverflow}px`);
+  if (guidanceMode === 'board-game') assert(evidence.tutorial.compact.visibleButtons.includes('Skip guide'), `compact board-game guide is missing Skip guide: ${JSON.stringify(evidence.tutorial.compact)}`);
   await page.screenshot({ path: `${outputDir}/tutorial-640x900.png`, fullPage: false });
   evidence.captures.tutorialCompact = 'tutorial-640x900.png';
 
-  await page.getByRole('button', { name: 'Skip tutorial', exact: true }).evaluate(element => element.click());
+  if (guidanceMode === 'board-game') {
+    await page.getByRole('button', { name: 'Skip guide', exact: true }).evaluate(element => element.click());
+  } else {
+    await page.getByRole('button', { name: 'Skip tutorial', exact: true }).evaluate(element => element.click());
+  }
   await page.waitForTimeout(100);
   evidence.shell.compact = await capture('command-map-640x900', 640, 900, { expectTerrain: false });
   evidence.captures.compact = 'command-map-640x900.png';
