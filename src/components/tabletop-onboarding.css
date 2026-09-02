@@ -1,3 +1,7 @@
+.bg11-boardgame-onboarding-installed .tutorial-guide {
+  display: none !important;
+}
+
 .tabletop-guide-button {
   position: fixed;
   z-index: 72;
