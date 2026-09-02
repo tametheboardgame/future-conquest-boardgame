@@ -24,6 +24,16 @@ test('BG11A first-turn guide teaches the authoritative board game and is replaya
   assert.match(shell, /data-bg-onboarding="BG11A"/);
 });
 
+test('BG11A replaces the visible legacy simulation tutorial without mutating tutorial save state', () => {
+  const onboarding = read('src/components/TabletopOnboarding.tsx');
+  const css = read('src/components/tabletop-onboarding.css');
+
+  assert.match(onboarding, /bg11-boardgame-onboarding-installed/);
+  assert.match(css, /\.bg11-boardgame-onboarding-installed \.tutorial-guide/);
+  assert.match(css, /display: none !important/);
+  assert.doesNotMatch(onboarding, /skipTutorial|progressTutorial|moveTutorial|state\.tutorial/);
+});
+
 test('BG11A exposes disabled action reasons as visible status content', () => {
   const passReason = read('src/components/TabletopPassReason.tsx');
   const support = read('src/components/TabletopSupportPanel.tsx');
