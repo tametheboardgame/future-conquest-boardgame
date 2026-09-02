@@ -1,12 +1,13 @@
 import {
-  playBoardActionCard,
-  prepareBoardActionCardsForRound
-} from './board-action-cards';
-import {
+  getSuddenBoardCampaignResolution,
   isBoardCampaignResolved,
   resolveBoardCampaign,
   scoreBoardCampaignRound
 } from './board-campaign';
+import {
+  playBoardActionCard,
+  prepareBoardActionCardsForRound
+} from './board-action-cards';
 import { attackBoardPiece } from './board-combat';
 import { resolveBoardEscalation } from './board-escalation';
 import { endBoardSeatActions } from './board-seat-actions';
@@ -80,6 +81,18 @@ export function applyBoardAction(state: BoardGameState, action: BoardAction): Bo
       accepted: false,
       commandActionsSpent: 0,
       reason: 'Campaign is already resolved.'
+    };
+  }
+
+  // A sudden campaign result is authoritative as soon as it is derivable from
+  // board state. Do not allow an intervening movement/combat/support/card action
+  // to erase that result before the normal orchestration layer persists it.
+  if (action.type !== 'resolve-campaign' && getSuddenBoardCampaignResolution(state)) {
+    return {
+      state,
+      accepted: false,
+      commandActionsSpent: 0,
+      reason: 'Campaign has reached a sudden resolution and must be resolved before any further action.'
     };
   }
 
