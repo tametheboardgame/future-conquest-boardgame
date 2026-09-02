@@ -34,6 +34,21 @@ function computerCombatState(seed = 11264) {
   return { state, attacker, defender };
 }
 
+function moveExpeditionOutOfContact(state, defender) {
+  const computerPiece = Object.values(state.pieces).find(piece => piece.seatId === 'seat-2' && piece.spaceId);
+  assert.ok(computerPiece?.spaceId);
+  const blockedSpaceIds = new Set([
+    computerPiece.spaceId,
+    ...state.spaces[computerPiece.spaceId].adjacentSpaceIds
+  ]);
+  const safeSpaceId = Object.keys(state.spaces)
+    .sort((a, b) => a.localeCompare(b))
+    .find(spaceId => !blockedSpaceIds.has(spaceId));
+  assert.ok(safeSpaceId, 'fixture requires one non-adjacent space for the surviving expedition formation');
+  state.pieces[defender.id] = { ...state.pieces[defender.id], spaceId: safeSpaceId };
+  return state;
+}
+
 test('BG5C computer activation chooses the canonical legal attack before other actions', () => {
   const { state, attacker, defender } = computerCombatState();
 
@@ -75,11 +90,8 @@ test('BG5C identical computer positions choose the same attack without consuming
 });
 
 test('BG5C no-attack fallback remains dispatcher-legal after BG9 expands computer actions', () => {
-  const { state } = computerCombatState();
-  state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
-    id,
-    piece.seatId === 'seat-1' ? { ...piece, spaceId: null } : piece
-  ]));
+  const { state, defender } = computerCombatState();
+  moveExpeditionOutOfContact(state, defender);
 
   const action = chooseAutomaticBoardAction(state);
   assert.ok(action);
@@ -88,11 +100,8 @@ test('BG5C no-attack fallback remains dispatcher-legal after BG9 expands compute
 });
 
 test('BG5C computer cannot create a zero-cost Pass loop when nobody else can activate', () => {
-  const { state } = computerCombatState();
-  state.pieces = Object.fromEntries(Object.entries(state.pieces).map(([id, piece]) => [
-    id,
-    piece.seatId === 'seat-1' ? { ...piece, spaceId: null } : piece
-  ]));
+  const { state, defender } = computerCombatState();
+  moveExpeditionOutOfContact(state, defender);
   state.seats['seat-1'] = { ...state.seats['seat-1'], commandActionsRemaining: 0 };
 
   const action = chooseAutomaticBoardAction(state);
