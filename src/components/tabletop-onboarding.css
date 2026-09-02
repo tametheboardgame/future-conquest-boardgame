@@ -124,6 +124,39 @@
   box-shadow: 0 0 0 6px rgba(215, 198, 120, .13) !important;
 }
 
+.tabletop-action-unavailable,
+.tabletop-card-availability,
+.tabletop-support-reasons {
+  color: #d8c989;
+  font: 600 9px/1.35 IBM Plex Mono, monospace;
+}
+
+.tabletop-action-unavailable {
+  display: block;
+  flex: 1 1 100%;
+  margin-top: 5px;
+  padding-left: 8px;
+  border-left: 2px solid #9b8f58;
+}
+
+.tabletop-card-availability {
+  margin: 7px 0 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(155, 143, 88, .55);
+  background: rgba(155, 143, 88, .08);
+}
+
+.tabletop-support-reasons {
+  margin: 7px 0 0;
+  padding: 6px 8px 6px 24px;
+  border-left: 2px solid #9b8f58;
+  background: rgba(155, 143, 88, .06);
+}
+
+.tabletop-support-reasons li + li {
+  margin-top: 3px;
+}
+
 @media (max-width: 760px) {
   .tabletop-guide-button {
     right: 10px;
