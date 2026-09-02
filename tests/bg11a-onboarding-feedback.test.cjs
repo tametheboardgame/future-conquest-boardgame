@@ -68,3 +68,16 @@ test('BG11A remains presentation-only and provides non-colour accessibility cues
   assert.match(onboarding, /aria-labelledby="tabletop-onboarding-title"/);
   assert.match(onboarding, /aria-expanded=\{open\}/);
 });
+
+test('BG11A browser presentation probe validates the new guide while retaining legacy fallback', () => {
+  const probe = read('scripts/probe-r3-wp6-5-interface-polish.mjs');
+
+  assert.match(probe, /bg11-boardgame-onboarding-installed/);
+  assert.match(probe, /\.tabletop-onboarding-card/);
+  assert.match(probe, /Skip guide/);
+  assert.match(probe, /board-game/);
+  assert.match(probe, /\.tutorial-overlay/);
+  assert.match(probe, /Restart tutorial/);
+  assert.match(probe, /guidanceMode/);
+  assert.match(probe, /horizontalOverflow/);
+});
