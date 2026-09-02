@@ -3,6 +3,7 @@ import { projectBoardStatus } from '../game/board-state-status';
 import { useBoardGameState } from './BoardGameStateProvider';
 import { TabletopCardHandPanel } from './TabletopCardHandPanel';
 import { TabletopOnboarding } from './TabletopOnboarding';
+import { TabletopPassReason } from './TabletopPassReason';
 import { TabletopSupportPanel } from './TabletopSupportPanel';
 import '../bg10-campaign-status.css';
 
@@ -55,6 +56,7 @@ export function TabletopStatusShell() {
 
     <TabletopCardHandPanel />
     <TabletopSupportPanel />
+    <TabletopPassReason />
     <TabletopOnboarding />
   </section>;
 }
