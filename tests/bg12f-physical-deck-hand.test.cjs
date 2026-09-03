@@ -66,7 +66,7 @@ test('BG12F prefers direct formation and map targeting but retains accessible fa
   assert.match(panel, /readMapPieceId/);
   assert.match(panel, /document\.addEventListener\('click', onBoardClick, true\)/);
   assert.match(panel, /map\.on\('click', TERRAIN_CLICK_LAYER_ID, onTerrainClick\)/);
-  assert.match(panel, /map\.off\('click', TERRAIN_CLICK_LAYER_ID, onTerrainClick\)/);
+  assert.match(panel, /attachedMap\.off\('click', TERRAIN_CLICK_LAYER_ID, onTerrainClick\)/);
   assert.match(panel, /className="tabletop-card-accessibility"/);
   assert.match(panel, /<summary>Target controls<\/summary>/);
   assert.match(panel, /aria-label="Card formation"/);

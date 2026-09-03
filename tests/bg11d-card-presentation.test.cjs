@@ -14,14 +14,14 @@ test('BG11D card hand derives presentation from authoritative card metadata', ()
   assert.match(panel, /data-card-family=\{card\.family\}/);
   assert.match(panel, /data-card-effect=\{card\.effect\}/);
   assert.match(panel, /aria-pressed=\{card\.id === selectedCardId\}/);
-  assert.match(panel, /data-bg-presentation="BG11D"/);
+  assert.match(panel, /data-bg-package="BG8"/);
+  assert.match(panel, /data-bg-presentation="BG12F"/);
 });
 
-test('BG11D selected card explains its free-action relationship to ordinary legality', () => {
+test('BG11D free-action card behaviour survives the BG12F presentation upgrade', () => {
   const panel = read('src/components/TabletopCardHandPanel.tsx');
 
-  assert.match(panel, /Uses ordinary \{selectedEffect\} legality/);
-  assert.match(panel, /Command Action refunded after a successful play/);
+  assert.match(panel, /One-shot free actions/);
   assert.match(panel, /Play \{selectedEffect\} · free action/);
   assert.match(panel, /previewBoardAction\(state, playAction\)/);
   assert.match(panel, /dispatch\(playAction\)/);
