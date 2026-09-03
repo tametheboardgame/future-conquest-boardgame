@@ -1,5 +1,7 @@
 # BG11C — Dice Presentation and Combat-Result Feedback
 
+> **Historical package note — 3 September 2026:** This document records the original BG11C D20 presentation package. BG12G-R supersedes its player-facing die model and current combat wording with the locked **2D6** combat standard. The determinism, authoritative-result, accessibility and presentation-only principles below remain valid; D20-specific values and visuals are historical rather than current requirements.
+
 ## Goal
 
 Make the existing deterministic D20 combat system easier to read and more satisfying to operate without changing any combat rule, target calculation, random-number source or consequence.
@@ -52,3 +54,5 @@ BG11C does not change:
 - no second or presentation-owned random path exists;
 - reduced-motion and forced-colour modes retain complete combat information;
 - exact-head regression, browser and performance gates remain green.
+
+For current combat requirements after 3 September 2026, use `docs/BOARDGAME-CONVERSION-ROADMAP.md` and the BG12G-R 2D6 combat standard rather than the D20-specific acceptance wording above.
