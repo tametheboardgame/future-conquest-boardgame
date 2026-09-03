@@ -1,5 +1,7 @@
 # BG5 Current Position
 
+> **Historical status note — 3 September 2026:** BG5 established the deterministic D20 combat architecture. BG12G-R later superseded the D20 die model with the locked **2D6** combat standard. The dispatcher, authoritative-state, saved-RNG and unified human/AI architecture documented below remains applicable; D20-specific rolls, targets and critical values are historical.
+
 Last updated: 2026-08-29
 
 BG0 is accepted. BG1A-E, BG2A-E, BG3A-E, BG4A-D and BG5A-D are merged into `main`.
@@ -30,3 +32,5 @@ BG5 is accepted when PR #31's exact head passes the repository pull-request gate
 - legacy simulation Attack controls remain disabled only as a compatibility quarantine, not as an input to board-game combat.
 
 After BG5E merges, **BG5 - Dice Combat is complete** and the next roadmap phase is **BG6 - Escalation and Reinforcement Deck**.
+
+For current combat dice and calibration after 3 September 2026, use `docs/BOARDGAME-CONVERSION-ROADMAP.md` and the BG12G-R 2D6 combat standard.
