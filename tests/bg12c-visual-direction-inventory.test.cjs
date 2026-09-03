@@ -93,7 +93,7 @@ test('BG12C gives every currently dominant board surface a destination and packa
   }
 });
 
-test('BG12C records the current collision-prone overlay stack from the owning CSS', () => {
+test('BG12C records the pre-BG12E collision-prone overlay stack from the owning CSS', () => {
   assertStack('src/components/tabletop-rules-reference.css', '.tabletop-context-hint', 31);
   assertStack('src/components/tabletop-card-hand.css', '.tabletop-card-hand', 34);
   assertStack('src/bg1-current-activation.css', '.tabletop-activation-panel', 34);
@@ -116,14 +116,27 @@ test('BG12C records the current collision-prone overlay stack from the owning CS
   assert.equal(audited.get('tabletop-onboarding-card'), 74);
 });
 
-test('BG12C captures the transitional root ownership that causes box pile-up', () => {
+test('BG12C transitional root ownership has advanced into the BG12E layout owner', () => {
   const main = read('src/main.tsx');
-  const status = main.indexOf('<TabletopStatusShell />');
-  const app = main.indexOf('<App />');
-  const combat = main.indexOf('<TabletopCombatPanel />');
-  const activation = main.indexOf('<TabletopActivationPanel />');
+  assert.match(main, /<TabletopLayout>[\s\S]*?<App \/>[\s\S]*?<\/TabletopLayout>/);
+  assert.doesNotMatch(main, /<TabletopStatusShell \/>/);
+  assert.doesNotMatch(main, /<TabletopCombatPanel \/>/);
+  assert.doesNotMatch(main, /<TabletopActivationPanel \/>/);
 
-  assert.ok(status >= 0 && app > status && combat > app && activation > combat, 'root board/legacy sibling ownership changed; refresh BG12C inventory');
+  const layout = read('src/components/TabletopLayout.tsx');
+  for (const child of [
+    'TabletopStatusShell',
+    'TabletopContextHint',
+    'TabletopCardHandPanel',
+    'TabletopSupportPanel',
+    'TabletopPassReason',
+    'TabletopRulesReference',
+    'TabletopOnboarding',
+    'TabletopCombatPanel',
+    'TabletopActivationPanel'
+  ]) {
+    assert.match(layout, new RegExp(`<${child}(?:\\s|\\/)`), `BG12E layout no longer owns ${child}; refresh composition contract`);
+  }
 
   const shell = read('src/components/TabletopStatusShell.tsx');
   for (const child of [
@@ -134,7 +147,7 @@ test('BG12C captures the transitional root ownership that causes box pile-up', (
     'TabletopRulesReference',
     'TabletopOnboarding'
   ]) {
-    assert.match(shell, new RegExp(`<${child}\\s*/>`), `TabletopStatusShell no longer owns ${child}; refresh BG12C inventory`);
+    assert.doesNotMatch(shell, new RegExp(`<${child}\\s*/>`), `status strip must not resume overlay ownership of ${child}`);
   }
 });
 
