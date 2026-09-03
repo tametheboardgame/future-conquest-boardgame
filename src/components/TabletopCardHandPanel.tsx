@@ -147,6 +147,7 @@ export function TabletopCardHandPanel() {
   const [playedCard, setPlayedCard] = useState<BoardActionCardDefinition | null>(null);
   const previousHandRef = useRef<string[]>([]);
   const destinationIntentRef = useRef<(spaceId: string) => void>(() => undefined);
+  const playedCardTimerRef = useRef<number | null>(null);
   const activeSeat = state.seats[state.activeSeat];
   const hand = state.decks.action.handBySeat[state.activeSeat];
   const humanActivation = state.phase === 'activation' && activeSeat.controller === 'human';
@@ -161,6 +162,12 @@ export function TabletopCardHandPanel() {
     const timer = window.setTimeout(() => setNewlyDrawnCardId(''), 720);
     return () => window.clearTimeout(timer);
   }, [hand]);
+
+  useEffect(() => () => {
+    if (playedCardTimerRef.current !== null) {
+      window.clearTimeout(playedCardTimerRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     if (hand.includes(selectedCardId)) return;
@@ -364,8 +371,13 @@ export function TabletopCardHandPanel() {
     setPlayedCard(card);
     setSelectedPieceId('');
     setDestinationSpaceId('');
-    const timer = window.setTimeout(() => setPlayedCard(null), 760);
-    return () => window.clearTimeout(timer);
+    if (playedCardTimerRef.current !== null) {
+      window.clearTimeout(playedCardTimerRef.current);
+    }
+    playedCardTimerRef.current = window.setTimeout(() => {
+      setPlayedCard(null);
+      playedCardTimerRef.current = null;
+    }, 760);
   };
 
   const availabilityReason = humanActivation && playAction && preview && !preview.accepted
