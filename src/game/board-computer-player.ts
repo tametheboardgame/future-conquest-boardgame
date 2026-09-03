@@ -1,7 +1,7 @@
 import { getBoardActionCard, type BoardActionCardDefinition } from './board-action-cards';
 import { CENTRAL_FRONT_CAMPAIGN_OBJECTIVES } from './board-campaign';
 import { applyBoardAction } from './board-action-dispatcher';
-import { getBoardCombatPreview, getBoardCombatTargets } from './board-combat';
+import { getBoardCombatHitChance, getBoardCombatPreview, getBoardCombatTargets } from './board-combat';
 import { getBoardMoveDestinations } from './board-state';
 import type { BoardAction, BoardGameState, BoardPiece, SeatId } from './board-state-types';
 
@@ -153,9 +153,8 @@ function scoreStandardAction(
     const preview = getBoardCombatPreview(state, action.attackerPieceId, action.defenderPieceId);
     if (!preview.legal) return Number.NEGATIVE_INFINITY;
     const defender = state.pieces[action.defenderPieceId];
-    const requiredDie = preview.target - preview.attackModifier;
-    const successfulFaces = Math.max(0, Math.min(20, 21 - requiredDie));
-    const hitChance = successfulFaces / 20;
+    const chance = getBoardCombatHitChance(preview.target, preview.attackModifier);
+    const hitChance = chance.successfulOutcomes / chance.totalOutcomes;
     const objectiveBonus = defender?.spaceId && isCampaignObjective(defender.spaceId) ? 26 : 0;
     score = 70
       + hitChance * 36
@@ -197,8 +196,8 @@ function scoreStandardAction(
   } else if (action.type === 'engineer-position' && typeof action.pieceId === 'string') {
     const piece = state.pieces[action.pieceId];
     if (!piece?.spaceId) return Number.NEGATIVE_INFINITY;
-    const fortification = Math.max(0, Math.trunc(state.spaces[piece.spaceId]?.fortification ?? 0));
-    score = 28 + (3 - Math.min(3, fortification)) * 4
+    const fortified = Math.max(0, Math.trunc(state.spaces[piece.spaceId]?.fortification ?? 0)) > 0;
+    score = 28 + (fortified ? 0 : 4)
       + hostileAdjacencyCount(state, piece.spaceId, piece.seatId) * 7
       + (isCampaignObjective(piece.spaceId) ? 10 : 0);
   } else if (action.type === 'end-seat-actions') {
