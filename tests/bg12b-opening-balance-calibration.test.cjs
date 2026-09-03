@@ -5,6 +5,12 @@ const path = require('node:path');
 
 const { createInitialBoardState } = require('../.test-dist/board-state.js');
 const { BOARD_COMMAND_ACTIONS_PER_ROUND } = require('../.test-dist/board-state-types.js');
+const {
+  BOARD_COMBAT_BASE_TARGET,
+  BOARD_COMBAT_DIE_COUNT,
+  BOARD_COMBAT_DIE_SIDES,
+  BOARD_COMBAT_ELIMINATION_DAMAGE
+} = require('../.test-dist/board-combat.js');
 const { BOARD_ESCALATION_CARDS } = require('../.test-dist/board-escalation.js');
 const { SLICE_IDS } = require('../.test-dist/data.js');
 const { runBoardPlaytestMatrix } = require('../.test-dist/board-playtest-simulation.js');
@@ -30,13 +36,14 @@ test('BG12B does not increase the Command Action economy', () => {
   assert.equal(state.seats['seat-2'].commandActionsRemaining, 0);
 });
 
-test('BG12B leaves combat and escalation rule constants untouched', () => {
+test('BG12B opening calibration remains intact while BG12G-R owns the later 2D6 combat conversion', () => {
   const scenario = read('src/game/board-scenario.ts');
-  const combat = read('src/game/board-combat.ts');
 
   assert.match(scenario, /'TG-7', 'TG-8'/);
-  assert.match(combat, /BOARD_COMBAT_BASE_TARGET = 11/);
-  assert.match(combat, /BOARD_COMBAT_ELIMINATION_DAMAGE = 3/);
+  assert.equal(BOARD_COMBAT_DIE_COUNT, 2);
+  assert.equal(BOARD_COMBAT_DIE_SIDES, 6);
+  assert.equal(BOARD_COMBAT_BASE_TARGET, 7);
+  assert.equal(BOARD_COMBAT_ELIMINATION_DAMAGE, 3);
   assert.deepEqual(
     BOARD_ESCALATION_CARDS.map(card => card.reinforcementCount),
     [1, 1, 1, 1, 2, 2, 2, 2]
