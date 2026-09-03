@@ -146,7 +146,8 @@ test('BG12C explicitly quarantines historical probes that still depend on legacy
   assert.match(navigation, /command-nav-legacy/);
 
   const workflow = read('.github/workflows/r3-wp9-integrated-validation.yml');
-  assert.match(workflow, /Adapt historical browser probes to the board-game shell/);
+  assert.match(workflow, /Adapt historical browser probes to explicit BG12D diagnostics mode/);
+  assert.match(workflow, /legacy-ui=1/);
   assert.match(workflow, /probe-r3-wp6-command-ui\.mjs/);
   assert.match(workflow, /probe-r3-wp6-5-interface-polish\.mjs/);
 
