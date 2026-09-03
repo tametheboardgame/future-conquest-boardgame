@@ -46,13 +46,14 @@ test('activation panel keeps board rules authoritative while using retained rend
   assert.match(panel, /data-bg-movement="BG4C"/);
 });
 
-test('board action panels remain mounted adjacent to the retained app under the board provider', () => {
+test('BG12E keeps board action panels under the provider but gives layout ownership to the tabletop rail', () => {
   const main = read('src/main.tsx');
+  const layout = read('src/components/TabletopLayout.tsx');
 
-  assert.match(main, /BoardGameStateProvider/);
-  assert.match(main, /TabletopStatusShell/);
-  assert.match(main, /TabletopCombatPanel/);
-  assert.match(main, /TabletopActivationPanel/);
-  assert.match(main, /<TabletopStatusShell \/>\s*<App \/>\s*<TabletopCombatPanel \/>\s*<TabletopActivationPanel \/>/);
+  assert.match(main, /<BoardGameStateProvider>[\s\S]*?<TabletopLayout>[\s\S]*?<App \/>[\s\S]*?<\/TabletopLayout>[\s\S]*?<\/BoardGameStateProvider>/);
+  assert.match(layout, /<TabletopStatusShell \/>/);
+  assert.match(layout, /activeSurface === 'combat'[\s\S]*?<TabletopCombatPanel \/>/);
+  assert.match(layout, /activeSurface === 'activation'[\s\S]*?<TabletopActivationPanel \/>/);
   assert.match(main, /bg1-current-activation\.css/);
+  assert.match(main, /bg12e-tabletop-layout\.css/);
 });
