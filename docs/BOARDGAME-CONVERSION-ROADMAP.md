@@ -204,20 +204,21 @@ Dropdowns/selects may remain as accessibility or fallback controls, but should n
 
 ## Physical dice
 
-The current deterministic D20 combat remains authoritative, but the player should see an **actual die roll**.
+The approved final combat direction is **two classic six-sided dice**, not a simulated polyhedral D20.
 
-Initial target:
+The first BG12G physical-D20 implementation was mechanically correct but failed the manual visual gate: the faceted silhouette did not read cleanly as a real D20 and its rotation read more like a flat coin flip than two objects tumbling across a tray. That implementation is historical and is superseded by BG12G-R below.
 
-- a physical-looking D20 in a dice tray;
-- tumble, bounce and roll animation;
-- final visible face equals the authoritative seeded result;
-- concise attack equation and HIT / MISS / CRITICAL result;
+Target behaviour:
+
+- two unmistakably cubic D6s with conventional pip faces;
+- each die has visible depth and independent three-axis tumble/bounce motion;
+- the final two faces and their total equal the authoritative 2D6 combat result;
+- concise attack equation plus HIT / MISS / CRITICAL result;
 - dice-clatter sound hook;
-- reduced-motion fallback that quickly reveals the final face.
+- reduced-motion fallback that quickly reveals the two final faces;
+- no second WebGL/Three renderer beside MapLibre.
 
-To protect the map renderer, the first implementation should prefer DOM/CSS 3D or another non-WebGL presentation rather than introducing a second WebGL/Three renderer beside MapLibre.
-
-If later card/rules design introduces additional dice, the same tray can support them; BG12G does not invent new combat dice merely for visual effect.
+This is deliberately a **combat-rules change as well as a presentation change**. The 2D6 probability curve is not equivalent to a D20, so the authoritative combat targets/modifiers are recalibrated in BG12G-R rather than disguising the old D20 result behind two cosmetic dice.
 
 ## Contextual formation interaction
 
@@ -267,7 +268,7 @@ These systems are fundamentally aligned with the target and should be preserved:
 - alternating activations and Command Actions;
 - direct map selection and destination highlighting;
 - BG4 physical movement animation;
-- BG5 deterministic D20 combat rules;
+- BG5 deterministic combat foundation, with the D20 die model superseded by BG12G-R's authoritative 2D6 conversion;
 - BG6 escalation/reinforcement state;
 - BG7 simplified Recover / Engineer / Logistics actions;
 - BG8 strategic card state and authoritative card-play path;
@@ -340,7 +341,7 @@ The detailed old forward plan is removed from this roadmap because these package
 | BG2 | COMPLETE | Authoritative deterministic board state |
 | BG3 | COMPLETE | Seats, rounds, Command Actions, alternating activations |
 | BG4 | COMPLETE | Physical pieces, direct map movement, movement animation |
-| BG5 | COMPLETE | Deterministic visible D20 combat |
+| BG5 | COMPLETE | Deterministic visible D20 combat; die model later superseded by BG12G-R |
 | BG6 | COMPLETE | Escalation and reinforcement deck system |
 | BG7 | COMPLETE | Simplified Recover / Engineer / Logistics board actions |
 | BG8 | COMPLETE | Strategic cards and authoritative card-play path |
@@ -507,29 +508,242 @@ A screenshot should make it immediately obvious that the player is holding **car
 
 ---
 
-## BG12G - Physical Dice Tray and Rolling Dice
+## BG12G-R - Physical 2D6 Dice Tray and Combat Recalibration
 
-### Goal
+**Status: REOPENED AFTER MANUAL VISUAL GATE — the merged physical-D20 implementation is superseded by this revision.**
 
-Make combat resolution tactile and satisfying while preserving deterministic combat.
+### Why BG12G is being redone
 
-### Work
+The original BG12G implementation proved the correct architecture: combat remained deterministic, the engine resolved first, animation could follow authoritative state, reduced motion worked, and no second WebGL renderer was introduced. It nevertheless failed the real-hardware visual test.
 
-- replace the floating dice-information box with a physical dice tray in the tabletop rail;
-- implement a real-looking animated D20;
-- engine resolves seeded roll first;
-- animation lands on exactly that result;
-- show concise target/modifier equation before roll;
-- show final die/result/consequences after roll;
-- support reduced-motion;
-- add sound hooks for dice roll/clatter;
-- do not create a second WebGL renderer unless a later measured need justifies it.
+The displayed die did not read as a convincing physical D20. Its silhouette looked closer to a rounded D12/polyhedral token, and the motion read as a two-dimensional flip rather than a solid die tumbling through space.
 
-### Acceptance
+The approved replacement is **two classic pip D6s**. Because 2D6 has a bell-shaped probability distribution rather than a flat D20 distribution, this revision changes the real combat rule instead of cosmetically mapping an old D20 number onto fake D6s.
 
-The player presses **ROLL**, sees an actual die tumble/land, and can immediately understand the resulting attack.
+### Player-facing rules contract
 
-No animation result may disagree with saved/reloaded authoritative combat state.
+Combat now uses **2D6**.
+
+Initial calibration for the revision branch:
+
+- roll two six-sided dice and add them;
+- base hit target: **7+**;
+- supply attack modifier remains intuitive and visible:
+  - supplied: `+0`;
+  - strained: `-1`;
+  - isolated: `-2`;
+- terrain is compressed for the 2D6 curve:
+  - open: `+0` defence;
+  - mixed lowland: `+1` defence;
+  - mixed upland: `+1` defence;
+  - mountainous: `+1` defence;
+- fortification becomes a **binary board-game state** rather than a three-level D20-era stack:
+  - unfortified: `+0` defence;
+  - fortified: `+1` defence;
+  - Engineer may fortify an eligible formation once; additional stacking to levels 2/3 is retired;
+  - legacy saves containing fortification 2/3 remain loadable and are treated as fortified for combat rather than becoming invalid;
+- hit when `2D6 total + supply modifier >= 7 + terrain defence + fortification defence`;
+- natural **double six** is the critical result;
+- critical consequence rules remain the existing authoritative critical consequence unless a separate balance finding requires change.
+
+These values are the **initial calibration**, not an excuse to skip balance evidence. The exact-head campaign matrix may adjust only the 2D6 calibration knobs in this package if it demonstrates a material strategic regression. Opening-force counts, victory thresholds, cards and unrelated systems are not silently retuned to compensate.
+
+### Why the modifier scale changes
+
+A D20 is flat: every +1/-1 changes hit probability by exactly five percentage points until the ends of the range.
+
+2D6 is curved around seven. The 36 equally likely ordered outcomes give these chances of rolling at least a target before modifiers:
+
+| Need on 2D6 | Hit chance |
+| ---: | ---: |
+| 6+ | 72.2% |
+| 7+ | 58.3% |
+| 8+ | 41.7% |
+| 9+ | 27.8% |
+| 10+ | 16.7% |
+| 11+ | 8.3% |
+| 12 | 2.8% |
+
+Keeping the old D20 terrain `0/+1/+2/+3` and fortification `0..3` values would therefore make combined defensive modifiers dramatically stronger and would create near-automatic campaign stalls. Terrain is compressed and fortification becomes binary so the game can use the character of 2D6 without accidentally importing D20-sized modifiers onto a much steeper probability curve.
+
+### Expected gameplay change
+
+The conversion is intentionally not probability-neutral.
+
+Compared with the old D20 model:
+
+- **neutral supplied attacks become a little more decisive**: open-ground baseline moves from 50% to 58.3%;
+- **ordinary defensive terrain remains meaningful**: supplied attacks into non-open terrain are 41.7%;
+- **supply matters much more** around the centre of the curve: strained open attacks are 41.7% and isolated open attacks are 27.8%;
+- **fortifying a position becomes a clear one-action board-game decision** rather than a three-step numerical stack;
+- **combined advantages matter strongly**: a supplied attack into fortified non-open terrain is 27.8%, strained is 16.7%, and isolated is 8.3%;
+- players should therefore be encouraged to restore supply, choose open approaches, use cards/support, manoeuvre around strongpoints or attack before a position is fortified rather than repeatedly throwing low-odds attacks at it;
+- results cluster around the middle, so combat should feel less swingy and less arbitrary than a D20 while still allowing dramatic doubles;
+- criticals become rarer and more recognisable: double six is 1/36, or 2.8%, instead of natural 20 at 5%;
+- AI attack desirability changes because the probability curve is different; AI must consume the same shared authoritative probability helper as the human preview;
+- campaign pacing may become faster in open manoeuvre and slower around supplied fortified terrain. This is a required playtest/automation observation, not an assumed success.
+
+The design aim is **more board-game texture, not simply the closest numerical imitation of a D20**. If the exact-head campaign matrix becomes materially defender-dominant or produces objective deadlock, recalibrate the 2D6 target/terrain/supply/fortification knobs inside BG12G-R and rerun the evidence before merge.
+
+### Deterministic RNG contract
+
+The rules engine remains authoritative and seeded.
+
+- one authoritative PRNG sample is consumed per combat, preserving the existing one-step combat RNG cursor footprint;
+- that sample selects one of the **36 equally likely ordered D6 pairs**;
+- the selected pair is stored in authoritative combat state as two individual faces plus their total;
+- presentation code never calls `Math.random`, `crypto`, a second board RNG path or animation physics to choose a result;
+- animation starts only after dispatch and must land on the stored pair;
+- reload/continue must reproduce the stored pair and total without rolling again.
+
+Using one seed sample for one of 36 ordered outcomes is mathematically equivalent to selecting the joint result of two fair D6s while avoiding an unnecessary change to the number of PRNG cursor advances per attack.
+
+### Authoritative state and save compatibility
+
+The combat roll state should expose both dice while retaining a migration-safe total:
+
+```ts
+dice: [number, number];
+die: number; // compatibility field containing dice[0] + dice[1]
+attackTotal: number;
+target: number;
+outcome: 'hit' | 'miss';
+```
+
+Rules:
+
+- every newly resolved combat writes the two faces and total;
+- `die` remains temporarily as the total so existing consumers do not all break in one package;
+- persistence validates both faces as integers 1-6 and validates that the total equals their sum;
+- legacy saves with a resolved D20 `die` but no `dice` remain loadable;
+- the UI must never invent fake D6 faces for a legacy D20 result. It may show a clear legacy resolved-roll fallback until a new combat occurs;
+- save/reload/continue and deterministic replay tests are mandatory.
+
+### Shared probability contract
+
+The 2D6 hit-chance calculation belongs in the authoritative combat module, not separately in UI and AI.
+
+Create/reuse one helper that enumerates the 36 ordered outcomes for the current target/modifier and returns the success count/percentage. Both:
+
+- `TabletopCombatPanel`; and
+- computer-player attack evaluation
+
+must use that same helper.
+
+This prevents the human preview saying one probability while the AI reasons from another.
+
+### Physical D6 presentation brief
+
+Replace `PhysicalD20` and its faceted/clip-path construction with two real CSS-3D cube components.
+
+Each D6 must:
+
+- have six actual square faces using 3D transforms, not a flat sprite rotating in 2D;
+- use conventional pip layouts for 1-6 rather than printed numerals on the cube;
+- keep opposite faces conventionally paired where practical (`1↔6`, `2↔5`, `3↔4`);
+- retain visible side/top depth throughout the roll so it continues to read as a cube;
+- tumble around X, Y and Z axes;
+- translate across the tray and visibly bounce before settling;
+- have a slightly different trajectory/timing from the other die so the pair does not move as one rigid object;
+- land with the authoritative face visibly uppermost/front-readable;
+- avoid clipping through the tray rim or each other in the accepted desktop size.
+
+The pair should feel like two small physical objects thrown into the recessed tray. It must **not** look like two cards, two rotating squares or two coins flipping.
+
+### Roll/result presentation
+
+Before roll:
+
+- show `2D6` and the exact target equation;
+- show an authoritative hit percentage based on 36 outcomes;
+- show both physical dice resting in the tray without implying a future result.
+
+During roll:
+
+- lock attacker/target controls against a duplicate dispatch;
+- hide the authoritative faces/total from visual and screen-reader output until settle;
+- fire the dice-clatter start hook;
+- animate the two cubes independently.
+
+On settle:
+
+- reveal the two stored faces;
+- show the arithmetic explicitly, for example **`3 + 5 = 8`**;
+- then show supply modifier and final comparison, for example **`8 - 1 = 7 vs 8`**;
+- reveal HIT / MISS / CRITICAL and consequences;
+- fire the settled sound hook with `{ dice: [a, b], total }` detail.
+
+### Accessibility and reduced motion
+
+- critical state cannot rely on colour, motion or sound;
+- keyboard/fallback target controls remain usable;
+- `prefers-reduced-motion` skips the long tumble and quickly reveals the final two cube faces;
+- forced-colour treatment must preserve die boundaries/pips/result semantics;
+- screen readers announce “Rolling two D6” during motion, then announce the two faces, total and outcome only after settle.
+
+### Renderer/performance boundary
+
+- use DOM/CSS 3D for the dice;
+- do not create another canvas/WebGL/Three renderer;
+- do not touch MapLibre lifecycle, terrain setup, camera or formation projection;
+- keep the existing tabletop rail surface budget;
+- exact-head WP2E performance budgets remain unchanged.
+
+### Required deterministic contracts
+
+Add/update tests for:
+
+- all authoritative rolls producing two faces in `1..6` and a total in `2..12`;
+- the 36-outcome mapping and one-RNG-cursor-advance contract;
+- total equalling `dice[0] + dice[1]`;
+- critical only on double six;
+- the recalibrated target/terrain/supply/fortification rules;
+- binary Engineer fortification behaviour and legacy fortification compatibility;
+- shared 2D6 probability helper used by UI and AI;
+- save/reload of current 2D6 combat;
+- loading a legacy D20 resolved combat without fabricating D6 faces;
+- two CSS-3D cube dice with six pip faces each;
+- independent tumble/bounce/settle motion;
+- delayed result reveal and reduced-motion fallback;
+- sound-hook payload;
+- absence of presentation RNG and second WebGL renderer;
+- full historical regression suite.
+
+### Balance and campaign gate
+
+Because this package changes the combat distribution, source/unit tests are not enough.
+
+Before merge:
+
+1. run the canonical deterministic multi-seed campaign matrix on the exact head;
+2. compare win mix, campaign length, objective capture timing, attack frequency, hit rate and stalled-campaign traces with the accepted pre-2D6 baseline;
+3. inspect AI attack selection under the new probabilities;
+4. reject any obvious permanent strongpoint/deadlock pattern caused by the new curve;
+5. if tuning is required, change only documented 2D6 calibration values and repeat the entire exact-head evidence cycle;
+6. do not quietly change opening force counts or unrelated victory/card systems to make the 2D6 package pass.
+
+### Automated acceptance
+
+- full regression suite green;
+- exact-head integrated browser validation green;
+- save/reload continuity green;
+- campaign traces/multi-seed balance evidence acceptable;
+- exact-head terrain performance gate green with unchanged budgets;
+- production build/deployment verifier green.
+
+### Manual visual/gameplay gate
+
+**Required before BG12H.**
+
+The live build passes only if the user can immediately say:
+
+- “those are two real D6s”;
+- both dice visibly tumble/bounce as solid cubes rather than flip like coins;
+- the two visible faces add to the displayed authoritative total;
+- the resulting attack is understandable immediately;
+- the dice tray feels like a physical board-game component while the map still dominates the screen.
+
+If the cubes or motion still fail that real-hardware test, BG12G-R remains open even if every automated gate is green.
 
 ---
 
@@ -931,14 +1145,15 @@ If a package makes the UI materially more cluttered than the approved tabletop c
 4. **BG12E** - build the clean tabletop composition.
 5. **MANUAL VISUAL CHECK.**
 6. **BG12F** - physical decks/cards.
-7. **BG12G** - real animated dice tray.
-8. **BG12H** - compact contextual piece/action flow.
-9. **MANUAL GAMEPLAY/VISUAL CHECK.**
-10. **BG12I-K** - reduce map clutter, coach marks, secondary drawers.
-11. **MANUAL VISUAL ACCEPTANCE.**
-12. **BG12L-N** - effects, sound/music, responsive/touch.
-13. **BG12O** - safely remove old simulation architecture from the normal runtime.
-14. **BG12P** - structured human playtest/remediation.
-15. **BG12Q** - final release candidate and presentation gate.
+7. **BG12G-R** - replace rejected D20 presentation and authoritative D20 combat with calibrated physical 2D6 combat.
+8. **MANUAL DICE/GAMEPLAY CHECK.**
+9. **BG12H** - compact contextual piece/action flow.
+10. **MANUAL GAMEPLAY/VISUAL CHECK.**
+11. **BG12I-K** - reduce map clutter, coach marks, secondary drawers.
+12. **MANUAL VISUAL ACCEPTANCE.**
+13. **BG12L-N** - effects, sound/music, responsive/touch.
+14. **BG12O** - safely remove old simulation architecture from the normal runtime.
+15. **BG12P** - structured human playtest/remediation.
+16. **BG12Q** - final release candidate and presentation gate.
 
 The goal from this point onward is not to add more interface. It is to make the existing game systems feel like **one coherent physical board game**.
