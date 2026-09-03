@@ -19,8 +19,8 @@ const { TERRITORIES } = require('../.test-dist/data.js');
 const TERRAIN_MODIFIER = {
   'open-lowland': 0,
   'mixed-lowland': 1,
-  'mixed-upland': 2,
-  mountainous: 3
+  'mixed-upland': 1,
+  mountainous: 1
 };
 
 function startedState(seed = 20260828) {
@@ -44,7 +44,7 @@ function adjacentEnemy(state, attackerPieceId = 'TG-1') {
   return { attacker, defender, targetSpaceId };
 }
 
-test('BG5A exposes a legal adjacent-enemy D20 preview with explicit terrain and fortification modifiers', () => {
+test('BG5A exposes a legal adjacent-enemy 2D6 preview with explicit terrain and binary fortification modifiers', () => {
   const state = startedState();
   const { defender, targetSpaceId } = adjacentEnemy(state);
   state.spaces[targetSpaceId] = { ...state.spaces[targetSpaceId], fortification: 2 };
@@ -54,11 +54,13 @@ test('BG5A exposes a legal adjacent-enemy D20 preview with explicit terrain and 
   assert.equal(preview.legal, true);
   assert.equal(preview.dieCount, BOARD_COMBAT_DIE_COUNT);
   assert.equal(preview.dieSides, BOARD_COMBAT_DIE_SIDES);
+  assert.equal(preview.dieCount, 2);
+  assert.equal(preview.dieSides, 6);
   assert.equal(preview.baseTarget, BOARD_COMBAT_BASE_TARGET);
   assert.equal(preview.modifiers.supply, 0);
   assert.equal(preview.modifiers.terrain, TERRAIN_MODIFIER[TERRITORIES[targetSpaceId].terrain]);
-  assert.equal(preview.modifiers.fortification, 2);
-  assert.equal(preview.target, BOARD_COMBAT_BASE_TARGET + preview.modifiers.terrain + 2);
+  assert.equal(preview.modifiers.fortification, 1);
+  assert.equal(preview.target, BOARD_COMBAT_BASE_TARGET + preview.modifiers.terrain + 1);
   assert.ok(preview.possibleOutcomes.length >= 4);
 });
 
@@ -76,12 +78,12 @@ test('BG5A declaration locks the visible combat contract without spending an act
   assert.equal(declared.state.rng.calls, state.rng.calls);
   assert.equal(declared.state.seats['seat-1'].commandActionsRemaining, 4);
   assert.equal(declared.state.activeSeat, 'seat-1');
-  assert.match(declared.state.combat.log[1], /Roll 1D20/);
+  assert.match(declared.state.combat.log[1], /Roll 2D6/);
   assert.equal(serializeBoardState(state), before);
 });
 
-test('BG5A resolution uses authoritative seeded RNG, records hit/miss, spends one action and advances activation', () => {
-  const state = startedState(11264);
+test('BG5A resolution uses authoritative seeded RNG, records the two D6 faces, spends one action and advances activation', () => {
+  const state = startedState(14848);
   const { defender } = adjacentEnemy(state);
   const declared = declareBoardCombat(state, 'TG-1', defender.id);
   assert.equal(declared.accepted, true);
@@ -92,14 +94,15 @@ test('BG5A resolution uses authoritative seeded RNG, records hit/miss, spends on
   assert.equal(resolved.commandActionsSpent, 1);
   assert.equal(resolved.state.rng.calls, 1);
   assert.equal(resolved.state.combat.status, 'resolved');
-  assert.equal(resolved.state.combat.roll.die, 15);
+  assert.deepEqual(resolved.state.combat.roll.dice, [6, 4]);
+  assert.equal(resolved.state.combat.roll.die, 10);
   assert.equal(resolved.state.combat.roll.outcome, 'hit');
   assert.equal(resolved.state.seats['seat-1'].commandActionsRemaining, 3);
   assert.equal(resolved.state.activeSeat, 'seat-2');
   assert.ok(resolved.state.combat.log.some(line => /HIT/.test(line)));
 });
 
-test('BG5A identical seeds and board positions reproduce the exact same combat roll', () => {
+test('BG5A identical seeds and board positions reproduce the exact same 2D6 combat roll', () => {
   function resolveOnce() {
     const state = startedState(20260828);
     const { defender } = adjacentEnemy(state);
@@ -111,12 +114,13 @@ test('BG5A identical seeds and board positions reproduce the exact same combat r
 
   assert.deepEqual(first.combat.roll, second.combat.roll);
   assert.deepEqual(first.rng, second.rng);
-  assert.equal(first.combat.roll.die, 3);
+  assert.deepEqual(first.combat.roll.dice, [1, 4]);
+  assert.equal(first.combat.roll.die, 5);
   assert.equal(first.combat.roll.outcome, 'miss');
 });
 
-test('BG5A supply penalties are visible before commitment and affect the resolved attack total', () => {
-  const state = startedState(11264);
+test('BG5A supply penalties are visible before commitment and affect the resolved 2D6 attack total', () => {
+  const state = startedState(14848);
   state.pieces['TG-1'] = { ...state.pieces['TG-1'], supply: 'isolated' };
   const { defender } = adjacentEnemy(state);
 
@@ -126,8 +130,9 @@ test('BG5A supply penalties are visible before commitment and affect the resolve
   assert.equal(preview.attackModifier, -2);
 
   const resolved = resolveBoardCombat(declareBoardCombat(state, 'TG-1', defender.id).state);
-  assert.equal(resolved.state.combat.roll.die, 15);
-  assert.equal(resolved.state.combat.roll.attackTotal, 13);
+  assert.deepEqual(resolved.state.combat.roll.dice, [6, 4]);
+  assert.equal(resolved.state.combat.roll.die, 10);
+  assert.equal(resolved.state.combat.roll.attackTotal, 8);
 });
 
 test('BG5A rejects friendly and non-adjacent targets without mutation or cost', () => {
@@ -172,11 +177,12 @@ test('BG5A does not roll twice or allow a second declaration while combat is pen
 });
 
 test('BG5B applies the first ordinary hit to the visible damage and readiness tracks', () => {
-  const state = startedState(11264);
+  const state = startedState(14848);
   const { defender } = adjacentEnemy(state);
   const resolved = resolveBoardCombat(declareBoardCombat(state, 'TG-1', defender.id).state);
 
   assert.equal(resolved.state.combat.roll.outcome, 'hit');
+  assert.equal(resolved.state.combat.consequence.critical, false);
   assert.equal(resolved.state.pieces[defender.id].damage, 1);
   assert.equal(resolved.state.pieces[defender.id].readiness, 75);
   assert.equal(resolved.state.combat.consequence.defenderStatus, 'held');
