@@ -30,14 +30,28 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function hasValidCombatRoll(value: unknown): value is BoardCombatRoll {
+function hasValidD6Pair(value: unknown): value is [number, number] {
+  return Array.isArray(value)
+    && value.length === 2
+    && value.every(face => Number.isInteger(face) && face >= 1 && face <= 6);
+}
+
+function hasValidCombatRoll(value: unknown, model: '2d6' | 'legacy-d20'): value is BoardCombatRoll {
   if (!isRecord(value)) return false;
-  return Number.isInteger(value.die)
-    && (value.die as number) >= 1
-    && (value.die as number) <= 20
-    && isFiniteNumber(value.attackTotal)
-    && isFiniteNumber(value.target)
-    && (value.outcome === 'hit' || value.outcome === 'miss');
+  if (!Number.isInteger(value.die)
+    || !isFiniteNumber(value.attackTotal)
+    || !isFiniteNumber(value.target)
+    || (value.outcome !== 'hit' && value.outcome !== 'miss')) return false;
+
+  if (model === 'legacy-d20') {
+    return value.dice === undefined
+      && (value.die as number) >= 1
+      && (value.die as number) <= 20;
+  }
+
+  if (!hasValidD6Pair(value.dice)) return false;
+  const total = value.dice[0] + value.dice[1];
+  return value.die === total && total >= 2 && total <= 12;
 }
 
 function hasValidCombatConsequence(value: unknown, state: BoardGameState): value is BoardCombatConsequence {
@@ -54,9 +68,9 @@ function hasValidCombatConsequence(value: unknown, state: BoardGameState): value
 }
 
 /**
- * BG5 combat was added without changing the v3 save envelope so older v3 saves
- * remain loadable. Validate the optional combat payload at the browser-storage
- * boundary instead of silently trusting malformed combat state.
+ * BG5/BG12G combat evolved inside the v3 save envelope. Validate both the
+ * current 2D6 payload and an already-resolved legacy D20 payload at the
+ * browser-storage boundary instead of fabricating migration dice faces.
  */
 function hasValidPersistedCombat(state: BoardGameState): boolean {
   const combat = state.combat;
@@ -67,7 +81,12 @@ function hasValidPersistedCombat(state: BoardGameState): boolean {
   if (typeof combat.defenderPieceId !== 'string' || !state.pieces[combat.defenderPieceId]) return false;
   if (typeof combat.originSpaceId !== 'string' || !state.spaces[combat.originSpaceId]) return false;
   if (typeof combat.targetSpaceId !== 'string' || !state.spaces[combat.targetSpaceId]) return false;
-  if (combat.dieCount !== 1 || combat.dieSides !== 20 || !isFiniteNumber(combat.baseTarget)) return false;
+  if (!isFiniteNumber(combat.baseTarget)) return false;
+
+  const current2D6 = combat.dieCount === 2 && combat.dieSides === 6;
+  const legacyD20 = combat.dieCount === 1 && combat.dieSides === 20;
+  if (!current2D6 && !legacyD20) return false;
+
   if (!isRecord(combat.modifiers)
     || !isFiniteNumber(combat.modifiers.supply)
     || !isFiniteNumber(combat.modifiers.terrain)
@@ -75,11 +94,25 @@ function hasValidPersistedCombat(state: BoardGameState): boolean {
   if (!Array.isArray(combat.log) || combat.log.some(entry => typeof entry !== 'string')) return false;
 
   if (combat.status === 'declared') {
+    // A pre-2D6 declaration consumed neither RNG nor a Command Action. It is
+    // safely cleared on load below so it cannot resolve using stale D20 targets.
     return combat.roll === null && combat.consequence === undefined;
   }
 
-  if (!hasValidCombatRoll(combat.roll)) return false;
+  if (!hasValidCombatRoll(combat.roll, current2D6 ? '2d6' : 'legacy-d20')) return false;
   return combat.consequence === undefined || hasValidCombatConsequence(combat.consequence, state);
+}
+
+function migrateLegacyDeclaredCombat(state: BoardGameState): BoardGameState {
+  if (state.combat?.status === 'declared'
+    && state.combat.dieCount === 1
+    && state.combat.dieSides === 20) {
+    // Declaration was zero-cost and consumed no RNG, so clearing it preserves
+    // the turn exactly and lets the player reselect under the current 2D6 rule.
+    const { combat: _legacyCombat, ...rest } = state;
+    return rest;
+  }
+  return state;
 }
 
 export function inspectStoredBoardState(storage: BoardStateStorageReader): BoardStateInspection {
@@ -107,7 +140,7 @@ export function inspectStoredBoardState(storage: BoardStateStorageReader): Board
     if (!hasValidPersistedCombat(state)) {
       throw new Error('Invalid Future Conquest board combat state.');
     }
-    return { ok: true, state };
+    return { ok: true, state: migrateLegacyDeclaredCombat(state) };
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (message.includes('Unsupported Future Conquest board state version')) {
