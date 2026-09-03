@@ -1,15 +1,9 @@
 import { projectBoardCampaignStatus } from '../game/board-campaign';
 import { projectBoardStatus } from '../game/board-state-status';
 import { useBoardGameState } from './BoardGameStateProvider';
-import { TabletopCardHandPanel } from './TabletopCardHandPanel';
-import { TabletopContextHint } from './TabletopContextHint';
-import { TabletopOnboarding } from './TabletopOnboarding';
-import { TabletopPassReason } from './TabletopPassReason';
-import { TabletopRulesReference } from './TabletopRulesReference';
-import { TabletopSupportPanel } from './TabletopSupportPanel';
 import '../bg10-campaign-status.css';
 
-/** Board-game chrome now reads its status directly from authoritative board state. */
+/** Board-game chrome reads its status directly from authoritative board state. */
 export function TabletopStatusShell() {
   const state = useBoardGameState();
   const status = projectBoardStatus(state);
@@ -19,11 +13,8 @@ export function TabletopStatusShell() {
     className="tabletop-status-shell"
     aria-label="Board game status"
     data-bg-package="BG2D"
-    data-bg-support="BG7"
-    data-bg-cards="BG8"
     data-bg-campaign="BG10"
-    data-bg-onboarding="BG11A"
-    data-bg-guidance="BG11B"
+    data-bg-layout="BG12E"
   >
     <div className="tabletop-title-block">
       <span>FUTURE CONQUEST</span>
@@ -56,12 +47,5 @@ export function TabletopStatusShell() {
       <strong>{campaign.outcomeLabel}</strong>
       <p>{campaign.reason}</p>
     </aside>}
-
-    <TabletopContextHint />
-    <TabletopCardHandPanel />
-    <TabletopSupportPanel />
-    <TabletopPassReason />
-    <TabletopRulesReference />
-    <TabletopOnboarding />
   </section>;
 }
