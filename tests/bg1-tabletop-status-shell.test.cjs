@@ -19,14 +19,14 @@ test('BG2D preserves the tabletop hierarchy while binding status to authoritativ
   assert.match(shell, /status\.phase/);
 });
 
-test('BG2D mounts one unconditional board-state provider around the existing app', () => {
+test('BG2D mounts one unconditional board-state provider around the BG12E layout and existing app', () => {
   const main = read('src/main.tsx');
+  const layout = read('src/components/TabletopLayout.tsx');
   const provider = read('src/components/BoardGameStateProvider.tsx');
 
   assert.match(main, /import \{ BoardGameStateProvider \} from '\.\/components\/BoardGameStateProvider'/);
-  assert.ok(main.indexOf('<BoardGameStateProvider>') < main.indexOf('<TabletopStatusShell />'));
-  assert.ok(main.indexOf('<TabletopStatusShell />') < main.indexOf('<App />'));
-  assert.ok(main.indexOf('<App />') < main.indexOf('</BoardGameStateProvider>'));
+  assert.match(main, /<BoardGameStateProvider>[\s\S]*?<TabletopLayout>[\s\S]*?<App \/>[\s\S]*?<\/TabletopLayout>[\s\S]*?<\/BoardGameStateProvider>/);
+  assert.match(layout, /<TabletopStatusShell \/>/);
   assert.doesNotMatch(provider, /\{state\s*&&\s*children\}|state\s*\?\s*children/);
   assert.match(provider, /useState<BoardGameState>\(initialiseBoardState\)/);
 });
@@ -44,10 +44,12 @@ test('BG1B removes simulation KPIs from normal presentation but keeps transition
 test('BG2D leaves the protected map and renderer integration in App', () => {
   const shell = read('src/components/TabletopStatusShell.tsx');
   const provider = read('src/components/BoardGameStateProvider.tsx');
+  const layout = read('src/components/TabletopLayout.tsx');
   const app = read('src/App.tsx');
 
   assert.doesNotMatch(shell, /MapView|TerrainMapPrototype|maplibre|WebGL/);
   assert.doesNotMatch(provider, /MapView|TerrainMapPrototype|maplibre|WebGL/);
+  assert.doesNotMatch(layout, /MapView|TerrainMapPrototype|maplibre|WebGL/);
   assert.match(app, /<TerrainMapPrototype/);
   assert.match(app, /<MapView/);
   assert.match(app, /loadTerrainMapModule/);
