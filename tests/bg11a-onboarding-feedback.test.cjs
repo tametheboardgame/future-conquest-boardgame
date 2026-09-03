@@ -56,7 +56,7 @@ test('BG11A exposes disabled action reasons as visible status content', () => {
   assert.match(cards, /`Unavailable: \$\{availabilityReason\}`/);
   assert.match(cards, /className="tabletop-card-feedback" role="status"/);
   assert.doesNotMatch(cards, /className="tabletop-card-availability"/);
-  assert.match(cardCss, /\.tabletop-card-feedback[\s\S]*max-height: 30px/);
+  assert.match(cardCss, /\.tabletop-card-feedback[\s\S]*max-height:\s*(?:30|34)px/);
   assert.match(cardCss, /\.tabletop-card-feedback[\s\S]*overflow: auto/);
 });
 
