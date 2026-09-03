@@ -47,12 +47,15 @@ import './bg1-boardgame-shell.css';
 import './bg1-current-activation.css';
 import './bg1-compact-navigation.css';
 import './bg1-compact-guidance.css';
+import './bg12d-legacy-presentation-quarantine.css';
 import { installMapTrackpadGuard } from './map-trackpad-guard';
 import { installR3MapVisualGrading } from './presentation/r3-map-visual-grading';
 import { installWp6NotificationDisclosure } from './wp6-notification-disclosure';
 import { installWp66WarningPreferences } from './wp66-warning-preferences';
 import { installR4UsabilityHotfix } from './r4-usability-hotfix';
+import { installBg12dLegacyPresentationQuarantine } from './bg12d-legacy-presentation-quarantine';
 
+installBg12dLegacyPresentationQuarantine();
 installMapTrackpadGuard();
 installR3MapVisualGrading();
 installWp6NotificationDisclosure();
