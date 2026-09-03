@@ -34,14 +34,14 @@ test('BG11B compact rules reference is tied to Central Front campaign constants'
   assert.match(rules, /holding at least \{CENTRAL_FRONT_FINAL_OBJECTIVE_TARGET\} objectives/);
 });
 
-test('BG11B guidance is presentation-only and integrated into the board shell', () => {
-  const shell = read('src/components/TabletopStatusShell.tsx');
+test('BG11B guidance is presentation-only and integrated into the BG12E tabletop owner', () => {
+  const layout = read('src/components/TabletopLayout.tsx');
   const hint = read('src/components/TabletopContextHint.tsx');
   const rules = read('src/components/TabletopRulesReference.tsx');
 
-  assert.match(shell, /data-bg-guidance="BG11B"/);
-  assert.match(shell, /<TabletopContextHint \/>/);
-  assert.match(shell, /<TabletopRulesReference \/>/);
+  assert.match(layout, /<TabletopContextHint \/>/);
+  assert.match(layout, /<TabletopRulesReference \/>/);
+  assert.match(hint, /data-bg-feedback="BG11B"/);
 
   for (const source of [hint, rules]) {
     assert.doesNotMatch(source, /dispatch\(/);
