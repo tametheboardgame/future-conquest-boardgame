@@ -52,7 +52,8 @@ export function TabletopRulesReference() {
         <ul>
           <li>Select one of your formations directly on the board; legal adjacent Move destinations are highlighted.</li>
           <li>Combat targets must be legal adjacent enemy pieces.</li>
-          <li>Combat uses a seeded D20. Review the target number and supply, terrain and fortification modifiers before confirming.</li>
+          <li>Combat uses two seeded D6s. Add the two faces, apply the supply modifier, and compare the result with the displayed terrain and fortification defence target before confirming.</li>
+          <li>Double six is a critical hit.</li>
           <li>Damage, readiness loss, retreat, elimination and control change are resolved by the authoritative rules engine.</li>
         </ul>
       </details>
@@ -61,7 +62,7 @@ export function TabletopRulesReference() {
         <summary>Support & cards</summary>
         <ul>
           <li>Recover repairs a formation when its current state permits it.</li>
-          <li>Engineer strengthens or repairs the selected position when legal.</li>
+          <li>Engineer fortifies an eligible unfortified formation once; fortification does not stack.</li>
           <li>Logistics improves a formation's supply state when legal.</li>
           <li>Disabled support/card controls show the authoritative rejection reason.</li>
         </ul>
