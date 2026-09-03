@@ -21,11 +21,16 @@ test('BG8 hand UI previews and dispatches the same play-action-card action', () 
   assert.match(panel, /getBoardMoveDestinations\(state, selectedPieceId\)/);
 });
 
-test('BG8 hand is a fixed overlay so it cannot push the map below the first viewport', () => {
-  const css = read('src/components/tabletop-card-hand.css');
-  const shell = read('src/components/TabletopStatusShell.tsx');
-  assert.match(css, /\.tabletop-card-hand\s*\{[^}]*position:\s*fixed/s);
-  assert.match(css, /z-index:\s*34/);
-  assert.match(shell, /<TabletopCardHandPanel \/>/);
-  assert.match(shell, /data-bg-cards="BG8"/);
+test('BG12E reserves the strategic hand inside the tabletop rail without overlaying the map', () => {
+  const cardCss = read('src/components/tabletop-card-hand.css');
+  const layoutCss = read('src/bg12e-tabletop-layout.css');
+  const layout = read('src/components/TabletopLayout.tsx');
+  const panel = read('src/components/TabletopCardHandPanel.tsx');
+
+  assert.match(cardCss, /\.tabletop-card-hand\s*\{[^}]*position:\s*fixed/s, 'pre-BG12E fallback geometry remains available');
+  assert.match(layout, /activeSurface === 'cards'[\s\S]*?<TabletopCardHandPanel \/>/);
+  assert.match(layoutCss, /\.bg12e-tabletop-rail \.tabletop-card-hand[\s\S]*?position:\s*relative !important/);
+  assert.match(layoutCss, /\.bg12e-board-zone\s*\{[\s\S]*?grid-column:\s*1;/);
+  assert.match(layoutCss, /\.bg12e-tabletop-rail\s*\{[\s\S]*?grid-column:\s*2;/);
+  assert.match(panel, /data-bg-package="BG8"/);
 });

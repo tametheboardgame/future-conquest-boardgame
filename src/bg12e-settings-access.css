@@ -1,0 +1,28 @@
+/* BG12E keeps the existing global Settings control permanently reachable without
+   allowing it to cover authoritative status information. */
+.bg12e-status-zone .tabletop-status-shell {
+  padding-right: 48px !important;
+}
+
+html.bg12d-board-ui .global-settings-toggle {
+  top: 7px;
+  right: 7px;
+  z-index: 76;
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  height: 34px;
+  padding: 4px;
+  border-radius: 3px;
+}
+
+@media (max-width: 900px) {
+  .bg12e-status-zone .tabletop-status-shell {
+    padding-right: 46px !important;
+  }
+
+  html.bg12d-board-ui .global-settings-toggle {
+    top: 15px;
+    right: 6px;
+  }
+}

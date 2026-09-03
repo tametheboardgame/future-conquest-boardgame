@@ -1,0 +1,393 @@
+/* BG12E owns page composition around the preserved map. It deliberately
+   repositions retained authoritative board-game controls without changing
+   renderer lifecycle or game rules. */
+
+.bg12e-tabletop-layout {
+  --bg12e-status-height: 48px;
+  --bg12e-rail-width: min(320px, 24vw);
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--bg12e-rail-width);
+  grid-template-rows: var(--bg12e-status-height) minmax(0, 1fr);
+  overflow: hidden;
+  background: #071016;
+}
+
+.bg12e-tabletop-layout[data-rail-state="collapsed"] {
+  --bg12e-rail-width: 44px;
+}
+
+.bg12e-status-zone {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  z-index: 40;
+}
+
+.bg12e-board-zone {
+  grid-column: 1;
+  grid-row: 2;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bg12e-board-zone > .command-app-shell {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+}
+
+.bg12e-tabletop-rail {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid rgba(129, 155, 163, .4);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, .035), transparent 10px),
+    linear-gradient(180deg, #18242a, #0c171d 58%, #10191d);
+  box-shadow: -12px 0 30px rgba(0, 0, 0, .24);
+  z-index: 28;
+}
+
+.bg12e-tabletop-rail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .28;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 21px, rgba(255, 255, 255, .018) 22px),
+    repeating-linear-gradient(90deg, transparent 0 37px, rgba(0, 0, 0, .04) 38px);
+}
+
+.bg12e-rail-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 7px;
+  min-width: 30px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 1px solid #53646a;
+  border-radius: 3px;
+  color: #d9e5e5;
+  background: rgba(13, 28, 34, .94);
+  cursor: pointer;
+}
+
+.bg12e-rail-toggle span {
+  font: 700 20px/1 Barlow Condensed, sans-serif;
+}
+
+.bg12e-rail-toggle b {
+  font: 700 8px IBM Plex Mono, monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bg12e-tabletop-layout[data-rail-state="collapsed"] .bg12e-rail-toggle {
+  right: 6px;
+  left: 6px;
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.bg12e-tabletop-layout[data-rail-state="collapsed"] .bg12e-rail-toggle b {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.bg12e-rail-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 9px;
+  padding: 52px 10px 10px;
+}
+
+.bg12e-rail-switcher {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid #47585e;
+  border-radius: 4px;
+  background: rgba(7, 18, 23, .7);
+}
+
+.bg12e-rail-switcher button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 2px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: #81959b;
+  background: transparent;
+  font: 700 7px IBM Plex Mono, monospace;
+  letter-spacing: .04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bg12e-rail-switcher button.active {
+  border-color: #697c80;
+  color: #f1eee0;
+  background: linear-gradient(180deg, #354249, #202f35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .035);
+}
+
+.bg12e-context-zone,
+.bg12e-context-surface {
+  min-width: 0;
+  min-height: 0;
+}
+
+.bg12e-context-zone {
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.bg12e-context-surface {
+  display: grid;
+  gap: 8px;
+}
+
+/* Retained BG3-BG11 controls stop being independently positioned overlays once
+   mounted in the BG12E rail. Later packages replace their internal presentation. */
+.bg12e-tabletop-rail .tabletop-activation-panel,
+.bg12e-tabletop-rail .tabletop-combat-panel,
+.bg12e-tabletop-rail .tabletop-card-hand,
+.bg12e-tabletop-rail .tabletop-support-panel {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .22) !important;
+  transform: none !important;
+}
+
+.bg12e-tabletop-rail .tabletop-card-hand {
+  pointer-events: auto;
+}
+
+.bg12e-tabletop-rail .tabletop-card-list > button:not(:disabled),
+.bg12e-tabletop-rail .tabletop-card-targets select:not(:disabled),
+.bg12e-tabletop-rail .tabletop-card-play-button:not(:disabled) {
+  pointer-events: auto;
+}
+
+/* BG12E status budget: the authoritative values stay, but the old 54-92px
+   header box is reduced to one restrained strip. */
+.bg12e-status-zone .tabletop-status-shell {
+  min-height: var(--bg12e-status-height) !important;
+  height: var(--bg12e-status-height);
+  margin: 0 !important;
+  padding-right: 0 !important;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr) !important;
+  border-width: 0 0 1px !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .2) !important;
+}
+
+.bg12e-status-zone .tabletop-title-block {
+  min-height: 0 !important;
+  padding: 4px 12px !important;
+}
+
+.bg12e-status-zone .tabletop-title-block span {
+  font-size: 16px !important;
+}
+
+.bg12e-status-zone .tabletop-title-block strong {
+  margin-top: 2px !important;
+  font-size: 7px !important;
+}
+
+.bg12e-status-zone .tabletop-status-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+
+.bg12e-status-zone .tabletop-status-grid > div {
+  padding: 4px 7px !important;
+  border-top: 0 !important;
+}
+
+.bg12e-status-zone .tabletop-status-grid dt {
+  font-size: 6.5px !important;
+}
+
+.bg12e-status-zone .tabletop-status-grid dd {
+  font-size: 12px !important;
+}
+
+/* Combat and cards are tabletop rail surfaces, not permanent navigation
+   destinations. The diagnostics path keeps the underlying legacy views intact. */
+html.bg12d-board-ui .command-nav-cards {
+  display: none !important;
+}
+
+.bg12e-secondary-utilities {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.bg12e-secondary-utilities > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 1100px) and (min-width: 901px) {
+  .bg12e-tabletop-layout {
+    --bg12e-rail-width: min(292px, 27vw);
+  }
+
+  .bg12e-tabletop-layout[data-rail-state="collapsed"] {
+    --bg12e-rail-width: 44px;
+  }
+
+  .bg12e-status-zone .tabletop-title-block {
+    display: none;
+  }
+
+  .bg12e-status-zone .tabletop-status-shell {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .bg12e-tabletop-layout {
+    --bg12e-status-height: 64px;
+    --bg12e-rail-height: min(46dvh, 390px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--bg12e-status-height) minmax(0, 1fr) var(--bg12e-rail-height);
+  }
+
+  .bg12e-tabletop-layout[data-rail-state="collapsed"] {
+    --bg12e-rail-height: 48px;
+  }
+
+  .bg12e-status-zone {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .bg12e-board-zone {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .bg12e-tabletop-rail {
+    grid-column: 1;
+    grid-row: 3;
+    border-top: 1px solid rgba(129, 155, 163, .45);
+    border-left: 0;
+    box-shadow: 0 -12px 28px rgba(0, 0, 0, .28);
+  }
+
+  .bg12e-rail-toggle {
+    top: 6px;
+    right: 8px;
+    left: auto;
+  }
+
+  .bg12e-tabletop-layout[data-rail-state="collapsed"] .bg12e-rail-toggle {
+    right: 8px;
+    left: auto;
+    width: 116px;
+    justify-content: center;
+  }
+
+  .bg12e-tabletop-layout[data-rail-state="collapsed"] .bg12e-rail-toggle b {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+  }
+
+  .bg12e-rail-content {
+    padding: 48px 8px 8px;
+  }
+
+  .bg12e-status-zone .tabletop-status-shell {
+    height: var(--bg12e-status-height) !important;
+    min-height: var(--bg12e-status-height) !important;
+    grid-template-columns: 128px minmax(0, 1fr) !important;
+  }
+
+  .bg12e-status-zone .tabletop-title-block {
+    display: flex;
+    min-height: 0 !important;
+    padding: 4px 8px !important;
+  }
+
+  .bg12e-status-zone .tabletop-title-block span {
+    font-size: 13px !important;
+  }
+
+  .bg12e-status-zone .tabletop-status-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    overflow: hidden;
+  }
+
+  .bg12e-status-zone .tabletop-status-grid > div:nth-child(n+5) {
+    display: none;
+  }
+
+  html.bg12d-board-ui .command-nav-primary {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .bg12e-status-zone .tabletop-status-shell {
+    grid-template-columns: 104px minmax(0, 1fr) !important;
+  }
+
+  .bg12e-status-zone .tabletop-title-block strong {
+    display: none;
+  }
+
+  .bg12e-status-zone .tabletop-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .bg12e-status-zone .tabletop-status-grid > div:nth-child(4) {
+    display: none;
+  }
+}
