@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const { createInitialBoardState } = require('../.test-dist/board-state.js');
 const { BOARD_COMMAND_ACTIONS_PER_ROUND } = require('../.test-dist/board-state-types.js');
+const { BOARD_ESCALATION_CARDS } = require('../.test-dist/board-escalation.js');
 const { SLICE_IDS } = require('../.test-dist/data.js');
 const { runBoardPlaytestMatrix } = require('../.test-dist/board-playtest-simulation.js');
 
@@ -32,12 +33,14 @@ test('BG12B does not increase the Command Action economy', () => {
 test('BG12B leaves combat and escalation rule constants untouched', () => {
   const scenario = read('src/game/board-scenario.ts');
   const combat = read('src/game/board-combat.ts');
-  const escalation = read('src/game/board-escalation.ts');
 
   assert.match(scenario, /'TG-7', 'TG-8'/);
   assert.match(combat, /BOARD_COMBAT_BASE_TARGET = 11/);
   assert.match(combat, /BOARD_COMBAT_ELIMINATION_DAMAGE = 3/);
-  assert.match(escalation, /REINFORCEMENT_COUNT_BY_ROUND = \[1, 1, 1, 1, 2, 2, 2, 2\]/);
+  assert.deepEqual(
+    BOARD_ESCALATION_CARDS.map(card => card.reinforcementCount),
+    [1, 1, 1, 1, 2, 2, 2, 2]
+  );
 });
 
 test('BG12B accepted canonical sample is mechanically complete and no longer dominant', () => {
