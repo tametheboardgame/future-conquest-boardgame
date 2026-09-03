@@ -27,23 +27,49 @@ function startsExpanded() {
   return !window.matchMedia('(max-width: 900px)').matches;
 }
 
+function isLegacyDiagnostics() {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).get('legacy-ui') === '1';
+}
+
 /**
  * BG12E owns normal board-game composition around the preserved map.
  * Existing authoritative interaction components are deliberately retained,
  * but only one rail interaction surface is mounted at a time.
+ *
+ * BG12D's explicit legacy diagnostics route bypasses BG12E composition so the
+ * quarantined historical workspaces and their browser probes keep the geometry
+ * they had before the tabletop rebuild.
  */
 export function TabletopLayout({ children }: Props) {
+  const legacyDiagnostics = isLegacyDiagnostics();
   const [railExpanded, setRailExpanded] = useState(startsExpanded);
   const [activeSurface, setActiveSurface] = useState<RailSurface>('activation');
 
   useEffect(() => {
+    if (legacyDiagnostics) return;
     const compact = window.matchMedia('(max-width: 900px)');
     const handleViewportChange = (event: MediaQueryListEvent) => {
       if (event.matches) setRailExpanded(false);
     };
     compact.addEventListener('change', handleViewportChange);
     return () => compact.removeEventListener('change', handleViewportChange);
-  }, []);
+  }, [legacyDiagnostics]);
+
+  if (legacyDiagnostics) {
+    return <>
+      <TabletopStatusShell />
+      {children}
+      <TabletopContextHint />
+      <TabletopCardHandPanel />
+      <TabletopSupportPanel />
+      <TabletopPassReason />
+      <TabletopRulesReference />
+      <TabletopOnboarding />
+      <TabletopCombatPanel />
+      <TabletopActivationPanel />
+    </>;
+  }
 
   return <div
     className="bg12e-tabletop-layout"
