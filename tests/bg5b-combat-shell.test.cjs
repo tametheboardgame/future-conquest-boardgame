@@ -31,9 +31,9 @@ test('BG5B runtime provider sends board actions through the unified dispatcher',
 
 test('BG5B removes retained simulation attack controls from player presentation', () => {
   const css = read('src/bg5-dice-combat.css');
-  const main = read('src/main.tsx');
+  const layout = read('src/components/TabletopLayout.tsx');
 
   assert.match(css, /\[data-tutorial="attack-action"\][\s\S]*display: none !important/);
   assert.match(css, /\.tabletop-activation-actions \.attack/);
-  assert.match(main, /<TabletopCombatPanel \/>/);
+  assert.match(layout, /activeSurface === 'combat'[\s\S]*?<TabletopCombatPanel \/>/);
 });
