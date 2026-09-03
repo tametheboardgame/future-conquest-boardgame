@@ -14,7 +14,7 @@ const {
   startBoardRound
 } = require('../.test-dist/board-state.js');
 
-function startedState(seed = 11264) {
+function startedState(seed = 14848) {
   return startBoardRound(createInitialBoardState({
     seed,
     controllers: { 'seat-1': 'human', 'seat-2': 'human' }
@@ -35,7 +35,7 @@ function adjacentEnemy(state, attackerPieceId = 'TG-1') {
   return { attacker, defender, targetSpaceId };
 }
 
-test('BG5B dispatcher atomically resolves a previewed attack for exactly one Command Action', () => {
+test('BG5B dispatcher atomically resolves a previewed 2D6 attack for exactly one Command Action', () => {
   const state = startedState();
   const { defender } = adjacentEnemy(state);
   const beforeRngCalls = state.rng.calls;
@@ -52,7 +52,8 @@ test('BG5B dispatcher atomically resolves a previewed attack for exactly one Com
   assert.equal(result.state.seats['seat-1'].commandActionsRemaining, 3);
   assert.equal(result.state.activeSeat, 'seat-2');
   assert.equal(result.state.combat.status, 'resolved');
-  assert.equal(result.state.combat.roll.die, 15);
+  assert.deepEqual(result.state.combat.roll.dice, [6, 4]);
+  assert.equal(result.state.combat.roll.die, 10);
 });
 
 test('BG5B dispatcher rejects malformed attacks without cost or mutation', () => {
@@ -92,6 +93,7 @@ test('BG5B a second ordinary hit forces a surviving defender to retreat and capt
   });
 
   assert.equal(result.state.combat.roll.outcome, 'hit');
+  assert.equal(result.state.combat.consequence.critical, false);
   assert.equal(result.state.combat.consequence.defenderStatus, 'retreated');
   assert.equal(result.state.pieces[defender.id].readiness, BOARD_COMBAT_RETREAT_THRESHOLD);
   assert.equal(result.state.pieces[defender.id].damage, 1);
@@ -115,6 +117,7 @@ test('BG5B reaching three damage eliminates the defender and advances into the c
   });
 
   assert.equal(result.state.combat.roll.outcome, 'hit');
+  assert.equal(result.state.combat.consequence.critical, false);
   assert.equal(result.state.combat.consequence.defenderStatus, 'eliminated');
   assert.equal(result.state.pieces[defender.id].damage, BOARD_COMBAT_ELIMINATION_DAMAGE);
   assert.equal(result.state.pieces[defender.id].spaceId, null);
@@ -122,8 +125,8 @@ test('BG5B reaching three damage eliminates the defender and advances into the c
   assert.equal(result.state.spaces[targetSpaceId].control, 'seat-1');
 });
 
-test('BG5B natural 20 is a visible critical hit with doubled damage/readiness loss', () => {
-  const state = startedState(15360);
+test('BG5B double six is a visible critical hit with doubled damage/readiness loss', () => {
+  const state = startedState(15872);
   const { defender } = adjacentEnemy(state);
 
   const result = applyBoardAction(state, {
@@ -132,7 +135,8 @@ test('BG5B natural 20 is a visible critical hit with doubled damage/readiness lo
     defenderPieceId: defender.id
   });
 
-  assert.equal(result.state.combat.roll.die, 20);
+  assert.deepEqual(result.state.combat.roll.dice, [6, 6]);
+  assert.equal(result.state.combat.roll.die, 12);
   assert.equal(result.state.combat.roll.outcome, 'hit');
   assert.equal(result.state.combat.consequence.critical, true);
   assert.equal(result.state.combat.consequence.damageInflicted, 2);
@@ -160,6 +164,7 @@ test('BG5B a defender with no legal retreat takes an additional loss and can be 
   });
 
   assert.equal(result.state.combat.roll.outcome, 'hit');
+  assert.equal(result.state.combat.consequence.critical, false);
   assert.equal(result.state.combat.consequence.retreatSpaceId, null);
   assert.equal(result.state.combat.consequence.damageInflicted, 2);
   assert.equal(result.state.combat.consequence.readinessLoss, 50);
@@ -179,7 +184,8 @@ test('BG5B misses leave piece tracks, position and control unchanged', () => {
     defenderPieceId: defender.id
   });
 
-  assert.equal(result.state.combat.roll.die, 3);
+  assert.deepEqual(result.state.combat.roll.dice, [1, 4]);
+  assert.equal(result.state.combat.roll.die, 5);
   assert.equal(result.state.combat.roll.outcome, 'miss');
   assert.deepEqual(result.state.pieces[defender.id], defenderBefore);
   assert.equal(result.state.spaces[targetSpaceId].control, controlBefore);
@@ -201,5 +207,6 @@ test('BG5B resolved combat consequences survive exact save and reload', () => {
 
   const restored = deserializeBoardState(serializeBoardState(attacked.state));
   assert.deepEqual(restored, attacked.state);
+  assert.deepEqual(restored.combat.roll.dice, [6, 4]);
   assert.equal(restored.combat.consequence.defenderStatus, 'retreated');
 });
