@@ -3,9 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { StartupExperience } from './components/StartupExperience';
 import { BoardGameStateProvider } from './components/BoardGameStateProvider';
-import { TabletopStatusShell } from './components/TabletopStatusShell';
-import { TabletopActivationPanel } from './components/TabletopActivationPanel';
-import { TabletopCombatPanel } from './components/TabletopCombatPanel';
+import { TabletopLayout } from './components/TabletopLayout';
 import './styles.css';
 import './command-panel-layout.css';
 import './formation-organisation.css';
@@ -48,6 +46,7 @@ import './bg1-current-activation.css';
 import './bg1-compact-navigation.css';
 import './bg1-compact-guidance.css';
 import './bg12d-legacy-presentation-quarantine.css';
+import './bg12e-tabletop-layout.css';
 import { installMapTrackpadGuard } from './map-trackpad-guard';
 import { installR3MapVisualGrading } from './presentation/r3-map-visual-grading';
 import { installWp6NotificationDisclosure } from './wp6-notification-disclosure';
@@ -66,10 +65,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StartupExperience>
       <BoardGameStateProvider>
-        <TabletopStatusShell />
-        <App />
-        <TabletopCombatPanel />
-        <TabletopActivationPanel />
+        <TabletopLayout>
+          <App />
+        </TabletopLayout>
       </BoardGameStateProvider>
     </StartupExperience>
   </StrictMode>
