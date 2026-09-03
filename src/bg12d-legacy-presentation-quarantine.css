@@ -1,0 +1,41 @@
+/* BG12D removes simulation-era presentation from normal board-game play without
+   deleting compatibility code. The explicit ?legacy-ui=1 route does not receive
+   these rules and therefore remains available for diagnostics and historical
+   browser validation. */
+
+html.bg12d-board-ui .command-nav-legacy,
+html.bg12d-board-ui .command-nav-primary [data-command-view="operations"],
+html.bg12d-board-ui .command-app-shell > .command-topbar,
+html.bg12d-board-ui .command-app-shell > .command-metrics,
+html.bg12d-board-ui .command-map-workspace .map-heading,
+html.bg12d-board-ui .command-map-workspace .map-context-panel,
+html.bg12d-board-ui .contextual-navigation-banner,
+html.bg12d-board-ui .operational-alert-strip,
+html.bg12d-board-ui .enemy-action-alert,
+html.bg12d-board-ui .adviser-alert-strip,
+html.bg12d-board-ui .combat-report-alert,
+html.bg12d-board-ui .command-outcome {
+  display: none !important;
+}
+
+html.bg12d-board-ui .command-map-workspace {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+html.bg12d-board-ui .command-map-workspace > .map-panel {
+  grid-column: 1 !important;
+  width: 100%;
+  max-width: none;
+}
+
+html.bg12d-board-ui .command-stage-map,
+html.bg12d-board-ui .command-map-workspace,
+html.bg12d-board-ui .command-map-workspace > .map-panel {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  html.bg12d-board-ui .command-nav-primary {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}

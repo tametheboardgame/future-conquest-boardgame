@@ -75,10 +75,26 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.62.1
           npx playwright install --with-deps chromium
-      - name: Adapt historical browser probes to the board-game shell
+      - name: Adapt historical browser probes to explicit BG12D diagnostics mode
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
+
+          for (const path of [
+            'scripts/probe-r3-wp4-battle-feedback.mjs',
+            'scripts/probe-r3-wp5-strategic-information.mjs',
+            'scripts/probe-r3-wp6-command-ui.mjs',
+            'scripts/probe-r3-wp6-notifications.mjs',
+            'scripts/probe-r3-wp6-accessibility.mjs',
+            'scripts/probe-r3-wp6-5-interface-polish.mjs'
+          ]) {
+            const source = fs.readFileSync(path, 'utf8');
+            const routed = source
+              .replace('/?terrain=1', '/?terrain=1&legacy-ui=1')
+              .replace('/?terrain=0', '/?terrain=0&legacy-ui=1');
+            if (routed === source) throw new Error(`Historical probe has no terrain route to quarantine: ${path}`);
+            fs.writeFileSync(path, routed);
+          }
 
           const commandPath = 'scripts/probe-r3-wp6-command-ui.mjs';
           let commandSource = fs.readFileSync(commandPath, 'utf8');
@@ -129,12 +145,14 @@ jobs:
           for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/r3-wp9-preview.log
           exit 1
-      - name: Review map-first shell, notifications and keyboard access
+      - name: Prove BG12D normal-play quarantine and diagnostics route
+        run: node scripts/probe-bg12d-legacy-quarantine.mjs
+      - name: Review historical map shell, notifications and keyboard access in diagnostics mode
         run: |
           node scripts/probe-r3-wp6-command-ui.mjs
           node scripts/probe-r3-wp6-notifications.mjs
           node scripts/probe-r3-wp6-accessibility.mjs
-      - name: Review desktop, compact and reduced-motion presentation
+      - name: Review historical desktop, compact and reduced-motion presentation in diagnostics mode
         run: node scripts/probe-r3-wp6-5-interface-polish.mjs
       - name: Validate browser save, reload and continue continuity
         env:

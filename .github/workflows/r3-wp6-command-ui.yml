@@ -62,10 +62,24 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Adapt historical workspace probe to BG1D More disclosure
+      - name: Adapt historical workspace probes to explicit BG12D diagnostics route
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
+
+          for (const path of [
+            'scripts/probe-r3-wp6-command-ui.mjs',
+            'scripts/probe-r3-wp6-notifications.mjs',
+            'scripts/probe-r3-wp6-accessibility.mjs'
+          ]) {
+            const source = fs.readFileSync(path, 'utf8');
+            const routed = source
+              .replace('/?terrain=1', '/?terrain=1&legacy-ui=1')
+              .replace('/?terrain=0', '/?terrain=0&legacy-ui=1');
+            if (routed === source) throw new Error(`Historical probe has no terrain route to quarantine: ${path}`);
+            fs.writeFileSync(path, routed);
+          }
+
           const path = 'scripts/probe-r3-wp6-command-ui.mjs';
           let source = fs.readFileSync(path, 'utf8');
           for (const view of ['engineering', 'territories']) {
