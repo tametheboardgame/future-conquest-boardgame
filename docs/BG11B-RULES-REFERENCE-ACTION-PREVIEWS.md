@@ -1,5 +1,7 @@
 # BG11B — Compact Rules Reference and Contextual Action Previews
 
+> **Current-rules note — 3 September 2026:** BG11B originally shipped while combat still used D20. BG12G-R later superseded that die model. The live quick reference must describe the locked **2D6** combat standard while preserving BG11B's presentation-only architecture and authoritative-rules boundary.
+
 ## Goal
 
 Continue BG11 onboarding and feedback polish by answering two questions without opening a long manual:
@@ -7,7 +9,7 @@ Continue BG11 onboarding and feedback polish by answering two questions without 
 1. **What can I do right now?**
 2. **What are the core rules again?**
 
-BG11B is presentation-only. It does not alter board rules, deterministic state, save format, campaign geography or the protected map renderer.
+BG11B is presentation-only. It does not own board rules, deterministic state, save format, campaign geography or the protected map renderer. When a later package changes an authoritative rule, as BG12G-R does for combat dice, the reference text follows the authoritative rule rather than preserving obsolete wording.
 
 ## Contextual action guidance
 
@@ -30,10 +32,12 @@ The guidance does not dispatch actions or maintain its own rules state.
 A persistent `Rules` control opens a compact reference containing:
 
 - turn and Command Action rules;
-- movement and D20 combat rules;
+- movement and authoritative 2D6 combat rules;
 - support actions and strategic cards;
 - Central Front objectives and victory conditions;
 - current live objective ownership.
+
+For current combat the quick reference states that two seeded D6s are rolled and summed, supply modifies the attack, terrain/fortification contribute to the displayed defence target, double six is critical, and fortification is binary/non-stacking. Numerical calibration remains owned by the combat engine and BG12G-R rules contract rather than duplicated as independent UI logic.
 
 Objective names and victory thresholds come from the BG10 campaign constants and projected campaign status rather than duplicated numeric configuration.
 
@@ -62,7 +66,7 @@ BG11B does **not** touch:
 ## Acceptance
 
 - a player can see a concise, rules-derived indication of useful actions without trial-and-error;
-- the quick reference accurately describes the current board-game rules;
+- the quick reference accurately describes the current board-game rules, including the locked 2D6 combat model;
 - the quick reference remains available after onboarding is dismissed;
 - map interaction remains unobstructed;
 - existing exact-head regression, browser and performance gates remain green.
