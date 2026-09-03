@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 1,
+  "package": "BG12C",
+  "title": "Visual Direction Lock and UI Inventory",
+  "visualDirection": {
+    "mapAttentionTargetPercent": [80, 90],
+    "normalPlayPersistentSurfaces": [
+      "thin-status-strip",
+      "minimal-navigation",
+      "tabletop-rail"
+    ],
+    "maxContextualSurfaces": 1,
+    "maxTransientCoachMarks": 1,
+    "diagnosticsQuery": "?legacy-ui=1",
+    "protectedInfrastructure": [
+      "MapLibre/WebGL lifecycle",
+      "DEM and terrain setup",
+      "map mounting and camera",
+      "cities and landmarks",
+      "retained physical formation rendering",
+      "authoritative board state and dispatcher",
+      "deterministic save/reload"
+    ]
+  },
+  "surfaceBudgets": {
+    "desktop": {
+      "minViewportWidth": 901,
+      "statusStripMaxHeightPx": 48,
+      "navigationMaxWidthPx": 72,
+      "tabletopRailMaxWidthPx": 320,
+      "idleMapMinViewportWidthPercent": 70,
+      "maxPersistentChromeSurfaces": 3,
+      "maxContextualSurfaces": 1,
+      "maxTransientCoachMarks": 1,
+      "maxHorizontalOverflowPx": 2
+    },
+    "compact": {
+      "maxViewportWidth": 900,
+      "statusStripMaxHeightPx": 64,
+      "navigationMaxThicknessPx": 56,
+      "tabletopRailCollapsedByDefault": true,
+      "openDrawerMaxViewportHeightPercent": 46,
+      "idleMapMinViewportHeightPercent": 60,
+      "maxContextualSurfaces": 1,
+      "maxTransientCoachMarks": 1,
+      "maxHorizontalOverflowPx": 2
+    }
+  },
+  "browserAcceptance": {
+    "viewports": [
+      { "name": "large-desktop", "width": 1900, "height": 829 },
+      { "name": "desktop", "width": 1366, "height": 768 },
+      { "name": "compact", "width": 640, "height": 900 }
+    ],
+    "normalPlayAssertions": [
+      "No normal-player More gateway or legacy Regions, Engineer, Logistics or Intel route is visible after BG12D.",
+      "Only the status strip, minimal navigation and tabletop rail persist around the idle board.",
+      "At most one contextual interaction surface is visible at once.",
+      "At most one coach mark or transient toast is visible at once.",
+      "No persistent or contextual surface intersects another outside its reserved edge region.",
+      "The document has no more than two pixels of horizontal overflow.",
+      "The idle map meets the desktop or compact map-size budget.",
+      "Normal-play screenshots contain no legacy operational workspace panel.",
+      "Critical state remains legible without relying only on colour or motion."
+    ],
+    "diagnosticsAssertions": [
+      "The diagnostics route is entered only by the explicit ?legacy-ui=1 query.",
+      "Historical probes that still require legacy workspaces opt into the diagnostics route deliberately.",
+      "The diagnostics route never becomes the default or a normal-player navigation destination."
+    ]
+  },
+  "legacyProbeDependencies": [
+    {
+      "script": "scripts/probe-r3-wp6-command-ui.mjs",
+      "workflow": ".github/workflows/r3-wp9-integrated-validation.yml",
+      "legacyViews": ["engineering", "logistics", "operations", "territories", "intelligence"],
+      "migration": "BG12D: launch with ?legacy-ui=1 before asserting legacy specialist surfaces"
+    },
+    {
+      "script": "scripts/probe-r3-wp6-5-interface-polish.mjs",
+      "workflow": ".github/workflows/r3-wp9-integrated-validation.yml",
+      "legacyViews": ["operations", "territories", "engineering", "logistics", "intelligence"],
+      "migration": "BG12D: specialist sweep runs only against ?legacy-ui=1; normal-play assertions test absence instead"
+    }
+  ],
+  "knownOverlayStack": [
+    { "surface": "tabletop-context-hint", "zIndex": 31, "owner": "TabletopContextHint" },
+    { "surface": "tabletop-card-hand", "zIndex": 34, "owner": "TabletopCardHandPanel" },
+    { "surface": "tabletop-activation-panel", "zIndex": 34, "owner": "TabletopActivationPanel" },
+    { "surface": "tabletop-combat-panel", "zIndex": 34, "owner": "TabletopCombatPanel" },
+    { "surface": "tabletop-support-panel", "zIndex": 34, "owner": "TabletopSupportPanel" },
+    { "surface": "legacy-command-topbar", "zIndex": 36, "owner": "App / command-topbar" },
+    { "surface": "tabletop-rules-button", "zIndex": 72, "owner": "TabletopRulesReference" },
+    { "surface": "tabletop-guide-button", "zIndex": 72, "owner": "TabletopOnboarding" },
+    { "surface": "tabletop-rules-reference", "zIndex": 73, "owner": "TabletopRulesReference" },
+    { "surface": "tabletop-onboarding-card", "zIndex": 74, "owner": "TabletopOnboarding" }
+  ],
+  "surfaces": [
+    {
+      "id": "board-map",
+      "owner": "TerrainMapPrototype / TerrainMapPrototypeImpl",
+      "currentPurpose": "2.5D Central Front board and camera",
+      "classification": "KEEP",
+      "target": "dominant central board surface",
+      "migrationPackage": "BG12E/BG12I",
+      "finalRemoval": "never; protected infrastructure",
+      "normalPlayAfterBG12D": "visible",
+      "reason": "The accepted map is the product centre and already owns the protected renderer lifecycle."
+    },
+    {
+      "id": "physical-formations",
+      "owner": "r3-formation-miniatures-layer / board renderer projection",
+      "currentPurpose": "retained physical task-group pieces",
+      "classification": "KEEP",
+      "target": "physical pieces on the board",
+      "migrationPackage": "BG12I/BG12L",
+      "finalRemoval": "never; presentation projection only",
+      "normalPlayAfterBG12D": "visible",
+      "reason": "Physical formations are already the correct board-game metaphor."
+    },
+    {
+      "id": "tabletop-status-shell",
+      "owner": "TabletopStatusShell",
+      "currentPurpose": "round, seat, player, CA, phase, activation and campaign status",
+      "classification": "TRANSFORM",
+      "target": "thin top status strip",
+      "migrationPackage": "BG12E",
+      "finalRemoval": "current large shell removed in BG12E",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "The information remains authoritative but the current box consumes too much vertical attention."
+    },
+    {
+      "id": "legacy-command-topbar",
+      "owner": "App / command-topbar",
+      "currentPurpose": "legacy resolver and operational header compatibility",
+      "classification": "RETIRE",
+      "target": "none in normal play",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4 after renderer extraction",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "It duplicates board status/action concepts and currently sits above the board at z-index 36."
+    },
+    {
+      "id": "command-navigation",
+      "owner": "CommandNavigation",
+      "currentPurpose": "Board, Forces, Combat, Cards, Rules & Save plus legacy navigation",
+      "classification": "TRANSFORM",
+      "target": "Board, Forces, Rules / Save and Settings only",
+      "migrationPackage": "BG12D/BG12E/BG12K",
+      "finalRemoval": "legacy navigation structure removed in BG12D; minimal replacement remains",
+      "normalPlayAfterBG12D": "visible simplified",
+      "reason": "Navigation remains useful but Combat/Cards are interactions and legacy specialist routes are not product destinations."
+    },
+    {
+      "id": "cards-nav-control",
+      "owner": "CommandNavigation",
+      "currentPurpose": "focuses the fixed strategic card hand",
+      "classification": "COLLAPSE",
+      "target": "cards handled directly in the tabletop rail",
+      "migrationPackage": "BG12F",
+      "finalRemoval": "BG12F",
+      "normalPlayAfterBG12D": "temporary",
+      "reason": "Cards should be physical components, not a navigation destination."
+    },
+    {
+      "id": "legacy-more-gateway",
+      "owner": "CommandNavigation",
+      "currentPurpose": "opens Regions, Engineer, Logistics and Intel",
+      "classification": "RETIRE",
+      "target": "no normal-player gateway",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12D normal play; BG12O4 code deletion",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "The old simulation workspaces are no longer product requirements."
+    },
+    {
+      "id": "map-context-panel",
+      "owner": "App / MapView / map context components",
+      "currentPurpose": "quick commands, selected formation and map-side operational context",
+      "classification": "COLLAPSE",
+      "target": "one contextual formation/action card only when required",
+      "migrationPackage": "BG12D/BG12H/BG12I",
+      "finalRemoval": "duplicate operational context removed by BG12H",
+      "normalPlayAfterBG12D": "reduced transitional",
+      "reason": "Permanent selected-formation sidebars duplicate board selection and crowd the map."
+    },
+    {
+      "id": "map-legends-and-mode-boxes",
+      "owner": "MapUxFoundations / TerrainMapPrototype controls",
+      "currentPurpose": "persistent legends, layers, modes and terrain controls",
+      "classification": "COLLAPSE",
+      "target": "small utilities revealed only when relevant",
+      "migrationPackage": "BG12I",
+      "finalRemoval": "large permanent boxes removed in BG12I",
+      "normalPlayAfterBG12D": "transitional",
+      "reason": "The board should carry state directly through markers, pieces and restrained labels."
+    },
+    {
+      "id": "tabletop-activation-panel",
+      "owner": "TabletopActivationPanel",
+      "currentPurpose": "selected piece, movement and activation actions",
+      "classification": "TRANSFORM",
+      "target": "single contextual formation action card",
+      "migrationPackage": "BG12H",
+      "finalRemoval": "fixed panel removed in BG12H",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "Its authoritative action logic is useful but it should appear contextually rather than persist at the right edge."
+    },
+    {
+      "id": "tabletop-combat-panel",
+      "owner": "TabletopCombatPanel",
+      "currentPurpose": "target selection, D20 preview/result and combat feedback",
+      "classification": "TRANSFORM",
+      "target": "compact attack preview plus physical dice tray",
+      "migrationPackage": "BG12G/BG12H",
+      "finalRemoval": "fixed form-like panel removed by BG12H",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "Combat rules remain authoritative but the presentation should become tactile and contextual."
+    },
+    {
+      "id": "tabletop-card-hand",
+      "owner": "TabletopCardHandPanel",
+      "currentPurpose": "fixed strategic card grid, targets and play feedback",
+      "classification": "TRANSFORM",
+      "target": "physical deck stacks, discard and hand in the tabletop rail",
+      "migrationPackage": "BG12F",
+      "finalRemoval": "fixed overlay removed in BG12F",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "Authoritative cards remain, but the current grid reads as a management form rather than a hand of cards."
+    },
+    {
+      "id": "tabletop-support-panel",
+      "owner": "TabletopSupportPanel",
+      "currentPurpose": "recover, engineer and logistics support actions",
+      "classification": "TRANSFORM",
+      "target": "contextual Support submenu",
+      "migrationPackage": "BG12H",
+      "finalRemoval": "fixed panel removed in BG12H",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "Support actions stay authoritative but should not occupy a permanent separate panel."
+    },
+    {
+      "id": "tabletop-pass-reason",
+      "owner": "TabletopPassReason",
+      "currentPurpose": "pass eligibility and reason feedback",
+      "classification": "COLLAPSE",
+      "target": "inline reason in the active contextual card",
+      "migrationPackage": "BG12H",
+      "finalRemoval": "standalone presentation removed in BG12H",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "The feedback matters but does not justify another persistent surface."
+    },
+    {
+      "id": "tabletop-context-hint",
+      "owner": "TabletopContextHint",
+      "currentPurpose": "fixed next-useful-action guidance",
+      "classification": "COLLAPSE",
+      "target": "small coach mark or contextual hint",
+      "migrationPackage": "BG12J",
+      "finalRemoval": "fixed hint removed in BG12J",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "Guidance remains useful but must not compete with the board."
+    },
+    {
+      "id": "tabletop-rules-reference",
+      "owner": "TabletopRulesReference",
+      "currentPurpose": "fixed Rules button and floating rules reference",
+      "classification": "TRANSFORM",
+      "target": "Rules / Save secondary drawer",
+      "migrationPackage": "BG12K",
+      "finalRemoval": "standalone floating panel removed in BG12K",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "Rules remain accessible but should be off-board depth, not persistent board chrome."
+    },
+    {
+      "id": "tabletop-onboarding",
+      "owner": "TabletopOnboarding",
+      "currentPurpose": "fixed Guide button and multi-step floating card",
+      "classification": "TRANSFORM",
+      "target": "coach marks anchored to real controls/map state",
+      "migrationPackage": "BG12J",
+      "finalRemoval": "current floating guide card removed in BG12J",
+      "normalPlayAfterBG12D": "visible transitional",
+      "reason": "The onboarding logic is retained but the window-like presentation obscures too much of the board."
+    },
+    {
+      "id": "global-settings",
+      "owner": "GlobalSettingsPanel / global settings toggle",
+      "currentPurpose": "audio, motion, accessibility and presentation settings",
+      "classification": "TRANSFORM",
+      "target": "Settings secondary drawer",
+      "migrationPackage": "BG12K",
+      "finalRemoval": "never; only the current shell changes",
+      "normalPlayAfterBG12D": "visible control",
+      "reason": "The settings system is useful and already authoritative for accessibility/audio preferences."
+    },
+    {
+      "id": "forces-workspace",
+      "owner": "FormationRoster / ForceOrganisationPanel",
+      "currentPurpose": "formation roster and organisation inspection",
+      "classification": "TRANSFORM",
+      "target": "Forces secondary drawer",
+      "migrationPackage": "BG12K",
+      "finalRemoval": "full-screen command workspace removed in BG12K",
+      "normalPlayAfterBG12D": "visible route transitional",
+      "reason": "Force inspection remains useful depth but should not replace the tabletop."
+    },
+    {
+      "id": "campaign-rules-save-workspace",
+      "owner": "App campaign view / persistence controls",
+      "currentPurpose": "campaign file actions, rules/save and legacy campaign controls",
+      "classification": "TRANSFORM",
+      "target": "Rules / Save secondary drawer",
+      "migrationPackage": "BG12K",
+      "finalRemoval": "legacy campaign workspace removed in BG12K/BG12O4",
+      "normalPlayAfterBG12D": "visible route transitional",
+      "reason": "Save/reload remains essential; operational campaign controls do not."
+    },
+    {
+      "id": "legacy-regions-workspace",
+      "owner": "App territories view",
+      "currentPurpose": "operational political/territory management",
+      "classification": "DEBUG-ONLY",
+      "target": "?legacy-ui=1 compatibility route only",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "Historical probes still inspect it, but board control state replaces it in the product."
+    },
+    {
+      "id": "legacy-engineer-workspace",
+      "owner": "InfrastructureCommand / engineering view",
+      "currentPurpose": "operational repair/build/interdiction management",
+      "classification": "DEBUG-ONLY",
+      "target": "?legacy-ui=1 compatibility route only",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "Board support/cards replace its strategic meaning; historical probes still inspect the surface."
+    },
+    {
+      "id": "legacy-logistics-workspace",
+      "owner": "LogisticsCommand / logistics priority views",
+      "currentPurpose": "operational supply allocation and priorities",
+      "classification": "DEBUG-ONLY",
+      "target": "?legacy-ui=1 compatibility route only",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "Board support/cards replace this management UI; historical probes still inspect it."
+    },
+    {
+      "id": "legacy-intelligence-workspace",
+      "owner": "App intelligence view",
+      "currentPurpose": "operational intelligence dashboards",
+      "classification": "DEBUG-ONLY",
+      "target": "?legacy-ui=1 compatibility route only",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "Board markers/cards should carry strategically relevant information instead."
+    },
+    {
+      "id": "legacy-operations-workspace",
+      "owner": "App operations view",
+      "currentPurpose": "old operational Combat/Operations command cards",
+      "classification": "DEBUG-ONLY",
+      "target": "?legacy-ui=1 compatibility route only",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "BG5 combat is the authoritative board-game combat path."
+    },
+    {
+      "id": "legacy-infrastructure-interdiction-defence",
+      "owner": "InfrastructureCommand / InterdictionCommand / DefencePanel",
+      "currentPurpose": "specialist operational dashboards",
+      "classification": "DEBUG-ONLY",
+      "target": "diagnostics only where renderer/runtime validation still needs them",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "These are old simulation product surfaces with no normal board-game destination."
+    },
+    {
+      "id": "legacy-combat-reports",
+      "owner": "CombatReports",
+      "currentPurpose": "old operational combat-report workspace",
+      "classification": "DEBUG-ONLY",
+      "target": "diagnostics only if a historical runtime probe still needs it",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "Board combat feedback and dice outcomes replace the old report workspace."
+    },
+    {
+      "id": "legacy-command-metrics",
+      "owner": "App command metrics",
+      "currentPurpose": "simulation KPI/status dashboard retained in DOM but hidden by BG1 CSS",
+      "classification": "RETIRE",
+      "target": "none",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "The authoritative board status strip supersedes operational KPIs."
+    },
+    {
+      "id": "legacy-simulation-tutorial",
+      "owner": "TutorialOverlay",
+      "currentPurpose": "old simulation tutorial presentation",
+      "classification": "RETIRE",
+      "target": "none in normal play; BG12J coach marks use board onboarding logic",
+      "migrationPackage": "BG12D/BG12J",
+      "finalRemoval": "BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "BG11/BG12 board onboarding replaces the simulation tutorial."
+    },
+    {
+      "id": "legacy-day-resolution-controls",
+      "owner": "App command topbar / legacy simulation state",
+      "currentPurpose": "global resolve and operational day progression",
+      "classification": "RETIRE",
+      "target": "none in normal board-game play",
+      "migrationPackage": "BG12D",
+      "finalRemoval": "BG12O3/BG12O4",
+      "normalPlayAfterBG12D": "hidden",
+      "reason": "Board rounds, activations and Command Actions are authoritative."
+    },
+    {
+      "id": "operational-notification-strips",
+      "owner": "legacy alert/notification surfaces",
+      "currentPurpose": "fixed operational/enemy/adviser/combat report alerts",
+      "classification": "COLLAPSE",
+      "target": "one small transient board-game toast/coach mark when needed",
+      "migrationPackage": "BG12D/BG12E/BG12L",
+      "finalRemoval": "obsolete operational variants removed by BG12O4",
+      "normalPlayAfterBG12D": "only board-relevant transient feedback",
+      "reason": "Notifications must not recreate a stack of permanent floating boxes."
+    }
+  ]
+}
