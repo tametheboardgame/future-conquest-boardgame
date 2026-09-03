@@ -14,7 +14,7 @@ test('BG5B combat panel previews authoritative rules and dispatches only attack-
   assert.match(panel, /useBoardGameDispatch/);
   assert.match(panel, /type: 'attack-piece'/);
   assert.match(panel, /className="confirm(?: [^"]*)?" onClick=\{confirmAttack\}/);
-  assert.match(panel, /Roll D20 · 1 Command Action/);
+  assert.match(panel, /Roll 2D6 · 1 Command Action/);
   assert.match(panel, /Possible outcomes/);
   assert.doesNotMatch(panel, /beginOperation|resolveDay|issueMove|Math\.random/);
 });
