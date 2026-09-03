@@ -27,7 +27,6 @@ test('BG12D diagnostics access is explicit and normal board mode is the default'
 test('BG12D hides legacy navigation and operational map chrome only in normal play', () => {
   for (const selector of [
     '.command-nav-legacy',
-    '[data-command-view="operations"]',
     '.command-app-shell > .command-topbar',
     '.command-map-workspace .map-heading',
     '.command-map-workspace .map-context-panel',
@@ -39,6 +38,7 @@ test('BG12D hides legacy navigation and operational map chrome only in normal pl
   ]) {
     assert.ok(css.includes(`html.bg12d-board-ui ${selector}`), `normal-play quarantine missing ${selector}`);
   }
+  assert.ok(css.includes('html.bg12d-board-ui .command-nav-primary [data-command-view="operations"]'), 'normal-play quarantine missing Operations destination');
 
   assert.match(css, /html\.bg12d-board-ui \.command-map-workspace \{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important;/);
   assert.match(css, /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\) !important;/);
@@ -52,7 +52,7 @@ test('BG12D browser acceptance proves normal absence and diagnostics availabilit
   assert.match(browserProbe, /legacy operational topbar is visible in normal play/);
   assert.match(browserProbe, /map did not reclaim the quarantined sidebar width/);
   assert.match(browserProbe, /diagnostics route lost the legacy workspace gateway/);
-  assert.match(browserProbe, /\[data-command-view=\\"engineering\\"\]/);
+  assert.ok(browserProbe.includes('[data-command-view="engineering"]'));
 });
 
 test('historical browser validation opts into the explicit diagnostics route', () => {
