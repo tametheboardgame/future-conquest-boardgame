@@ -2,7 +2,7 @@ import { SLICE_IDS, TERRITORIES } from './data';
 import type { BoardPiece, BoardSpace, SeatId } from './board-state-types';
 
 export const CENTRAL_FRONT_SPACE_IDS = [...SLICE_IDS] as const;
-export const CENTRAL_FRONT_TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4'] as const;
+export const CENTRAL_FRONT_TASK_GROUP_IDS = ['TG-1', 'TG-2', 'TG-3', 'TG-4', 'TG-5', 'TG-6', 'TG-7', 'TG-8'] as const;
 
 export interface CentralFrontBoardSetup {
   entrySpaceId: string;

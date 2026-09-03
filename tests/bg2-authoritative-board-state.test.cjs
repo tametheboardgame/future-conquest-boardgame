@@ -33,7 +33,7 @@ test('authoritative initial board state is deterministic and contains six perman
   assert.equal(first.seats['seat-4'].controller, 'human');
   assert.equal(first.seats['seat-1'].commandActionsRemaining, 0);
   assert.equal(Object.keys(first.spaces).length, 15);
-  assert.equal(Object.keys(first.pieces).length, 18);
+  assert.equal(Object.keys(first.pieces).length, 22);
 });
 
 test('authoritative random stream is reproducible and advances explicit RNG state', () => {
