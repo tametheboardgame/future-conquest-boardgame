@@ -5,21 +5,21 @@ const path = require('node:path');
 
 const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 
-test('BG11C D20 preview derives its chance from the authoritative combat preview', () => {
+test('BG11C 2D6 preview derives its chance from the authoritative combat helper', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
 
   assert.match(combat, /getBoardCombatPreview/);
-  assert.match(combat, /hitChance\(preview\.target, preview\.attackModifier\)/);
-  assert.match(combat, /const minimumDie = target - attackModifier/);
-  assert.match(combat, /successfulFaces \* 5/);
-  assert.match(combat, /Need \{chance\.minimumDie\}\+ on die/);
-  assert.match(combat, /\{chance\.percent\}% hit chance/);
-  assert.match(combat, /Roll D20 · 1 Command Action/);
+  assert.match(combat, /getBoardCombatHitChance\(preview\.target, preview\.attackModifier\)/);
+  assert.match(combat, /chance\.minimumDiceTotal/);
+  assert.match(combat, /chance\.percent/);
+  assert.match(combat, /Need \{chance\.minimumDiceTotal\}\+ on 2D6/);
+  assert.match(combat, /Roll 2D6 · 1 Command Action/);
 });
 
 test('BG11C resolved roll shows the authoritative equation and consequences', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
 
+  assert.match(combat, /result\.dice/);
   assert.match(combat, /result\.die/);
   assert.match(combat, /result\.attackTotal/);
   assert.match(combat, /result\.target/);
@@ -32,28 +32,28 @@ test('BG11C resolved roll shows the authoritative equation and consequences', ()
   assert.match(combat, /aria-live="polite"/);
 });
 
-test('BG11C is presentation-only and does not introduce a second RNG path', () => {
+test('BG11C remains presentation-only and does not introduce a second RNG path', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
-  const css = read('src/bg5-dice-combat.css');
+  const css = read('src/bg12g-dice-tray.css');
 
   assert.match(combat, /dispatchBoardAction\(\{\s*type: 'attack-piece'/s);
   assert.doesNotMatch(combat, /Math\.random|crypto\.getRandomValues|nextBoardRandom/);
   assert.doesNotMatch(combat, /MapLibre|maplibre|WebGL|TerrainMapPrototype|setFeatureState|addLayer/);
   assert.match(combat, /data-bg-dice-presentation="BG11C"/);
-  assert.match(css, /tabletop-d20-face/);
-  assert.match(css, /tabletop-combat-result-reveal/);
+  assert.match(combat, /data-bg-dice-model="BG12G-R-2D6"/);
+  assert.match(css, /bg12g-d6-face/);
+  assert.match(css, /transform-style:\s*preserve-3d/);
 });
 
 test('BG11C dice feedback remains accessible without motion or colour', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
-  const css = read('src/bg5-dice-combat.css');
+  const css = read('src/bg12g-dice-tray.css');
 
   assert.match(combat, /★ CRITICAL HIT/);
   assert.match(combat, /✓ HIT/);
   assert.match(combat, /× MISS/);
-  assert.match(combat, /aria-label=\{`D20 rolled \$\{result\.die\}`\}/);
+  assert.match(combat, /Two D6 rolled/);
   assert.match(css, /prefers-reduced-motion: reduce/);
-  assert.match(css, /animation: none !important/);
+  assert.match(css, /animation:\s*none !important/);
   assert.match(css, /forced-colors: active/);
-  assert.match(css, /border: 2px solid CanvasText/);
 });
