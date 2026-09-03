@@ -7,7 +7,7 @@ const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 
 test('BG11A first-turn guide teaches the authoritative board game and is replayable', () => {
   const onboarding = read('src/components/TabletopOnboarding.tsx');
-  const shell = read('src/components/TabletopStatusShell.tsx');
+  const layout = read('src/components/TabletopLayout.tsx');
 
   for (const term of ['Paris', 'Brussels', 'Rhine-Ruhr', 'Command Action', 'Move', 'Attack', 'Recover', 'Engineer', 'Logistics', 'Strategic cards']) {
     assert.match(onboarding, new RegExp(term));
@@ -21,8 +21,8 @@ test('BG11A first-turn guide teaches the authoritative board game and is replaya
   assert.match(onboarding, /Replay the board-game guide/);
   assert.match(onboarding, /\{open \? 'Close guide' : 'Guide'\}/);
   assert.match(onboarding, /Start playing/);
-  assert.match(shell, /<TabletopOnboarding \/>/);
-  assert.match(shell, /data-bg-onboarding="BG11A"/);
+  assert.match(onboarding, /data-bg-package="BG11A"/);
+  assert.match(layout, /<TabletopOnboarding \/>/);
 });
 
 test('BG11A replaces the visible legacy simulation tutorial without mutating tutorial save state', () => {
@@ -40,12 +40,12 @@ test('BG11A exposes disabled action reasons as visible status content', () => {
   const support = read('src/components/TabletopSupportPanel.tsx');
   const cards = read('src/components/TabletopCardHandPanel.tsx');
   const cardCss = read('src/components/tabletop-card-hand.css');
-  const shell = read('src/components/TabletopStatusShell.tsx');
+  const layout = read('src/components/TabletopLayout.tsx');
 
   assert.match(passReason, /Pass unavailable:/);
   assert.match(passReason, /preview\.reason/);
   assert.match(passReason, /role="status"/);
-  assert.match(shell, /<TabletopPassReason \/>/);
+  assert.match(layout, /activeSurface === 'activation'[\s\S]*?<TabletopPassReason \/>/);
 
   assert.match(support, /unavailableReasons/);
   assert.match(support, /Unavailable support action reasons/);
