@@ -1,12 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { getBoardCombatPreview, getBoardCombatTargets } from '../game/board-combat';
 import { TERRITORIES } from '../game/data';
 import { useBoardGameDispatch, useBoardGameState } from './BoardGameStateProvider';
 import '../bg5-dice-combat.css';
+import '../bg12g-dice-tray.css';
 
 const MAP_PIECE_SELECTOR = '.r3-terrain-task-group-marker[data-group-id], .task-group-marker';
 const MAP_ENEMY_CONTACT_SELECTOR = '.r3-terrain-enemy-contact[data-territory-id]';
 const LEGACY_ATTACK_SELECTOR = '[data-tutorial="attack-action"]';
+const D20_FACES = Array.from({ length: 20 }, (_, index) => index + 1);
+const FULL_ROLL_DURATION_MS = 1180;
+const REDUCED_ROLL_DURATION_MS = 120;
+
+type D20Style = CSSProperties & {
+  '--d20-settle-x': string;
+  '--d20-settle-y': string;
+  '--d20-settle-z': string;
+};
 
 function territoryLabel(spaceId: string | null | undefined): string {
   if (!spaceId) return 'Off board';
@@ -52,12 +62,59 @@ function quarantineLegacySimulationAttackControls() {
   }
 }
 
+function d20SettleStyle(value: number | null): D20Style {
+  const face = value ?? 20;
+  return {
+    '--d20-settle-x': `${-12 + ((face * 37) % 28)}deg`,
+    '--d20-settle-y': `${-18 + ((face * 53) % 36)}deg`,
+    '--d20-settle-z': `${-8 + ((face * 29) % 16)}deg`
+  };
+}
+
+function PhysicalD20({
+  value,
+  rolling,
+  outcome = 'preview',
+  critical = false
+}: {
+  value: number | null;
+  rolling: boolean;
+  outcome?: 'preview' | 'hit' | 'miss';
+  critical?: boolean;
+}) {
+  return <div
+    className={`bg12g-d20-stage ${rolling ? 'rolling' : 'settled'} ${outcome}${critical ? ' critical' : ''}`}
+    style={d20SettleStyle(value)}
+    data-authoritative-result={value ?? undefined}
+    aria-hidden="true"
+  >
+    <span className="bg12g-d20-shadow" />
+    <div className="bg12g-d20-shell">
+      {D20_FACES.map(face => <span
+        key={face}
+        className={`bg12g-d20-facet bg12g-d20-facet-${face}`}
+      ><i>{face}</i></span>)}
+      <strong className="bg12g-d20-final-face">{rolling ? 'D20' : value ?? 'D20'}</strong>
+    </div>
+  </div>;
+}
+
+function fireDiceClatterHook(phase: 'start' | 'settled', result?: number) {
+  window.dispatchEvent(new CustomEvent('future-conquest:dice-clatter', {
+    detail: { die: 'd20', phase, result }
+  }));
+}
+
 export function TabletopCombatPanel() {
   const boardState = useBoardGameState();
   const dispatchBoardAction = useBoardGameDispatch();
   const [attackerPieceId, setAttackerPieceId] = useState<string>('');
   const [defenderPieceId, setDefenderPieceId] = useState<string>('');
   const [feedback, setFeedback] = useState('Select one of your formations, then choose an adjacent enemy piece.');
+  const [rollPhase, setRollPhase] = useState<'idle' | 'rolling' | 'settled'>('idle');
+  const [revealedCombatKey, setRevealedCombatKey] = useState('');
+  const rollRequestedRef = useRef(false);
+  const rollTimerRef = useRef<number | null>(null);
   const activeSeat = boardState.seats[boardState.activeSeat];
 
   const availableAttackers = useMemo(
@@ -79,6 +136,14 @@ export function TabletopCombatPanel() {
     [attackerPieceId, boardState, defenderPieceId]
   );
   const chance = preview?.legal ? hitChance(preview.target, preview.attackModifier) : null;
+  const latestCombat = boardState.combat?.status === 'resolved' ? boardState.combat : null;
+  const result = latestCombat?.roll;
+  const consequence = latestCombat?.consequence;
+  const resultModifier = latestCombat?.modifiers.supply ?? 0;
+  const latestCombatKey = latestCombat
+    ? `${latestCombat.attackerPieceId}-${latestCombat.defenderPieceId}-${result?.die}-${result?.attackTotal}`
+    : '';
+  const resultRevealed = Boolean(latestCombatKey && revealedCombatKey === latestCombatKey && result && consequence);
 
   useEffect(() => {
     quarantineLegacySimulationAttackControls();
@@ -91,6 +156,29 @@ export function TabletopCombatPanel() {
     });
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => () => {
+    if (rollTimerRef.current !== null) window.clearTimeout(rollTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (!latestCombatKey || !result) return;
+    if (!rollRequestedRef.current) {
+      setRevealedCombatKey(latestCombatKey);
+      setRollPhase('settled');
+      return;
+    }
+
+    if (rollTimerRef.current !== null) window.clearTimeout(rollTimerRef.current);
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    rollTimerRef.current = window.setTimeout(() => {
+      setRevealedCombatKey(latestCombatKey);
+      setRollPhase('settled');
+      rollRequestedRef.current = false;
+      rollTimerRef.current = null;
+      fireDiceClatterHook('settled', result.die);
+    }, reducedMotion ? REDUCED_ROLL_DURATION_MS : FULL_ROLL_DURATION_MS);
+  }, [latestCombatKey, result]);
 
   useEffect(() => {
     if (boardState.phase !== 'activation' || activeSeat.controller !== 'human') {
@@ -169,26 +257,32 @@ export function TabletopCombatPanel() {
   };
 
   const confirmAttack = () => {
-    if (!attackerPieceId || !defenderPieceId || !preview?.legal) return;
+    if (!attackerPieceId || !defenderPieceId || !preview?.legal || rollPhase === 'rolling') return;
+    rollRequestedRef.current = true;
+    setRollPhase('rolling');
+    setRevealedCombatKey('');
+    fireDiceClatterHook('start');
+    const attackTarget = defenderPieceId;
     const result = dispatchBoardAction({
       type: 'attack-piece',
       attackerPieceId,
-      defenderPieceId
+      defenderPieceId: attackTarget
     });
     setFeedback(result.reason);
-    if (result.accepted) setDefenderPieceId('');
+    if (result.accepted) {
+      setDefenderPieceId('');
+      return;
+    }
+    rollRequestedRef.current = false;
+    setRollPhase('idle');
   };
 
-  const latestCombat = boardState.combat?.status === 'resolved' ? boardState.combat : null;
-  const result = latestCombat?.roll;
-  const consequence = latestCombat?.consequence;
-  const resultModifier = latestCombat?.modifiers.supply ?? 0;
-
   return <aside
-    className="tabletop-combat-panel"
+    className="tabletop-combat-panel bg12g-dice-tray-panel"
     aria-label="Dice combat"
     data-bg-combat="BG5C"
     data-bg-dice-presentation="BG11C"
+    data-bg-physical-dice="BG12G"
   >
     <header>
       <span>Dice Combat</span>
@@ -199,7 +293,7 @@ export function TabletopCombatPanel() {
       <span>Attacking formation</span>
       <select
         value={attackerPieceId}
-        disabled={boardState.phase !== 'activation' || activeSeat.controller !== 'human'}
+        disabled={boardState.phase !== 'activation' || activeSeat.controller !== 'human' || rollPhase === 'rolling'}
         onChange={event => selectAttacker(event.target.value)}
       >
         <option value="">Select formation</option>
@@ -226,6 +320,7 @@ export function TabletopCombatPanel() {
             type="button"
             key={target.defenderPieceId}
             className={target.defenderPieceId === defenderPieceId ? 'selected' : ''}
+            disabled={rollPhase === 'rolling'}
             onClick={() => selectDefender(target.defenderPieceId)}
           >
             <span>{target.defenderPieceId} · {territoryLabel(target.targetSpaceId)}</span>
@@ -235,10 +330,11 @@ export function TabletopCombatPanel() {
         : <p>No legal adjacent enemy target.</p>}
     </section>}
 
-    {preview?.legal && chance && <section className="tabletop-combat-preview" aria-label="Combat preview">
-      <div className="tabletop-combat-die">
-        <div className="tabletop-d20-face preview" aria-hidden="true"><strong>D20</strong></div>
-        <div className="tabletop-combat-die-copy">
+    {preview?.legal && chance && <section className="tabletop-combat-preview bg12g-pre-roll" aria-label="Combat preview">
+      <div className="bg12g-tray" aria-label="D20 dice tray ready to roll">
+        <div className="bg12g-tray-rim" aria-hidden="true" />
+        <PhysicalD20 value={null} rolling={false} />
+        <div className="bg12g-tray-copy">
           <span>Need {chance.minimumDie}+ on die</span>
           <b>{chance.percent}% hit chance</b>
         </div>
@@ -256,34 +352,48 @@ export function TabletopCombatPanel() {
         <summary>Possible outcomes</summary>
         <ul>{preview.possibleOutcomes.map(outcome => <li key={outcome}>{outcome}</li>)}</ul>
       </details>
-      <button type="button" className="confirm" onClick={confirmAttack}>Roll D20 · 1 Command Action</button>
+      <button type="button" className="confirm bg12g-roll-button" onClick={confirmAttack}>Roll D20 · 1 Command Action</button>
     </section>}
 
     <p className="tabletop-combat-feedback" role="status">{feedback}</p>
 
-    {result && consequence && <section
-      key={`${latestCombat?.attackerPieceId}-${latestCombat?.defenderPieceId}-${result.die}-${result.attackTotal}`}
-      className={`tabletop-combat-result ${result.outcome}${consequence.critical ? ' critical' : ''}`}
+    {latestCombat && result && consequence && <section
+      key={latestCombatKey}
+      className={`tabletop-combat-result bg12g-resolved-tray ${result.outcome}${consequence.critical ? ' critical' : ''} ${rollPhase}`}
       aria-label="Latest combat result"
       aria-live="polite"
     >
-      <div className="tabletop-combat-result-roll">
-        <div className="tabletop-d20-face resolved" aria-label={`D20 rolled ${result.die}`}>
-          <strong>{result.die}</strong><small>D20</small>
+      <div className="bg12g-tray" aria-label={`D20 rolled ${result.die}`}>
+        <div className="bg12g-tray-rim" aria-hidden="true" />
+        <PhysicalD20
+          value={result.die}
+          rolling={rollPhase === 'rolling'}
+          outcome={result.outcome}
+          critical={consequence.critical}
+        />
+        <div className="bg12g-tray-copy bg12g-roll-state">
+          {rollPhase === 'rolling'
+            ? <><span>Rolling D20</span><b className="bg12g-rolling-dots" aria-hidden="true">•••</b></>
+            : <><span>Authoritative roll</span><b>{result.die}</b></>}
         </div>
-        <div className="tabletop-combat-result-summary">
+      </div>
+
+      {resultRevealed && <>
+        <div className="tabletop-combat-result-summary bg12g-result-summary">
           <span className="tabletop-combat-outcome">{consequence.critical ? '★ CRITICAL HIT' : result.outcome === 'hit' ? '✓ HIT' : '× MISS'}</span>
           <strong>{result.attackTotal} vs {result.target}</strong>
           <small>{result.die} {signed(resultModifier)} = {result.attackTotal}</small>
         </div>
-      </div>
-      <p>{latestCombat?.attackerPieceId} → {latestCombat?.defenderPieceId}: {consequence.critical ? 'critical ' : ''}{consequence.defenderStatus}.</p>
-      <div className="tabletop-combat-consequences" aria-label="Combat consequences">
-        <b>Damage +{consequence.damageInflicted}</b>
-        <b>Readiness -{consequence.readinessLoss}</b>
-        {consequence.retreatSpaceId && <b>Retreat {territoryLabel(consequence.retreatSpaceId)}</b>}
-        {consequence.controlChanged && <b>Control changed</b>}
-      </div>
+        <p>{latestCombat.attackerPieceId} → {latestCombat.defenderPieceId}: {consequence.critical ? 'critical ' : ''}{consequence.defenderStatus}.</p>
+        <div className="tabletop-combat-consequences" aria-label="Combat consequences">
+          <b>Damage +{consequence.damageInflicted}</b>
+          <b>Readiness -{consequence.readinessLoss}</b>
+          {consequence.retreatSpaceId && <b>Retreat {territoryLabel(consequence.retreatSpaceId)}</b>}
+          {consequence.controlChanged && <b>Control changed</b>}
+        </div>
+      </>}
+
+      {rollPhase === 'rolling' && <p className="bg12g-roll-announcement" role="status">Rolling D20…</p>}
     </section>}
   </aside>;
 }
