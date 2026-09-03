@@ -85,6 +85,7 @@ These remain non-negotiable throughout the rest of the project.
 9. **Accessibility remains first-class.** Critical state cannot rely only on colour, sound or animation. Reduced-motion and keyboard/touch alternatives remain supported.
 10. **Real hardware wins.** Automated tests do not overrule a freeze, severe performance regression or obvious presentation failure on the accepted real PC/browser.
 11. **Small packages, exact-head gates.** Risky work remains divided into coherent PRs with deterministic tests and exact-head CI.
+12. **Combat dice standard is locked to 2D6.** Future balance work may tune documented target/modifier values, but normal combat uses exactly two six-sided dice. D20, 3D6 or 4D6 must not be reintroduced as the base combat roll without a new explicit rules decision, migration package and full deterministic/balance evidence.
 
 ---
 
@@ -205,6 +206,8 @@ Dropdowns/selects may remain as accessibility or fallback controls, but should n
 ## Physical dice
 
 The approved final combat direction is **two classic six-sided dice**, not a simulated polyhedral D20.
+
+**This is now a locked product and rules decision.** Balance evidence may tune the documented target/modifier calibration, but Future Conquest base combat remains 2D6.
 
 The first BG12G physical-D20 implementation was mechanically correct but failed the manual visual gate: the faceted silhouette did not read cleanly as a real D20 and its rotation read more like a flat coin flip than two objects tumbling across a tray. That implementation is historical and is superseded by BG12G-R below.
 
@@ -510,7 +513,7 @@ A screenshot should make it immediately obvious that the player is holding **car
 
 ## BG12G-R - Physical 2D6 Dice Tray and Combat Recalibration
 
-**Status: REOPENED AFTER MANUAL VISUAL GATE — the merged physical-D20 implementation is superseded by this revision.**
+**Status: IN PROGRESS — 2D6 DICE MODEL LOCKED; balance evidence and manual visual/gameplay validation pending.**
 
 ### Why BG12G is being redone
 
@@ -524,7 +527,9 @@ The approved replacement is **two classic pip D6s**. Because 2D6 has a bell-shap
 
 Combat now uses **2D6**.
 
-Initial calibration for the revision branch:
+**The 2D6 dice count/type is locked.** Automated and human balance evidence may change documented target or modifier values, but BG12G-R does not reconsider D20, 3D6 or 4D6 as the base combat roll.
+
+Locked dice model and current calibration:
 
 - roll two six-sided dice and add them;
 - base hit target: **7+**;
@@ -546,7 +551,7 @@ Initial calibration for the revision branch:
 - natural **double six** is the critical result;
 - critical consequence rules remain the existing authoritative critical consequence unless a separate balance finding requires change.
 
-These values are the **initial calibration**, not an excuse to skip balance evidence. The exact-head campaign matrix may adjust only the 2D6 calibration knobs in this package if it demonstrates a material strategic regression. Opening-force counts, victory thresholds, cards and unrelated systems are not silently retuned to compensate.
+The dice model itself is final. The numerical values above remain **calibration knobs** until the exact-head campaign evidence is accepted. That evidence may adjust only documented 2D6 target/terrain/supply/fortification values in this package if it demonstrates a material strategic regression. Opening-force counts, victory thresholds, cards and unrelated systems are not silently retuned to compensate.
 
 ### Why the modifier scale changes
 
@@ -583,7 +588,7 @@ Compared with the old D20 model:
 - AI attack desirability changes because the probability curve is different; AI must consume the same shared authoritative probability helper as the human preview;
 - campaign pacing may become faster in open manoeuvre and slower around supplied fortified terrain. This is a required playtest/automation observation, not an assumed success.
 
-The design aim is **more board-game texture, not simply the closest numerical imitation of a D20**. If the exact-head campaign matrix becomes materially defender-dominant or produces objective deadlock, recalibrate the 2D6 target/terrain/supply/fortification knobs inside BG12G-R and rerun the evidence before merge.
+The design aim is **more board-game texture, not simply the closest numerical imitation of a D20**. If the exact-head campaign matrix becomes materially defender-dominant or produces objective deadlock, recalibrate the 2D6 target/terrain/supply/fortification knobs inside BG12G-R and rerun the evidence before merge. The dice model remains 2D6 throughout that calibration.
 
 ### Deterministic RNG contract
 
@@ -720,7 +725,8 @@ Before merge:
 3. inspect AI attack selection under the new probabilities;
 4. reject any obvious permanent strongpoint/deadlock pattern caused by the new curve;
 5. if tuning is required, change only documented 2D6 calibration values and repeat the entire exact-head evidence cycle;
-6. do not quietly change opening force counts or unrelated victory/card systems to make the 2D6 package pass.
+6. do not quietly change opening force counts or unrelated victory/card systems to make the 2D6 package pass;
+7. treat the matrix as a trigger for numerical 2D6 tuning only, not as a reason to reopen D20/3D6/4D6 selection.
 
 ### Automated acceptance
 
@@ -778,7 +784,7 @@ Show only critical identity/status and:
 2. choose Attack;
 3. legal targets highlight;
 4. choose target;
-5. dice tray becomes the active interaction;
+5. the locked 2D6 dice tray becomes the active interaction;
 6. roll/resolution;
 7. result feeds map markers/pieces.
 
@@ -1051,7 +1057,7 @@ Human feedback may create narrowly scoped remediation packages for balance, paci
 - acceptable automated and human-tested balance;
 - accepted gameplay direction;
 - accepted card/deck presentation;
-- accepted physical dice presentation;
+- accepted physical 2D6 presentation;
 - accepted desktop and compact layout;
 - accessibility/reduced-motion coverage;
 - no legacy simulation interface in normal play;
@@ -1145,9 +1151,9 @@ If a package makes the UI materially more cluttered than the approved tabletop c
 4. **BG12E** - build the clean tabletop composition.
 5. **MANUAL VISUAL CHECK.**
 6. **BG12F** - physical decks/cards.
-7. **BG12G-R** - replace rejected D20 presentation and authoritative D20 combat with calibrated physical 2D6 combat.
+7. **BG12G-R** - replace rejected D20 presentation and authoritative D20 combat with the locked physical 2D6 combat model and calibrated 2D6 rules.
 8. **MANUAL DICE/GAMEPLAY CHECK.**
-9. **BG12H** - compact contextual piece/action flow.
+9. **BG12H** - compact contextual piece/action flow using the locked 2D6 combat interaction.
 10. **MANUAL GAMEPLAY/VISUAL CHECK.**
 11. **BG12I-K** - reduce map clutter, coach marks, secondary drawers.
 12. **MANUAL VISUAL ACCEPTANCE.**
