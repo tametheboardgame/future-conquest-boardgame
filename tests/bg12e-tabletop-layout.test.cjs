@@ -41,6 +41,18 @@ test('BG12E keeps exactly one retained rail interaction surface mounted', () => 
   assert.match(layout, /data-active-surface=\{activeSurface\}/);
 });
 
+test('BG12E bypasses its composition on the explicit BG12D legacy diagnostics route', () => {
+  const layout = read('src/components/TabletopLayout.tsx');
+
+  assert.match(layout, /new URLSearchParams\(window\.location\.search\)\.get\('legacy-ui'\) === '1'/);
+  assert.match(layout, /if \(legacyDiagnostics\) \{[\s\S]*?return <>[\s\S]*?<TabletopStatusShell \/>[\s\S]*?\{children\}/);
+  assert.match(layout, /\{children\}[\s\S]*?<TabletopContextHint \/>[\s\S]*?<TabletopCardHandPanel \/>[\s\S]*?<TabletopCombatPanel \/>[\s\S]*?<TabletopActivationPanel \/>/);
+  assert.ok(
+    layout.indexOf('if (legacyDiagnostics)') < layout.indexOf('return <div'),
+    'legacy diagnostics must exit before the BG12E grid wrapper is mounted'
+  );
+});
+
 test('BG12E enforces desktop surface budgets and keeps the map outside the rail', () => {
   const css = read('src/bg12e-tabletop-layout.css');
 
