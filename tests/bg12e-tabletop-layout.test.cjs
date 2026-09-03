@@ -83,10 +83,17 @@ test('BG12E turns retained fixed overlays into reserved rail content', () => {
   assert.match(css, /width:\s*100% !important;/);
 });
 
-test('BG12E removes cards from permanent navigation while BG12D keeps combat quarantined', () => {
+test('BG12E keeps only core board navigation persistent and retains direct Settings access', () => {
   const layoutCss = read('src/bg12e-tabletop-layout.css');
   const quarantineCss = read('src/bg12d-legacy-presentation-quarantine.css');
+  const navigation = read('src/components/CommandNavigation.tsx');
+  const startup = read('src/components/StartupExperience.tsx');
 
+  assert.match(navigation, /id: 'map'[\s\S]*?label: 'Board'/);
+  assert.match(navigation, /id: 'forces'[\s\S]*?label: 'Forces'/);
+  assert.match(navigation, /id: 'campaign'[\s\S]*?label: 'Rules & Save'/);
   assert.match(layoutCss, /html\.bg12d-board-ui \.command-nav-cards\s*\{[\s\S]*?display:\s*none !important;/);
   assert.match(quarantineCss, /\.command-nav-primary \[data-command-view="operations"\]/);
+  assert.match(startup, /className="global-settings-toggle"/);
+  assert.match(startup, /aria-label="Open game settings"/);
 });
