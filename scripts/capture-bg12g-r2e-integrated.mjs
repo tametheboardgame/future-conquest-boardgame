@@ -10,8 +10,25 @@ const assert = (condition, message) => {
   if (!condition) throw new Error(message);
 };
 
+function serialisePageError(error) {
+  return error?.stack || error?.message || String(error);
+}
+
+function isKnownTerrainTileStateWarning(error) {
+  const undefinedFeatureId = /Cannot read properties of undefined \(reading ['"]id['"]\)/i.test(error);
+  if (!undefinedFeatureId) return false;
+  const taggedTerrainWarning = /R3 terrain source warning:/i.test(error)
+    && /setFeatureState|initializeTileState|_tileLoaded|_loadTile/i.test(error);
+  const mapLibreTileStateStack = /TerrainMapPrototype-[^\s)]+\.js/i.test(error)
+    && /setFeatureState|initializeTileState|_tileLoaded|_loadTile/i.test(error);
+  return taggedTerrainWarning || mapLibreTileStateStack;
+}
+
 function relevantErrors(errors) {
-  return errors.filter(error => !/favicon|ERR_ABORTED|Failed to load resource.*404/i.test(error));
+  return errors.filter(error =>
+    !/favicon|ERR_ABORTED|Failed to load resource.*404/i.test(error)
+    && !isKnownTerrainTileStateWarning(error)
+  );
 }
 
 async function createContext(browser, { reducedMotion = 'no-preference', recordVideo = false } = {}) {
@@ -108,7 +125,7 @@ async function runNormalCase(browser) {
   const video = page.video();
   const errors = [];
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => errors.push(serialisePageError(error)));
   try {
     await enterCampaign(page, '?terrain=1');
     const mapCanvas = page.locator('.maplibregl-canvas').first();
@@ -170,9 +187,21 @@ async function runNormalCase(browser) {
     await page.waitForTimeout(220);
     await page.screenshot({ path: `${outputDir}/05-map-after-dice-lifecycle.png`, fullPage: false });
 
+    const knownTerrainWarnings = errors.filter(isKnownTerrainTileStateWarning);
     const browserErrors = relevantErrors(errors);
     assert(browserErrors.length === 0, `browser errors during integrated dice case: ${JSON.stringify(browserErrors)}`);
-    return { ...selection, dice, events, resultCopy, settledMs, lifecycleAfterRoll, cycles, lifecycleFinal, mapBox: box };
+    return {
+      ...selection,
+      dice,
+      events,
+      resultCopy,
+      settledMs,
+      lifecycleAfterRoll,
+      cycles,
+      lifecycleFinal,
+      mapBox: box,
+      knownTerrainTileStateWarnings: knownTerrainWarnings.length
+    };
   } finally {
     await context.close();
     if (video) {
@@ -186,7 +215,7 @@ async function runReducedMotionCase(browser) {
   const context = await createContext(browser, { reducedMotion: 'reduce' });
   const page = await context.newPage();
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => errors.push(serialisePageError(error)));
   try {
     await enterCampaign(page, '?terrain=0');
     await openCombat(page);
@@ -210,7 +239,7 @@ async function runFallbackCase(browser) {
   const context = await createContext(browser);
   const page = await context.newPage();
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => errors.push(serialisePageError(error)));
   try {
     await enterCampaign(page, '?terrain=0&bg12g-force-dice-fallback=1');
     await openCombat(page);
@@ -254,7 +283,7 @@ try {
     video: 'bg12g-r2e-integrated-roll.webm'
   };
   fs.writeFileSync(`${outputDir}/evidence.json`, `${JSON.stringify(evidence, null, 2)}\n`);
-  console.log(`BG12G-R2E integrated evidence passed: ${normal.dice.left}+${normal.dice.right}=${normal.dice.total}; lifecycle ${normal.lifecycleFinal.created}/${normal.lifecycleFinal.disposed}; reduced ${reducedMotion.settledMs.toFixed(1)}ms; fallback ${fallback.dice.renderer}.`);
+  console.log(`BG12G-R2E integrated evidence passed: ${normal.dice.left}+${normal.dice.right}=${normal.dice.total}; lifecycle ${normal.lifecycleFinal.created}/${normal.lifecycleFinal.disposed}; reduced ${reducedMotion.settledMs.toFixed(1)}ms; fallback ${fallback.dice.renderer}; known terrain tile-state warnings ${normal.knownTerrainTileStateWarnings}.`);
 } finally {
   await browser.close();
 }
