@@ -3,7 +3,11 @@ const assert = require('node:assert/strict');
 
 const { applyBoardAction } = require('../.test-dist/board-action-dispatcher.js');
 const {
+  BOARD_COMBAT_CRITICAL_DAMAGE,
+  BOARD_COMBAT_CRITICAL_READINESS_LOSS,
+  BOARD_COMBAT_DAMAGE_PER_HIT,
   BOARD_COMBAT_ELIMINATION_DAMAGE,
+  BOARD_COMBAT_READINESS_LOSS,
   BOARD_COMBAT_RETREAT_THRESHOLD,
   getBoardCombatTargets
 } = require('../.test-dist/board-combat.js');
@@ -125,7 +129,7 @@ test('BG5B reaching three damage eliminates the defender and advances into the c
   assert.equal(result.state.spaces[targetSpaceId].control, 'seat-1');
 });
 
-test('BG5B double six is a visible critical hit with doubled damage/readiness loss', () => {
+test('BG5B double six is critical and a blocked forced retreat adds the standard extra loss', () => {
   const state = startedState(15872);
   const { defender } = adjacentEnemy(state);
 
@@ -139,10 +143,22 @@ test('BG5B double six is a visible critical hit with doubled damage/readiness lo
   assert.equal(result.state.combat.roll.die, 12);
   assert.equal(result.state.combat.roll.outcome, 'hit');
   assert.equal(result.state.combat.consequence.critical, true);
-  assert.equal(result.state.combat.consequence.damageInflicted, 2);
-  assert.equal(result.state.combat.consequence.readinessLoss, 50);
-  assert.equal(result.state.pieces[defender.id].damage, 2);
-  assert.equal(result.state.pieces[defender.id].readiness, 50);
+  assert.equal(result.state.combat.consequence.retreatSpaceId, null);
+  assert.equal(
+    result.state.combat.consequence.damageInflicted,
+    BOARD_COMBAT_CRITICAL_DAMAGE + BOARD_COMBAT_DAMAGE_PER_HIT
+  );
+  assert.equal(
+    result.state.combat.consequence.readinessLoss,
+    BOARD_COMBAT_CRITICAL_READINESS_LOSS + BOARD_COMBAT_READINESS_LOSS
+  );
+  assert.equal(result.state.combat.consequence.defenderStatus, 'eliminated');
+  assert.equal(result.state.pieces[defender.id].damage, BOARD_COMBAT_ELIMINATION_DAMAGE);
+  assert.equal(
+    result.state.pieces[defender.id].readiness,
+    defender.readiness - BOARD_COMBAT_CRITICAL_READINESS_LOSS - BOARD_COMBAT_READINESS_LOSS
+  );
+  assert.equal(result.state.pieces[defender.id].spaceId, null);
 });
 
 test('BG5B a defender with no legal retreat takes an additional loss and can be eliminated', () => {
