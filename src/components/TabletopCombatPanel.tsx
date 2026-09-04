@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getBoardCombatHitChance, getBoardCombatPreview, getBoardCombatTargets } from '../game/board-combat';
 import { TERRITORIES } from '../game/data';
+import type { BoardCombatState } from '../game/board-state-types';
 import { useBoardGameDispatch, useBoardGameState } from './BoardGameStateProvider';
 import { Bg12gIntegratedDiceRenderer } from './Bg12gIntegratedDiceRenderer';
 import '../bg5-dice-combat.css';
@@ -9,6 +10,11 @@ import '../bg12g-dice-tray.css';
 const MAP_PIECE_SELECTOR = '.r3-terrain-task-group-marker[data-group-id], .task-group-marker';
 const MAP_ENEMY_CONTACT_SELECTOR = '.r3-terrain-enemy-contact[data-territory-id]';
 const LEGACY_ATTACK_SELECTOR = '[data-tutorial="attack-action"]';
+
+type CombatPresentationSnapshot = {
+  combat: BoardCombatState;
+  key: string;
+};
 
 function territoryLabel(spaceId: string | null | undefined): string {
   if (!spaceId) return 'Off board';
@@ -41,6 +47,11 @@ function formatPercent(value: number): string {
   return value.toFixed(1).replace(/\.0$/, '');
 }
 
+function makeCombatPresentationKey(combat: BoardCombatState, rngCalls: number): string {
+  const roll = combat.roll;
+  return `${combat.attackerPieceId}-${combat.defenderPieceId}-${roll?.die ?? 'pending'}-${roll?.attackTotal ?? 'pending'}-${rngCalls}`;
+}
+
 function quarantineLegacySimulationAttackControls() {
   for (const element of document.querySelectorAll<HTMLButtonElement>(LEGACY_ATTACK_SELECTOR)) {
     element.disabled = true;
@@ -63,6 +74,7 @@ export function TabletopCombatPanel() {
   const [feedback, setFeedback] = useState('Select one of your formations, then choose an adjacent enemy piece.');
   const [rollPhase, setRollPhase] = useState<'idle' | 'rolling' | 'settled'>('idle');
   const [revealedCombatKey, setRevealedCombatKey] = useState('');
+  const [presentationSnapshot, setPresentationSnapshot] = useState<CombatPresentationSnapshot | null>(null);
   const rollRequestedRef = useRef(false);
   const activeSeat = boardState.seats[boardState.activeSeat];
 
@@ -85,15 +97,17 @@ export function TabletopCombatPanel() {
     [attackerPieceId, boardState, defenderPieceId]
   );
   const chance = preview?.legal ? getBoardCombatHitChance(preview.target, preview.attackModifier) : null;
-  const latestCombat = boardState.combat?.status === 'resolved' ? boardState.combat : null;
-  const result = latestCombat?.roll;
-  const consequence = latestCombat?.consequence;
-  const resultModifier = latestCombat?.modifiers.supply ?? 0;
-  const authoritativeDice = result?.dice ?? null;
-  const latestCombatKey = latestCombat
-    ? `${latestCombat.attackerPieceId}-${latestCombat.defenderPieceId}-${result?.die}-${result?.attackTotal}-${boardState.rng.calls}`
+  const liveLatestCombat = boardState.combat?.status === 'resolved' ? boardState.combat : null;
+  const liveLatestCombatKey = liveLatestCombat
+    ? makeCombatPresentationKey(liveLatestCombat, boardState.rng.calls)
     : '';
-  const resultRevealed = Boolean(latestCombatKey && revealedCombatKey === latestCombatKey && result && consequence);
+  const presentedCombat = presentationSnapshot?.combat ?? liveLatestCombat;
+  const presentedCombatKey = presentationSnapshot?.key ?? liveLatestCombatKey;
+  const result = presentedCombat?.roll;
+  const consequence = presentedCombat?.consequence;
+  const resultModifier = presentedCombat?.modifiers.supply ?? 0;
+  const authoritativeDice = result?.dice ?? null;
+  const resultRevealed = Boolean(presentedCombatKey && revealedCombatKey === presentedCombatKey && result && consequence);
 
   useEffect(() => {
     quarantineLegacySimulationAttackControls();
@@ -108,13 +122,13 @@ export function TabletopCombatPanel() {
   }, []);
 
   useEffect(() => {
-    if (!latestCombatKey || !result) return;
+    if (!presentedCombatKey || !result) return;
     if (!rollRequestedRef.current || !result.dice) {
-      setRevealedCombatKey(latestCombatKey);
+      setRevealedCombatKey(presentedCombatKey);
       setRollPhase('settled');
       rollRequestedRef.current = false;
     }
-  }, [latestCombatKey, result]);
+  }, [presentedCombatKey, result]);
 
   useEffect(() => {
     if (boardState.phase !== 'activation' || activeSeat.controller !== 'human') {
@@ -206,6 +220,16 @@ export function TabletopCombatPanel() {
     });
     setFeedback(actionResult.reason);
     if (actionResult.accepted) {
+      const acceptedCombat = actionResult.state.combat;
+      if (acceptedCombat?.status === 'resolved' && acceptedCombat.roll) {
+        setPresentationSnapshot({
+          combat: acceptedCombat,
+          key: makeCombatPresentationKey(acceptedCombat, actionResult.state.rng.calls)
+        });
+      } else {
+        rollRequestedRef.current = false;
+        setRollPhase('idle');
+      }
       setDefenderPieceId('');
       return;
     }
@@ -214,13 +238,13 @@ export function TabletopCombatPanel() {
   };
 
   const settleAuthoritativeRoll = (settledDice: [number, number], settledTotal: number) => {
-    if (!rollRequestedRef.current || !latestCombatKey || !result?.dice) return;
+    if (!rollRequestedRef.current || !presentedCombatKey || !result?.dice) return;
     const matchesAuthority = result.dice[0] === settledDice[0]
       && result.dice[1] === settledDice[1]
       && result.die === settledTotal;
     if (!matchesAuthority) return;
     rollRequestedRef.current = false;
-    setRevealedCombatKey(latestCombatKey);
+    setRevealedCombatKey(presentedCombatKey);
     setRollPhase('settled');
     fireDiceClatterHook('settled', settledDice, settledTotal);
   };
@@ -264,7 +288,7 @@ export function TabletopCombatPanel() {
       >
         <option value="">Select formation</option>
         {availableAttackers.map(piece => <option key={piece.id} value={piece.id}>
-          {piece.id} · {territoryLabel(piece.spaceId)} · R{piece.readiness} · D{piece.damage}
+          {piece.id} · {territoryLabel(piece.spaceId)} · R{piece.readiness} · D{piece.damage}/3 · S{piece.supply}
         </option>)}
       </select>
     </label>
@@ -323,8 +347,8 @@ export function TabletopCombatPanel() {
 
     <p className="tabletop-combat-feedback" role="status">{feedback}</p>
 
-    {latestCombat && result && consequence && <section
-      key={latestCombatKey}
+    {presentedCombat && result && consequence && <section
+      key={presentedCombatKey}
       className={`tabletop-combat-result bg12g-resolved-tray ${result.outcome}${consequence.critical ? ' critical' : ''} ${rollPhase}`}
       aria-label="Latest combat result"
     >
@@ -357,7 +381,7 @@ export function TabletopCombatPanel() {
           <strong>{result.attackTotal} vs {result.target}</strong>
           <small>{authoritativeDice ? `${authoritativeDice[0]} + ${authoritativeDice[1]} = ${result.die}; ` : `Legacy D20 ${result.die}; `}{result.die} {signed(resultModifier)} = {result.attackTotal}</small>
         </div>
-        <p>{latestCombat.attackerPieceId} → {latestCombat.defenderPieceId}: {consequence.critical ? 'critical ' : ''}{consequence.defenderStatus}.</p>
+        <p>{presentedCombat.attackerPieceId} → {presentedCombat.defenderPieceId}: {consequence.critical ? 'critical ' : ''}{consequence.defenderStatus}.</p>
         <div className="tabletop-combat-consequences" aria-label="Combat consequences">
           <b>Damage +{consequence.damageInflicted}</b>
           <b>Readiness -{consequence.readinessLoss}</b>
