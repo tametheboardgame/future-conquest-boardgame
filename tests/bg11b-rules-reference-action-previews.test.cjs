@@ -21,6 +21,13 @@ test('BG11B contextual guidance uses authoritative legality helpers', () => {
   assert.match(hint, /Cards \{preview\.cards\}/);
 });
 
+test('BG11B contextual combat guidance matches the authoritative 2D6 model', () => {
+  const hint = read('src/components/TabletopContextHint.tsx');
+
+  assert.match(hint, /compare its 2D6 preview before committing/);
+  assert.doesNotMatch(hint, /D20 preview/);
+});
+
 test('BG11B compact rules reference is tied to Central Front campaign constants', () => {
   const rules = read('src/components/TabletopRulesReference.tsx');
 
