@@ -49,7 +49,7 @@ export function TabletopContextHint() {
       ? 'No Command Actions remain for this seat. Pass Activation to continue the round.'
       : 'No Command Actions remain. The turn sequence will advance when the current activation resolves.';
   } else if (preview.attackers > 0) {
-    guidance = `${preview.attackers} formation${preview.attackers === 1 ? '' : 's'} can attack now. Select a formation to compare its D20 preview before committing.`;
+    guidance = `${preview.attackers} formation${preview.attackers === 1 ? '' : 's'} can attack now. Select a formation to compare its 2D6 preview before committing.`;
   } else if (preview.movable > 0) {
     guidance = `${preview.movable} formation${preview.movable === 1 ? '' : 's'} can move now. Select a formation on the board to reveal legal adjacent destinations.`;
   } else if (preview.supportTypes > 0) {
