@@ -13,32 +13,36 @@ test('BG12G-R2B is an isolated opt-in two-D6 Three.js motion route', () => {
   assert.match(main, /import\('\.\/components\/Bg12gR2bDiceMotionPrototype'\)/);
   assert.match(prototype, /makeD6\(theme, 'BG12G-R2B left D6'\)/);
   assert.match(prototype, /makeD6\(theme, 'BG12G-R2B right D6'\)/);
+  assert.match(prototype, /from '\.\/bg12gDiceMotion'/);
   assert.doesNotMatch(prototype, /BoardGameStateProvider|dispatchBoardAction|attack-piece|board-combat|MapLibre|maplibre/);
 });
 
 test('BG12G-R2B motion is scripted theatre with bounce beats and no result RNG', () => {
   const prototype = read('src/components/Bg12gR2bDiceMotionPrototype.tsx');
+  const motion = read('src/components/bg12gDiceMotion.ts');
 
-  assert.match(prototype, /const LEFT_MOTION/);
-  assert.match(prototype, /const RIGHT_MOTION/);
-  assert.match(prototype, /durationMs: 1580/);
-  assert.match(prototype, /durationMs: 1660/);
-  assert.match(prototype, /position: \[-1\.82, 0\.02, 0\.1\]/);
-  assert.match(prototype, /position: \[-1\.58, 0\.64, 0\.02\]/);
-  assert.match(prototype, /position: \[1\.94, 0\.02, 0\.08\]/);
-  assert.match(prototype, /position: \[1\.67, 0\.56, 0\.13\]/);
-  assert.match(prototype, /slerpQuaternions/);
+  assert.match(motion, /const LEFT_MOTION/);
+  assert.match(motion, /const RIGHT_MOTION/);
+  assert.match(motion, /durationMs: 1580/);
+  assert.match(motion, /durationMs: 1660/);
+  assert.match(motion, /position: \[-1\.82, 0\.02, 0\.1\]/);
+  assert.match(motion, /position: \[-1\.58, 0\.64, 0\.02\]/);
+  assert.match(motion, /position: \[1\.94, 0\.02, 0\.08\]/);
+  assert.match(motion, /position: \[1\.67, 0\.56, 0\.13\]/);
+  assert.match(motion, /slerpQuaternions/);
   assert.doesNotMatch(prototype, /Math\.random|crypto\.getRandomValues/);
+  assert.doesNotMatch(motion, /Math\.random|crypto\.getRandomValues/);
 });
 
 test('BG12G-R2B converges explicitly to predetermined final faces', () => {
   const prototype = read('src/components/Bg12gR2bDiceMotionPrototype.tsx');
+  const motion = read('src/components/bg12gDiceMotion.ts');
   const geometry = read('src/components/bg12gDiceGeometry.ts');
 
-  assert.match(prototype, /getFaceUpQuaternion\(motion\.finalFace, motion\.finalTwist\)/);
-  assert.match(prototype, /die\.quaternion\.copy\(finalQuaternion\)/);
-  assert.match(prototype, /finalFace: left/);
-  assert.match(prototype, /finalFace: right/);
+  assert.match(prototype, /createDieMotion\('left', left\)/);
+  assert.match(prototype, /createDieMotion\('right', right\)/);
+  assert.match(motion, /getFaceUpQuaternion\(motion\.finalFace, motion\.finalTwist\)/);
+  assert.match(motion, /die\.quaternion\.copy\(finalQuaternion\)/);
   assert.match(geometry, /export function getFaceUpQuaternion/);
 });
 
@@ -47,7 +51,7 @@ test('BG12G-R2B stops its animation loop when both dice settle and disposes its 
 
   assert.match(prototype, /if \(leftSettled && rightSettled\)/);
   assert.match(prototype, /setMotionState\('settled'\)/);
-  assert.match(prototype, /return;\n        }\n        animationFrame = window\.requestAnimationFrame\(animate\)/);
+  assert.match(prototype, /animationFrame = window\.requestAnimationFrame\(animate\)/);
   assert.match(prototype, /window\.cancelAnimationFrame\(animationFrame\)/);
   assert.match(prototype, /disposeThreeScene\(scene\)/);
   assert.match(prototype, /renderer\.dispose\(\)/);

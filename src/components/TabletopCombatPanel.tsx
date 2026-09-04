@@ -1,40 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getBoardCombatHitChance, getBoardCombatPreview, getBoardCombatTargets } from '../game/board-combat';
 import { TERRITORIES } from '../game/data';
 import { useBoardGameDispatch, useBoardGameState } from './BoardGameStateProvider';
+import { Bg12gIntegratedDiceRenderer } from './Bg12gIntegratedDiceRenderer';
 import '../bg5-dice-combat.css';
 import '../bg12g-dice-tray.css';
 
 const MAP_PIECE_SELECTOR = '.r3-terrain-task-group-marker[data-group-id], .task-group-marker';
 const MAP_ENEMY_CONTACT_SELECTOR = '.r3-terrain-enemy-contact[data-territory-id]';
 const LEGACY_ATTACK_SELECTOR = '[data-tutorial="attack-action"]';
-const D6_FACE_VALUES = [1, 2, 3, 4, 5, 6] as const;
-const FULL_ROLL_DURATION_MS = 1180;
-const REDUCED_ROLL_DURATION_MS = 120;
-
-type D6Style = CSSProperties & {
-  '--d6-settle-x': string;
-  '--d6-settle-y': string;
-  '--d6-settle-z': string;
-};
-
-const D6_SETTLE_ROTATIONS: Record<number, readonly [number, number]> = {
-  1: [0, 0],
-  2: [0, -90],
-  3: [-90, 0],
-  4: [90, 0],
-  5: [0, 90],
-  6: [0, 180]
-};
-
-const D6_FACE_CLASSES: Record<number, string> = {
-  1: 'front',
-  2: 'right',
-  3: 'top',
-  4: 'bottom',
-  5: 'left',
-  6: 'back'
-};
 
 function territoryLabel(spaceId: string | null | undefined): string {
   if (!spaceId) return 'Off board';
@@ -75,70 +49,6 @@ function quarantineLegacySimulationAttackControls() {
   }
 }
 
-function d6SettleStyle(value: number | null, dieIndex: 0 | 1): D6Style {
-  const face = value ?? (dieIndex === 0 ? 3 : 5);
-  const [x, y] = D6_SETTLE_ROTATIONS[face] ?? D6_SETTLE_ROTATIONS[1];
-  return {
-    '--d6-settle-x': `${x}deg`,
-    '--d6-settle-y': `${y}deg`,
-    '--d6-settle-z': `${dieIndex === 0 ? -7 : 9}deg`
-  };
-}
-
-function D6Face({ value }: { value: number }) {
-  return <span
-    className={`bg12g-d6-face bg12g-d6-face-${D6_FACE_CLASSES[value]}`}
-    data-face-value={value}
-  >
-    {Array.from({ length: value }, (_, index) => <i className="bg12g-d6-pip" key={index} />)}
-  </span>;
-}
-
-function PhysicalD6({
-  value,
-  rolling,
-  dieIndex,
-  outcome = 'preview',
-  critical = false
-}: {
-  value: number | null;
-  rolling: boolean;
-  dieIndex: 0 | 1;
-  outcome?: 'preview' | 'hit' | 'miss';
-  critical?: boolean;
-}) {
-  const dieClass = dieIndex === 0 ? 'die-a' : 'die-b';
-  return <div
-    className={`bg12g-d6-stage ${dieClass} ${rolling ? 'rolling' : 'settled'} ${outcome}${critical ? ' critical' : ''}`}
-    style={d6SettleStyle(value, dieIndex)}
-    data-authoritative-result={value ?? undefined}
-    data-die-index={dieIndex + 1}
-    aria-hidden="true"
-  >
-    <span className="bg12g-d6-shadow" />
-    <div className="bg12g-d6-cube">
-      {D6_FACE_VALUES.map(face => <D6Face key={face} value={face} />)}
-    </div>
-  </div>;
-}
-
-function PhysicalDicePair({
-  dice,
-  rolling,
-  outcome = 'preview',
-  critical = false
-}: {
-  dice: [number, number] | null;
-  rolling: boolean;
-  outcome?: 'preview' | 'hit' | 'miss';
-  critical?: boolean;
-}) {
-  return <div className="bg12g-dice-pair" aria-hidden="true">
-    <PhysicalD6 value={dice?.[0] ?? null} rolling={rolling} dieIndex={0} outcome={outcome} critical={critical} />
-    <PhysicalD6 value={dice?.[1] ?? null} rolling={rolling} dieIndex={1} outcome={outcome} critical={critical} />
-  </div>;
-}
-
 function fireDiceClatterHook(phase: 'start' | 'settled', dice?: [number, number], total?: number) {
   window.dispatchEvent(new CustomEvent('future-conquest:dice-clatter', {
     detail: { diceType: '2d6', phase, dice, total }
@@ -154,7 +64,6 @@ export function TabletopCombatPanel() {
   const [rollPhase, setRollPhase] = useState<'idle' | 'rolling' | 'settled'>('idle');
   const [revealedCombatKey, setRevealedCombatKey] = useState('');
   const rollRequestedRef = useRef(false);
-  const rollTimerRef = useRef<number | null>(null);
   const activeSeat = boardState.seats[boardState.activeSeat];
 
   const availableAttackers = useMemo(
@@ -198,28 +107,13 @@ export function TabletopCombatPanel() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => () => {
-    if (rollTimerRef.current !== null) window.clearTimeout(rollTimerRef.current);
-  }, []);
-
   useEffect(() => {
     if (!latestCombatKey || !result) return;
     if (!rollRequestedRef.current || !result.dice) {
       setRevealedCombatKey(latestCombatKey);
       setRollPhase('settled');
       rollRequestedRef.current = false;
-      return;
     }
-
-    if (rollTimerRef.current !== null) window.clearTimeout(rollTimerRef.current);
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    rollTimerRef.current = window.setTimeout(() => {
-      setRevealedCombatKey(latestCombatKey);
-      setRollPhase('settled');
-      rollRequestedRef.current = false;
-      rollTimerRef.current = null;
-      fireDiceClatterHook('settled', result.dice, result.die);
-    }, reducedMotion ? REDUCED_ROLL_DURATION_MS : FULL_ROLL_DURATION_MS);
   }, [latestCombatKey, result]);
 
   useEffect(() => {
@@ -305,18 +199,30 @@ export function TabletopCombatPanel() {
     setRevealedCombatKey('');
     fireDiceClatterHook('start');
     const attackTarget = defenderPieceId;
-    const result = dispatchBoardAction({
+    const actionResult = dispatchBoardAction({
       type: 'attack-piece',
       attackerPieceId,
       defenderPieceId: attackTarget
     });
-    setFeedback(result.reason);
-    if (result.accepted) {
+    setFeedback(actionResult.reason);
+    if (actionResult.accepted) {
       setDefenderPieceId('');
       return;
     }
     rollRequestedRef.current = false;
     setRollPhase('idle');
+  };
+
+  const settleAuthoritativeRoll = () => {
+    if (!rollRequestedRef.current || !latestCombatKey || !result?.dice) return;
+    rollRequestedRef.current = false;
+    setRevealedCombatKey(latestCombatKey);
+    setRollPhase('settled');
+    fireDiceClatterHook('settled', result.dice, result.die);
+  };
+
+  const handleDiceRendererFailure = () => {
+    setFeedback('3D dice renderer unavailable. Combat resolved normally and the authoritative dice are shown using the static fallback.');
   };
 
   const resultAriaLabel = rollPhase === 'rolling'
@@ -325,6 +231,12 @@ export function TabletopCombatPanel() {
       ? `Two D6 rolled ${authoritativeDice[0]} and ${authoritativeDice[1]}, total ${result?.die}`
       : `Legacy D20 rolled ${result?.die ?? 0}`;
 
+  const screenReaderResult = rollPhase === 'rolling'
+    ? 'Rolling two D6.'
+    : resultRevealed && authoritativeDice && result && consequence
+      ? `Roll result ${authoritativeDice[0]} and ${authoritativeDice[1]}, total ${result.die}. ${consequence.critical ? 'Critical hit.' : result.outcome === 'hit' ? 'Hit.' : 'Miss.'}`
+      : '';
+
   return <aside
     className="tabletop-combat-panel bg12g-dice-tray-panel"
     aria-label="Dice combat"
@@ -332,6 +244,7 @@ export function TabletopCombatPanel() {
     data-bg-dice-presentation="BG11C"
     data-bg-physical-dice="BG12G"
     data-bg-dice-model="BG12G-R-2D6"
+    data-bg-dice-renderer="BG12G-R2C-THREE"
   >
     <header>
       <span>Dice Combat</span>
@@ -382,7 +295,7 @@ export function TabletopCombatPanel() {
     {preview?.legal && chance && <section className="tabletop-combat-preview bg12g-pre-roll" aria-label="Combat preview">
       <div className="bg12g-tray" aria-label="Two D6 dice tray ready to roll">
         <div className="bg12g-tray-rim" aria-hidden="true" />
-        <PhysicalDicePair dice={null} rolling={false} />
+        <Bg12gIntegratedDiceRenderer dice={null} />
         <div className="bg12g-tray-copy">
           <span>Need {chance.minimumDiceTotal}+ on 2D6</span>
           <b>{formatPercent(chance.percent)}% hit chance</b>
@@ -410,16 +323,16 @@ export function TabletopCombatPanel() {
       key={latestCombatKey}
       className={`tabletop-combat-result bg12g-resolved-tray ${result.outcome}${consequence.critical ? ' critical' : ''} ${rollPhase}`}
       aria-label="Latest combat result"
-      aria-live="polite"
     >
+      <p className="bg12g-dice-sr-only" role="status" aria-live="polite" aria-atomic="true">{screenReaderResult}</p>
       <div className="bg12g-tray" aria-label={resultAriaLabel}>
         <div className="bg12g-tray-rim" aria-hidden="true" />
         {authoritativeDice
-          ? <PhysicalDicePair
+          ? <Bg12gIntegratedDiceRenderer
               dice={authoritativeDice}
-              rolling={rollPhase === 'rolling'}
-              outcome={result.outcome}
-              critical={consequence.critical}
+              animate={rollPhase === 'rolling'}
+              onSettled={settleAuthoritativeRoll}
+              onRendererFailure={handleDiceRendererFailure}
             />
           : <div className="bg12g-legacy-roll" aria-label={`Legacy D20 result ${result.die}`}>
               <span>Legacy saved combat</span>
