@@ -48,13 +48,16 @@ export function Bg12gIntegratedDiceRenderer({
 }: {
   dice: DicePair | null;
   animate?: boolean;
-  onSettled?: () => void;
+  onSettled?: (dice: DicePair, total: number) => void;
   onRendererFailure?: (message: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const initialAnimateRef = useRef(animate);
   const settledCallbackRef = useRef(onSettled);
   const failureCallbackRef = useRef(onRendererFailure);
+  settledCallbackRef.current = onSettled;
+  failureCallbackRef.current = onRendererFailure;
+
   const [rendererError, setRendererError] = useState<string | null>(null);
   const [rendererState, setRendererState] = useState<RendererState>('ready');
   const visibleDice = dice ?? PREVIEW_DICE;
@@ -64,14 +67,6 @@ export function Bg12gIntegratedDiceRenderer({
   const authoritative = dice !== null;
 
   useEffect(() => {
-    settledCallbackRef.current = onSettled;
-  }, [onSettled]);
-
-  useEffect(() => {
-    failureCallbackRef.current = onRendererFailure;
-  }, [onRendererFailure]);
-
-  useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
@@ -79,6 +74,7 @@ export function Bg12gIntegratedDiceRenderer({
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const forceFallback = new URLSearchParams(window.location.search).get('bg12g-force-dice-fallback') === '1';
     const theme = normaliseDiceTheme(DEFAULT_DICE_THEME);
+    const settledDice: DicePair = [left, right];
     let animationFrame = 0;
     let reducedSettleTimer = 0;
     let renderer: THREE.WebGLRenderer | null = null;
@@ -91,7 +87,7 @@ export function Bg12gIntegratedDiceRenderer({
       if (settledNotified) return;
       settledNotified = true;
       setRendererState('settled');
-      settledCallbackRef.current?.();
+      settledCallbackRef.current?.(settledDice, total);
     };
 
     try {
