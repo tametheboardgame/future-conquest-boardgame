@@ -23,7 +23,7 @@ test('BG11C resolved roll shows the authoritative equation and consequences', ()
   assert.match(combat, /result\.die/);
   assert.match(combat, /result\.attackTotal/);
   assert.match(combat, /result\.target/);
-  assert.match(combat, /latestCombat\?\.modifiers\.supply/);
+  assert.match(combat, /presentedCombat\?\.modifiers\.supply/);
   assert.match(combat, /★ CRITICAL HIT/);
   assert.match(combat, /✓ HIT/);
   assert.match(combat, /× MISS/);
