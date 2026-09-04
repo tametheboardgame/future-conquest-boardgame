@@ -21,24 +21,16 @@ test('BG12E gives normal board play one page-composition owner', () => {
   assert.doesNotMatch(layout, /\.\.\/game\//, 'layout owner must not absorb authoritative game rules');
 });
 
-test('BG12E keeps exactly one retained rail interaction surface mounted', () => {
+test('BG12H supersedes the four-way rail hierarchy with one formation surface plus cards', () => {
   const layout = read('src/components/TabletopLayout.tsx');
 
-  for (const [surface, component] of [
-    ['activation', 'TabletopActivationPanel'],
-    ['combat', 'TabletopCombatPanel'],
-    ['cards', 'TabletopCardHandPanel'],
-    ['support', 'TabletopSupportPanel']
-  ]) {
-    assert.match(
-      layout,
-      new RegExp(`activeSurface === '${surface}'[\\s\\S]*?<${component} \\/>`),
-      `${surface} must be gated by the single active rail surface`
-    );
-  }
-
-  assert.match(layout, /type RailSurface = 'activation' \| 'combat' \| 'cards' \| 'support'/);
+  assert.match(layout, /type RailSurface = 'formation' \| 'cards'/);
+  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /activeSurface === 'cards'[\s\S]*?<TabletopCardHandPanel \/>/);
   assert.match(layout, /data-active-surface=\{activeSurface\}/);
+  assert.doesNotMatch(layout, /activeSurface === 'activation'/);
+  assert.doesNotMatch(layout, /activeSurface === 'combat'/);
+  assert.doesNotMatch(layout, /activeSurface === 'support'/);
 });
 
 test('BG12E bypasses its composition on the explicit BG12D legacy diagnostics route', () => {
@@ -77,7 +69,7 @@ test('BG12E compact mode becomes a collapsed-by-default bottom tabletop drawer',
   assert.match(css, /data-rail-state="collapsed"[\s\S]*?--bg12e-rail-height:\s*48px;/);
 });
 
-test('BG12E turns retained fixed overlays into reserved rail content', () => {
+test('BG12E keeps retained historical controls safely rail-compatible', () => {
   const css = read('src/bg12e-tabletop-layout.css');
 
   for (const selector of [
