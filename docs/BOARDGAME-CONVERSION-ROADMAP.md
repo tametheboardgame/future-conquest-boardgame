@@ -79,6 +79,12 @@ Specific failure characteristics:
 
 This is a **presentation rejection only**. It does not reopen the accepted 2D6 rules, deterministic RNG, combat consequences or current balance calibration.
 
+## What has now passed in BG12G-R2
+
+The **R2A static true-3D D6 prototype passed the user visual gate on 4 September 2026**.
+
+The accepted direction is the isolated Three.js/WebGL bevelled D6 with conventional pip faces, real depth, lighting and tray/contact shadow. This approval covers the **static physical form only**. Throw/bounce/settle motion remains unapproved and must pass R2B separately.
+
 ---
 
 # Locked Architectural Decisions
@@ -135,7 +141,7 @@ The current CSS/DOM pseudo-3D implementation is **rejected and must not be itera
 
 # BG12G-R2 — True 3D Physical Dice Revision
 
-**Status: ACTIVE — manual presentation rejection requires replacement before PR #50 may merge.**
+**Status: ACTIVE — R2A static form accepted; motion/integration still requires approval before PR #50 may merge.**
 
 BG12G-R2 is a visual/rendering revision inside the existing BG12G-R programme. It preserves the accepted 2D6 rules and replaces only the failed dice presentation layer.
 
@@ -239,6 +245,8 @@ A lightweight physics library may be used only if it materially improves motion 
 
 ## R2A — Solid Dice Prototype
 
+**Status: USER VISUAL GATE PASSED — 4 September 2026.**
+
 Build the smallest possible isolated prototype before full integration.
 
 Deliverables:
@@ -252,7 +260,33 @@ Deliverables:
 
 ### R2A gate
 
-Do not proceed to motion unless static screenshots unmistakably look like **a real cube-shaped die**.
+**PASSED.** The user reviewed the six static face captures and accepted the true-3D physical direction as a substantial improvement over the rejected CSS dice.
+
+---
+
+## R2A.5 — Dice Theme Architecture
+
+Before motion is built around the accepted mesh/material implementation, make dice appearance deliberately configurable without building the player-facing cosmetics system yet.
+
+This stage exists to prevent colour/material/style choices being hard-wired into the renderer while the dice component is still isolated and cheap to structure correctly.
+
+Deliverables:
+
+- one typed/default dice-theme configuration consumed by the renderer;
+- configurable body colour/material treatment;
+- configurable pip colour;
+- configurable bevel/edge treatment within safe geometry limits;
+- configurable roughness/gloss and restrained metallic/emissive properties where supported;
+- configurable tray/background treatment where it belongs to the dice presentation;
+- a clean extension point for later alternate pip shapes/symbol sets without changing authoritative dice values;
+- the accepted R2A appearance retained as the default theme;
+- no dependency from game rules, RNG or combat state onto cosmetic theme selection.
+
+### R2A.5 scope boundary
+
+Do **not** build the final settings UI, unlock/progression system, cosmetics inventory/shop or a large style catalogue here. This is architecture only, with at most a minimal developer/test selector if useful for proving the contract.
+
+Player-facing dice customisation belongs in the later Settings/polish work once the core dice interaction is accepted.
 
 ---
 
@@ -431,11 +465,15 @@ Replace large tutorial presentation with compact anchored coach marks while keep
 
 Provide deliberate Forces, Rules/Save and Settings drawers. Closing them returns to an uncluttered board.
 
+The Settings work should expose player-facing dice appearance customisation using the theme architecture established in R2A.5. Initial supported choices should remain a curated set of readable board-game styles rather than arbitrary shader controls. Candidate options include die body colour/style, pip colour/style and tray treatment, with all choices remaining cosmetic only.
+
 Manual desktop visual acceptance required after BG12I-K.
 
 ## BG12L — Board-Game Effects and Motion Pass
 
 Refine piece movement, damage/elimination, objective capture, card motion, escalation/reinforcement and round/victory effects without changing authoritative rules.
+
+This polish pass may expand the curated dice-style catalogue or add higher-fidelity cosmetic variants, provided the accepted dice readability, performance and authoritative result contracts remain unchanged.
 
 ## BG12M — Sound and Music
 
@@ -511,19 +549,20 @@ If any package causes the accepted machine/browser to freeze or materially desta
 
 # Immediate Sequence
 
-1. **BG12G-R2A** — build and capture a convincing static true-3D D6 prototype.
-2. **BG12G-R2B** — add two-dice throw/bounce/settle and capture motion evidence.
-3. **BG12G-R2C/D** — integrate with authoritative combat plus accessibility/fallback.
-4. **BG12G-R2E** — exact-head automated video/screenshots and lifecycle/performance evidence.
-5. **MANUAL DICE/GAMEPLAY CHECK — USER MUST PASS.**
-6. **Merge PR #50** only after exact-head automation and manual acceptance.
-7. **BG12H** — compact contextual piece/action flow using the accepted 2D6 interaction.
-8. **MANUAL GAMEPLAY/VISUAL CHECK.**
-9. **BG12I-K** — map information reduction, coach marks and secondary drawers.
-10. **MANUAL VISUAL ACCEPTANCE.**
-11. **BG12L-N** — effects, sound/music and responsive/touch.
-12. **BG12O** — safely remove obsolete simulation architecture.
-13. **BG12P** — structured human playtest/remediation.
-14. **BG12Q** — final release candidate and presentation gate.
+1. **BG12G-R2A — PASSED** — static true-3D D6 form accepted by the user on 4 September 2026.
+2. **BG12G-R2A.5** — add lightweight dice-theme architecture while the renderer is still isolated; keep the accepted R2A look as default.
+3. **BG12G-R2B** — add two-dice throw/bounce/settle and capture motion evidence.
+4. **BG12G-R2C/D** — integrate with authoritative combat plus accessibility/fallback.
+5. **BG12G-R2E** — exact-head automated video/screenshots and lifecycle/performance evidence.
+6. **MANUAL DICE/GAMEPLAY CHECK — USER MUST PASS.**
+7. **Merge PR #50** only after exact-head automation and manual acceptance.
+8. **BG12H** — compact contextual piece/action flow using the accepted 2D6 interaction.
+9. **MANUAL GAMEPLAY/VISUAL CHECK.**
+10. **BG12I-K** — map information reduction, coach marks and secondary drawers, including player-facing dice appearance settings.
+11. **MANUAL VISUAL ACCEPTANCE.**
+12. **BG12L-N** — effects/cosmetic polish, sound/music and responsive/touch.
+13. **BG12O** — safely remove obsolete simulation architecture.
+14. **BG12P** — structured human playtest/remediation.
+15. **BG12Q** — final release candidate and presentation gate.
 
-The next objective is therefore very narrow: **make the two locked authoritative D6s look and move like real physical dice without compromising the proven map.**
+The next objective is therefore very narrow: **make the accepted true-3D dice appearance configurable without changing its default look, then make the two authoritative D6s move like real physical dice without compromising the proven map.**
