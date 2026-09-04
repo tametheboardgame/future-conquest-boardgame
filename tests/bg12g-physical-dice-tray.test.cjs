@@ -65,6 +65,19 @@ test('BG12G-R2C binds settle evidence to the exact rendered pair and verifies it
   assert.match(combat, /if \(!matchesAuthority\) return/);
 });
 
+test('BG12G-R2E snapshots the exact accepted human combat before automatic orchestration can replace the global latest combat', () => {
+  const combat = read('src/components/TabletopCombatPanel.tsx');
+
+  assert.match(combat, /type CombatPresentationSnapshot = \{/);
+  assert.match(combat, /const acceptedCombat = actionResult\.state\.combat/);
+  assert.match(combat, /setPresentationSnapshot\(\{\s*combat: acceptedCombat,\s*key: makeCombatPresentationKey\(acceptedCombat, actionResult\.state\.rng\.calls\)\s*\}\)/s);
+  assert.match(combat, /const presentedCombat = presentationSnapshot\?\.combat \?\? liveLatestCombat/);
+  assert.match(combat, /const presentedCombatKey = presentationSnapshot\?\.key \?\? liveLatestCombatKey/);
+  assert.match(combat, /key=\{presentedCombatKey\}/);
+  assert.match(combat, /\{presentedCombat\.attackerPieceId\} → \{presentedCombat\.defenderPieceId\}/);
+  assert.doesNotMatch(combat, /chooseAutomaticBoardAction|setTimeout\([^)]*dispatchBoardAction/);
+});
+
 test('BG12G-R2C preserves dice-clatter start/settled hooks without duplicate result dispatch', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
 
@@ -72,8 +85,8 @@ test('BG12G-R2C preserves dice-clatter start/settled hooks without duplicate res
   assert.match(combat, /diceType: '2d6'/);
   assert.match(combat, /fireDiceClatterHook\('start'\)/);
   assert.match(combat, /fireDiceClatterHook\('settled', settledDice, settledTotal\)/);
-  assert.match(combat, /if \(!rollRequestedRef\.current \|\| !latestCombatKey \|\| !result\?\.dice\) return/);
-  assert.match(combat, /rollRequestedRef\.current = false;\s*setRevealedCombatKey/s);
+  assert.match(combat, /if \(!rollRequestedRef\.current \|\| !presentedCombatKey \|\| !result\?\.dice\) return/);
+  assert.match(combat, /rollRequestedRef\.current = false;\s*setRevealedCombatKey\(presentedCombatKey\)/s);
   assert.equal((combat.match(/type: 'attack-piece'/g) || []).length, 1);
 });
 
