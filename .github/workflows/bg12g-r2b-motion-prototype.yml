@@ -1,0 +1,64 @@
+name: BG12G-R2B two-D6 motion gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BG12G_R2B_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  two-d6-motion-prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact motion head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BG12G_R2B_REF }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run R2A and R2B source contracts
+        run: node --test tests/bg12g-r2a-dice-prototype.test.cjs tests/bg12g-r2b-dice-motion.test.cjs
+
+      - name: Build exact production bundle
+        run: npm run build
+
+      - name: Install browser capture runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Start exact production preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/bg12g-r2b-preview.log 2>&1 &
+          for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/bg12g-r2b-preview.log
+          exit 1
+
+      - name: Capture two-D6 throw bounce settle evidence
+        env:
+          BG12G_R2B_REF: ${{ env.BG12G_R2B_REF }}
+        run: node scripts/capture-bg12g-r2b-motion.mjs
+
+      - name: Upload BG12G-R2B motion evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12g-r2b-motion-${{ env.BG12G_R2B_REF }}
+          path: artifacts/bg12g-r2b-motion
+          if-no-files-found: error
+          retention-days: 14
