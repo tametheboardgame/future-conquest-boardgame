@@ -213,12 +213,16 @@ export function TabletopCombatPanel() {
     setRollPhase('idle');
   };
 
-  const settleAuthoritativeRoll = () => {
+  const settleAuthoritativeRoll = (settledDice: [number, number], settledTotal: number) => {
     if (!rollRequestedRef.current || !latestCombatKey || !result?.dice) return;
+    const matchesAuthority = result.dice[0] === settledDice[0]
+      && result.dice[1] === settledDice[1]
+      && result.die === settledTotal;
+    if (!matchesAuthority) return;
     rollRequestedRef.current = false;
     setRevealedCombatKey(latestCombatKey);
     setRollPhase('settled');
-    fireDiceClatterHook('settled', result.dice, result.die);
+    fireDiceClatterHook('settled', settledDice, settledTotal);
   };
 
   const handleDiceRendererFailure = () => {
