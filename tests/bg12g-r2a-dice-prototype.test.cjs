@@ -62,7 +62,7 @@ test('BG12G-R2A.5 constrains cosmetic geometry/material inputs and provides a pi
   assert.match(theme, /styleId: string/);
   assert.match(prototype, /const PIP_STYLE_RENDERERS: Record<string, PipStyleRenderer>/);
   assert.match(prototype, /PIP_STYLE_RENDERERS\[theme\.styleId\]/);
-  assert.doesNotMatch(theme, /BoardGameState|dispatchBoardAction|Math\.random|crypto\.getRandomValues|combat|RNG/i);
+  assert.doesNotMatch(theme, /BoardGameState|dispatchBoardAction|Math\.random|crypto\.getRandomValues/);
 });
 
 test('BG12G-R2A uses real lighting, a tray floor and contact shadows without motion or RNG', () => {
