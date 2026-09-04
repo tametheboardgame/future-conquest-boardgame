@@ -27,7 +27,8 @@ test('BG12G-R2C replaces the rejected CSS pseudo-cubes with two accepted true-3D
   assert.match(renderer, /new THREE\.WebGLRenderer/);
   assert.match(renderer, /makeD6\(theme, 'BG12G-R2C integrated left D6'\)/);
   assert.match(renderer, /makeD6\(theme, 'BG12G-R2C integrated right D6'\)/);
-  assert.match(renderer, /data-bg12g-integrated-dice-renderer/);
+  assert.match(renderer, /dataset\.bg12gIntegratedDiceRenderer = 'three'/);
+  assert.match(renderer, /data-die-count="2"/);
   assert.doesNotMatch(combat, /function PhysicalD6|function PhysicalDicePair|D6_SETTLE_ROTATIONS/);
   assert.doesNotMatch(css, /bg12g-d6-cube|bg12g-d6-face-front|bg12g-d6-throw-a|transform-style:\s*preserve-3d/);
 });
@@ -79,4 +80,14 @@ test('BG12G-R2D provides reduced motion, screen-reader output, forced-colour sem
   assert.match(combat, /3D dice renderer unavailable\. Combat resolved normally/);
   assert.match(css, /@media \(forced-colors: active\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test('BG12G-R2E exposes bounded renderer lifecycle instrumentation for repeated rail mount/unmount evidence', () => {
+  const renderer = read('src/components/Bg12gIntegratedDiceRenderer.tsx');
+
+  assert.match(renderer, /__bg12gDiceRendererLifecycle/);
+  assert.match(renderer, /markRendererCreated\(\)/);
+  assert.match(renderer, /markRendererDisposed\(\)/);
+  assert.match(renderer, /lifecycle\.active = Math\.max\(0, lifecycle\.active - 1\)/);
+  assert.match(renderer, /data-die-count="2"/);
 });

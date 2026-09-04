@@ -34,15 +34,19 @@ test('BG11C resolved roll shows the authoritative equation and consequences', ()
 
 test('BG11C remains presentation-only and does not introduce a second RNG path', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
+  const renderer = read('src/components/Bg12gIntegratedDiceRenderer.tsx');
   const css = read('src/bg12g-dice-tray.css');
 
   assert.match(combat, /dispatchBoardAction\(\{\s*type: 'attack-piece'/s);
   assert.doesNotMatch(combat, /Math\.random|crypto\.getRandomValues|nextBoardRandom/);
-  assert.doesNotMatch(combat, /MapLibre|maplibre|WebGL|TerrainMapPrototype|setFeatureState|addLayer/);
+  assert.doesNotMatch(combat, /MapLibre|maplibre|TerrainMapPrototype|setFeatureState|addLayer/);
   assert.match(combat, /data-bg-dice-presentation="BG11C"/);
   assert.match(combat, /data-bg-dice-model="BG12G-R-2D6"/);
-  assert.match(css, /bg12g-d6-face/);
-  assert.match(css, /transform-style:\s*preserve-3d/);
+  assert.match(combat, /Bg12gIntegratedDiceRenderer/);
+  assert.match(renderer, /makeD6/);
+  assert.doesNotMatch(renderer, /Math\.random|crypto\.getRandomValues|nextBoardRandom|dispatchBoardAction|attack-piece/);
+  assert.match(css, /bg12g-integrated-dice/);
+  assert.doesNotMatch(css, /bg12g-d6-face|transform-style:\s*preserve-3d/);
 });
 
 test('BG11C dice feedback remains accessible without motion or colour', () => {

@@ -13,8 +13,28 @@ import {
 
 type DicePair = [number, number];
 type RendererState = 'ready' | 'rolling' | 'settled' | 'fallback';
+type DiceRendererLifecycle = { created: number; disposed: number; active: number; peak: number };
 
 const PREVIEW_DICE: DicePair = [3, 5];
+const lifecycle: DiceRendererLifecycle = { created: 0, disposed: 0, active: 0, peak: 0 };
+
+function publishLifecycle() {
+  const target = window as Window & { __bg12gDiceRendererLifecycle?: DiceRendererLifecycle };
+  target.__bg12gDiceRendererLifecycle = { ...lifecycle };
+}
+
+function markRendererCreated() {
+  lifecycle.created += 1;
+  lifecycle.active += 1;
+  lifecycle.peak = Math.max(lifecycle.peak, lifecycle.active);
+  publishLifecycle();
+}
+
+function markRendererDisposed() {
+  lifecycle.disposed += 1;
+  lifecycle.active = Math.max(0, lifecycle.active - 1);
+  publishLifecycle();
+}
 
 function fallbackGlyph(value: number) {
   return ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][value - 1] ?? String(value);
@@ -65,6 +85,7 @@ export function Bg12gIntegratedDiceRenderer({
     let scene: THREE.Scene | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let settledNotified = false;
+    let lifecycleRegistered = false;
 
     const notifySettled = () => {
       if (settledNotified) return;
@@ -80,6 +101,8 @@ export function Bg12gIntegratedDiceRenderer({
         alpha: false,
         powerPreference: 'high-performance'
       });
+      lifecycleRegistered = true;
+      markRendererCreated();
       setRendererError(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Three.js dice renderer creation failed';
@@ -92,6 +115,7 @@ export function Bg12gIntegratedDiceRenderer({
 
     renderer.domElement.className = 'bg12g-integrated-dice-canvas';
     renderer.domElement.dataset.bg12gIntegratedDiceRenderer = 'three';
+    renderer.domElement.dataset.dieCount = '2';
     renderer.domElement.dataset.leftFace = String(left);
     renderer.domElement.dataset.rightFace = String(right);
     renderer.domElement.dataset.total = String(total);
@@ -193,6 +217,7 @@ export function Bg12gIntegratedDiceRenderer({
       renderer?.dispose();
       renderer?.forceContextLoss();
       renderer?.domElement.remove();
+      if (lifecycleRegistered) markRendererDisposed();
     };
   }, [authoritative, left, right, total]);
 
@@ -201,6 +226,7 @@ export function Bg12gIntegratedDiceRenderer({
     data-renderer={rendererError ? 'fallback' : 'three'}
     data-motion-state={rendererState}
     data-authoritative={authoritative}
+    data-die-count="2"
     data-left-face={authoritative ? left : undefined}
     data-right-face={authoritative ? right : undefined}
     data-total={authoritative ? total : undefined}
