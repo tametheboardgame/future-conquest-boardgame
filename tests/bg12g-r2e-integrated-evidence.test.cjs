@@ -47,15 +47,15 @@ test('BG12G-R2E ignores only the known MapLibre tile feature-state warning while
   const capture = read('scripts/capture-bg12g-r2e-integrated.mjs');
 
   assert.match(capture, /function isKnownTerrainTileStateWarning\(error\)/);
-  assert.match(capture, /Cannot read properties of undefined/);
-  assert.match(capture, /reading \['"\]id\['"\]/);
-  assert.match(capture, /R3 terrain source warning:/);
-  assert.match(capture, /TerrainMapPrototype-/);
+  assert.match(capture, /const undefinedFeatureId = \/Cannot read properties of undefined/);
+  assert.match(capture, /if \(!undefinedFeatureId\) return false/);
+  assert.match(capture, /const taggedTerrainWarning = \/R3 terrain source warning:/);
+  assert.match(capture, /const mapLibreTileStateStack = \/TerrainMapPrototype-/);
   assert.match(capture, /setFeatureState\|initializeTileState\|_tileLoaded\|_loadTile/);
+  assert.match(capture, /return taggedTerrainWarning \|\| mapLibreTileStateStack/);
   assert.match(capture, /&& !isKnownTerrainTileStateWarning\(error\)/);
   assert.match(capture, /knownTerrainTileStateWarnings: knownTerrainWarnings\.length/);
-  assert.match(capture, /serialisePageError\(error\)/);
-  assert.doesNotMatch(capture, /Cannot read properties of undefined.*return false/s);
+  assert.match(capture, /page\.on\('pageerror', error => errors\.push\(serialisePageError\(error\)\)\)/);
 });
 
 test('BG12G-R2E exercises reduced motion and forced WebGL fallback without changing authoritative results', () => {
