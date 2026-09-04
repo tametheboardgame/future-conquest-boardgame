@@ -62,14 +62,33 @@ installWp6NotificationDisclosure();
 installWp66WarningPreferences();
 installR4UsabilityHotfix();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <StartupExperience>
-      <BoardGameStateProvider>
-        <TabletopLayout>
-          <App />
-        </TabletopLayout>
-      </BoardGameStateProvider>
-    </StartupExperience>
-  </StrictMode>
-);
+const root = createRoot(document.getElementById('root')!);
+const query = new URLSearchParams(window.location.search);
+const bg12gR2aPrototype = query.get('bg12g-r2a') === '1';
+
+if (bg12gR2aPrototype) {
+  const requestedFace = Number(query.get('face') ?? '1');
+  const face = Number.isFinite(requestedFace)
+    ? Math.max(1, Math.min(6, Math.round(requestedFace)))
+    : 1;
+
+  void import('./components/Bg12gR2aDicePrototype').then(({ Bg12gR2aDicePrototype }) => {
+    root.render(
+      <StrictMode>
+        <Bg12gR2aDicePrototype face={face} />
+      </StrictMode>
+    );
+  });
+} else {
+  root.render(
+    <StrictMode>
+      <StartupExperience>
+        <BoardGameStateProvider>
+          <TabletopLayout>
+            <App />
+          </TabletopLayout>
+        </BoardGameStateProvider>
+      </StartupExperience>
+    </StrictMode>
+  );
+}

@@ -1,0 +1,64 @@
+name: BG12G-R2A static true-3D dice gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BG12G_R2A_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  static-d6-prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact prototype head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BG12G_R2A_REF }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run BG12G-R2A source contracts
+        run: node --test tests/bg12g-r2a-dice-prototype.test.cjs
+
+      - name: Build exact production bundle
+        run: npm run build
+
+      - name: Install browser capture runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Start exact production preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/bg12g-r2a-preview.log 2>&1 &
+          for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/bg12g-r2a-preview.log
+          exit 1
+
+      - name: Capture all six upward faces
+        env:
+          BG12G_R2A_REF: ${{ env.BG12G_R2A_REF }}
+        run: node scripts/capture-bg12g-r2a-static.mjs
+
+      - name: Upload BG12G-R2A static visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12g-r2a-static-${{ env.BG12G_R2A_REF }}
+          path: artifacts/bg12g-r2a-static
+          if-no-files-found: error
+          retention-days: 14
