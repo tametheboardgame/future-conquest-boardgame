@@ -288,7 +288,7 @@ export function TabletopCombatPanel() {
       >
         <option value="">Select formation</option>
         {availableAttackers.map(piece => <option key={piece.id} value={piece.id}>
-          {piece.id} · {territoryLabel(piece.spaceId)} · R{piece.readiness} · D{piece.damage}/3 · S{piece.supply}
+          {piece.id} · {territoryLabel(piece.spaceId)} · R{piece.readiness} · D{piece.damage}
         </option>)}
       </select>
     </label>
