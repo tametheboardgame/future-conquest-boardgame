@@ -183,7 +183,9 @@ jobs:
           try {
             await page.goto('http://127.0.0.1:4173/?terrain=0', { waitUntil: 'domcontentloaded' });
             await page.getByRole('button', { name: 'BEGIN CAMPAIGN', exact: true }).click();
-            await page.locator('.tabletop-combat-panel[data-bg-dice-model="BG12G-R-2D6"]').waitFor({ state: 'visible', timeout: 30000 });
+            await page.locator('.bg12e-tabletop-layout').waitFor({ state: 'visible', timeout: 30000 });
+            await page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Combat', exact: true }).click();
+            await page.locator('.tabletop-combat-panel[data-bg-dice-model="BG12G-R-2D6"]').waitFor({ state: 'visible', timeout: 5000 });
 
             const closeGuide = page.getByRole('button', { name: /close guide/i });
             if (await closeGuide.count() > 0 && await closeGuide.first().isVisible()) {
