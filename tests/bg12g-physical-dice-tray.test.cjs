@@ -51,13 +51,27 @@ test('BG12G-R2C uses the approved shared throw/bounce/settle motion and reveals 
   assert.doesNotMatch(combat, /FULL_ROLL_DURATION_MS|rollTimerRef/);
 });
 
+test('BG12G-R2C binds settle evidence to the exact rendered pair and verifies it against current authority', () => {
+  const combat = read('src/components/TabletopCombatPanel.tsx');
+  const renderer = read('src/components/Bg12gIntegratedDiceRenderer.tsx');
+
+  assert.match(renderer, /onSettled\?: \(dice: DicePair, total: number\) => void/);
+  assert.match(renderer, /const settledDice: DicePair = \[left, right\]/);
+  assert.match(renderer, /settledCallbackRef\.current\?\.\(settledDice, total\)/);
+  assert.match(combat, /const settleAuthoritativeRoll = \(settledDice: \[number, number\], settledTotal: number\)/);
+  assert.match(combat, /result\.dice\[0\] === settledDice\[0\]/);
+  assert.match(combat, /result\.dice\[1\] === settledDice\[1\]/);
+  assert.match(combat, /result\.die === settledTotal/);
+  assert.match(combat, /if \(!matchesAuthority\) return/);
+});
+
 test('BG12G-R2C preserves dice-clatter start/settled hooks without duplicate result dispatch', () => {
   const combat = read('src/components/TabletopCombatPanel.tsx');
 
   assert.match(combat, /future-conquest:dice-clatter/);
   assert.match(combat, /diceType: '2d6'/);
   assert.match(combat, /fireDiceClatterHook\('start'\)/);
-  assert.match(combat, /fireDiceClatterHook\('settled', result\.dice, result\.die\)/);
+  assert.match(combat, /fireDiceClatterHook\('settled', settledDice, settledTotal\)/);
   assert.match(combat, /if \(!rollRequestedRef\.current \|\| !latestCombatKey \|\| !result\?\.dice\) return/);
   assert.match(combat, /rollRequestedRef\.current = false;\s*setRevealedCombatKey/s);
   assert.equal((combat.match(/type: 'attack-piece'/g) || []).length, 1);
