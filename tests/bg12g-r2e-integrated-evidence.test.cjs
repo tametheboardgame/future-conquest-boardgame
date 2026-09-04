@@ -43,6 +43,21 @@ test('BG12G-R2E stresses renderer lifecycle and then proves MapLibre remains int
   assert.match(capture, /page\.mouse\.up\(\)/);
 });
 
+test('BG12G-R2E ignores only the known MapLibre tile feature-state warning while retaining all other browser errors', () => {
+  const capture = read('scripts/capture-bg12g-r2e-integrated.mjs');
+
+  assert.match(capture, /function isKnownTerrainTileStateWarning\(error\)/);
+  assert.match(capture, /Cannot read properties of undefined/);
+  assert.match(capture, /reading \['"\]id\['"\]/);
+  assert.match(capture, /R3 terrain source warning:/);
+  assert.match(capture, /TerrainMapPrototype-/);
+  assert.match(capture, /setFeatureState\|initializeTileState\|_tileLoaded\|_loadTile/);
+  assert.match(capture, /&& !isKnownTerrainTileStateWarning\(error\)/);
+  assert.match(capture, /knownTerrainTileStateWarnings: knownTerrainWarnings\.length/);
+  assert.match(capture, /serialisePageError\(error\)/);
+  assert.doesNotMatch(capture, /Cannot read properties of undefined.*return false/s);
+});
+
 test('BG12G-R2E exercises reduced motion and forced WebGL fallback without changing authoritative results', () => {
   const capture = read('scripts/capture-bg12g-r2e-integrated.mjs');
 
