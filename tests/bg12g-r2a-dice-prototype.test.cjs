@@ -20,11 +20,49 @@ test('BG12G-R2A builds one bevelled solid D6 with conventional pips on all six f
   const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
 
   assert.match(prototype, /const D6_VALUES = \[1, 2, 3, 4, 5, 6\]/);
-  assert.match(prototype, /new RoundedBoxGeometry\(2, 2, 2, 8, 0\.18\)/);
+  assert.match(prototype, /new RoundedBoxGeometry\(2, 2, 2, theme\.edge\.bevelSegments, theme\.edge\.bevelRadius\)/);
   assert.match(prototype, /const PIP_LAYOUT/);
-  assert.match(prototype, /for \(const face of D6_VALUES\) addFacePips/);
+  assert.match(prototype, /for \(const face of D6_VALUES\) addFaceMarks/);
   assert.match(prototype, /FACE_NORMALS\[face\]/);
   assert.match(prototype, /orientFaceUp/);
+});
+
+test('BG12G-R2A.5 makes cosmetic dice appearance typed and configurable while retaining the accepted default', () => {
+  const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
+  const theme = read('src/components/bg12gDiceTheme.ts');
+
+  assert.match(theme, /export interface DiceTheme/);
+  assert.match(theme, /export const DEFAULT_DICE_THEME/);
+  assert.match(theme, /id: 'r2a-accepted'/);
+  assert.match(theme, /colour: 0xe9dfc9/);
+  assert.match(theme, /colour: 0x171317/);
+  assert.match(theme, /bevelRadius: 0\.18/);
+  assert.match(theme, /bevelSegments: 8/);
+  assert.match(theme, /roughness: 0\.38/);
+  assert.match(theme, /metalness: 0\.02/);
+  assert.match(theme, /backgroundColour: 0x171014/);
+  assert.match(theme, /floorColour: 0x3a2020/);
+
+  assert.match(prototype, /theme = DEFAULT_DICE_THEME/);
+  assert.match(prototype, /normaliseDiceTheme\(theme\)/);
+  assert.match(prototype, /makeMaterial\(theme\.body\)/);
+  assert.match(prototype, /makeMaterial\(theme\.pips\)/);
+  assert.match(prototype, /safeTheme\.tray\.backgroundColour/);
+  assert.match(prototype, /safeTheme\.tray\.floorColour/);
+});
+
+test('BG12G-R2A.5 constrains cosmetic geometry/material inputs and provides a pip-style extension point', () => {
+  const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
+  const theme = read('src/components/bg12gDiceTheme.ts');
+
+  assert.match(theme, /normaliseDiceTheme/);
+  assert.match(theme, /bevelRadius: clamp/);
+  assert.match(theme, /bevelSegments: Math\.round\(clamp/);
+  assert.match(theme, /emissiveIntensity: clamp/);
+  assert.match(theme, /styleId: string/);
+  assert.match(prototype, /const PIP_STYLE_RENDERERS: Record<string, PipStyleRenderer>/);
+  assert.match(prototype, /PIP_STYLE_RENDERERS\[theme\.styleId\]/);
+  assert.doesNotMatch(theme, /BoardGameState|dispatchBoardAction|Math\.random|crypto\.getRandomValues|combat|RNG/i);
 });
 
 test('BG12G-R2A uses real lighting, a tray floor and contact shadows without motion or RNG', () => {
