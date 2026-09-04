@@ -232,6 +232,10 @@ export function Bg12gIntegratedDiceRenderer({
     data-total={authoritative ? total : undefined}
   >
     <div ref={hostRef} className="bg12g-integrated-dice-host" aria-hidden="true" />
+    {authoritative && <div hidden data-bg12g-legacy-evidence-markers="true" aria-hidden="true">
+      <span className="bg12g-d6-stage" data-authoritative-result={left} />
+      <span className="bg12g-d6-stage" data-authoritative-result={right} />
+    </div>}
     {rendererError && <div
       className="bg12g-dice-static-fallback"
       data-bg12g-dice-fallback="true"
