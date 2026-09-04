@@ -21,6 +21,13 @@ test('BG11B contextual guidance uses authoritative legality helpers', () => {
   assert.match(hint, /Cards \{preview\.cards\}/);
 });
 
+test('BG11B contextual combat guidance matches the authoritative 2D6 model', () => {
+  const hint = read('src/components/TabletopContextHint.tsx');
+
+  assert.match(hint, /compare its 2D6 preview before committing/);
+  assert.doesNotMatch(hint, /D20 preview/);
+});
+
 test('BG11B compact rules reference is tied to Central Front campaign constants', () => {
   const rules = read('src/components/TabletopRulesReference.tsx');
 
@@ -30,7 +37,10 @@ test('BG11B compact rules reference is tied to Central Front campaign constants'
   assert.match(rules, /projectBoardCampaignStatus/);
   assert.match(rules, /Move, Attack, Recover, Engineer and Logistics each cost 1 Command Action/);
   assert.match(rules, /Invalid actions cost nothing and change nothing/);
-  assert.match(rules, /Combat uses a seeded D20/);
+  assert.match(rules, /Combat uses two seeded D6s/);
+  assert.match(rules, /Double six is a critical hit/);
+  assert.match(rules, /fortification does not stack/);
+  assert.doesNotMatch(rules, /Combat uses a seeded D20/);
   assert.match(rules, /holding at least \{CENTRAL_FRONT_FINAL_OBJECTIVE_TARGET\} objectives/);
 });
 

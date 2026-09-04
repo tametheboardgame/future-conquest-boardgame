@@ -8,7 +8,7 @@ import type {
 
 export const BOARD_RECOVERY_READINESS_GAIN = 25 as const;
 export const BOARD_RECOVERY_DAMAGE_REPAIRED = 1 as const;
-export const BOARD_FORTIFICATION_LIMIT = 3 as const;
+export const BOARD_FORTIFICATION_LIMIT = 1 as const;
 
 const SUPPLY_IMPROVEMENT: Record<SupplyState, SupplyState> = {
   isolated: 'strained',
@@ -119,7 +119,7 @@ export function recoverBoardPiece(state: BoardGameState, pieceId: string): Board
 
 /**
  * Logistics improves the selected formation by exactly one supply step. This
- * feeds the existing BG5 attack modifier directly: isolated -2, strained -1,
+ * feeds the authoritative combat modifier directly: isolated -2, strained -1,
  * supplied 0.
  */
 export function improveBoardPieceSupply(state: BoardGameState, pieceId: string): BoardActionResult {
@@ -145,9 +145,8 @@ export function improveBoardPieceSupply(state: BoardGameState, pieceId: string):
 
 /**
  * Engineer fortifies the selected formation's current friendly-controlled
- * position. Fortification is already an explicit BG5 defensive modifier, so
- * the effect is strategically meaningful without reviving legacy engineering
- * projects, allocations or route-repair administration.
+ * position. BG12G-R makes fortification a binary +1 defensive state because a
+ * single modifier step is already substantial on the 2D6 bell curve.
  */
 export function engineerBoardPosition(state: BoardGameState, pieceId: string): BoardActionResult {
   const eligibility = getSupportPiece(state, pieceId, 'Engineer');
@@ -161,21 +160,20 @@ export function engineerBoardPosition(state: BoardGameState, pieceId: string): B
 
   const fortification = Math.max(0, Math.trunc(space.fortification ?? 0));
   if (fortification >= BOARD_FORTIFICATION_LIMIT) {
-    return reject(state, `${spaceId} is already at fortification ${BOARD_FORTIFICATION_LIMIT}.`);
+    return reject(state, `${spaceId} is already fortified.`);
   }
 
-  const nextFortification = fortification + 1;
   const nextState: BoardGameState = {
     ...state,
     spaces: {
       ...state.spaces,
-      [spaceId]: { ...space, fortification: nextFortification }
+      [spaceId]: { ...space, fortification: BOARD_FORTIFICATION_LIMIT }
     }
   };
 
   return spendSupportAction(
     state,
     nextState,
-    `${pieceId} engineered ${spaceId} to fortification ${nextFortification}`
+    `${pieceId} fortified ${spaceId}`
   );
 }

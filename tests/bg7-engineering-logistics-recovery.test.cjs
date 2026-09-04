@@ -179,7 +179,9 @@ test('BG7 Engineer raises friendly fortification and immediately raises the BG5 
   assert.equal(fortified.target, unfortified.target + 1);
 });
 
-test('BG7 Engineer requires friendly control and respects the fortification cap without cost', () => {
+test('BG7 Engineer requires friendly control and enforces binary fortification without cost', () => {
+  assert.equal(BOARD_FORTIFICATION_LIMIT, 1);
+
   const hostile = startedState();
   const piece = ownPiece(hostile);
   const spaceId = piece.spaceId;
@@ -209,7 +211,7 @@ test('BG7 Engineer requires friendly control and respects the fortification cap 
   assert.equal(capResult.accepted, false);
   assert.equal(capResult.commandActionsSpent, 0);
   assert.equal(serializeBoardState(capped), cappedBefore);
-  assert.match(capResult.reason, /already at fortification/);
+  assert.match(capResult.reason, /already fortified/);
 });
 
 test('BG7 support actions share activation, ownership and payload guardrails', () => {

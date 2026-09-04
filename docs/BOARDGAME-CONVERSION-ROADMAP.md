@@ -1,8 +1,8 @@
 # Future Conquest Board-Game Roadmap
 
-> **Roadmap reset: 3 September 2026**
+> **Roadmap reset: 4 September 2026**
 >
-> This document supersedes the old forward-looking BG0-BG12 conversion plan. The old plan successfully got the project from the original simulation to a functioning authoritative board game, but many of its transitional UI assumptions are now obsolete. Historical package documents remain useful records of what was built; this file is now the authority for what happens next.
+> This file is the current authority for the Future Conquest board-game conversion. Historical package documents and earlier versions of this roadmap remain useful implementation records, but where they conflict with this reset, this document wins.
 
 ---
 
@@ -15,930 +15,554 @@ The player should feel that they are manipulating a physical strategy board game
 - physical formations on the map;
 - clear territory and objective control;
 - real-looking cards and card decks;
-- actual animated dice rolls;
-- short, contextual actions rather than operational-management screens;
-- a campaign that is understandable from the board itself.
+- convincing physical dice rolls;
+- short contextual actions rather than operational-management screens;
+- a campaign understandable primarily from the board itself.
 
 The game must **not** drift back toward the spreadsheet-heavy operational simulator interface that the conversion was intended to replace.
 
-**The map is the foundation. The board game is now the application. The old simulation UI is compatibility residue, not the product.**
+**The map is the foundation. The board game is the application. The old simulation UI is compatibility residue, not the product.**
 
 ---
 
-# Current Position
+# Current Position — 4 September 2026
 
 ## Accepted `main`
 
-Current green `main` at this roadmap reset:
+The current BG12G-R branch is based on accepted `main`:
 
-`0d4c863198bbfe88ba6e0b03f84305bdde39b1b7`
+`9819754a4254ac315cd0bcca85865188c0474ee4`
 
-This includes:
+The board-game conversion through the tabletop/card foundation is mechanically established. The original BG12G D20 package was merged, then rejected manually as a final physical-dice presentation and superseded by the current 2D6 rework.
 
-- BG0-BG11 board-game conversion work;
-- the authoritative board state and deterministic dispatcher;
-- alternating activations and Command Actions;
-- direct map-piece movement;
-- deterministic D20 combat;
-- escalation/reinforcement systems;
-- simplified Recover / Engineer / Logistics board actions;
-- strategic cards;
-- computer players;
-- Central Front objectives and victory conditions;
-- onboarding, rules reference, disabled-action feedback and presentation work;
-- BG12A deterministic multi-seed board-game playtest tooling.
+## Active branch / PR
 
-## BG12B remains separate
+- branch: `feat/bg12g-2d6-rework`
+- PR: **#50 — BG12G-R: Replace D20 combat with physical 2D6**
+- last accepted exact head before this roadmap reset: `bd8ac10bbf754f0dfb4d6a6ca032fa58f1f598a4`
+- PR remains **draft and unmerged**.
 
-PR #43, **BG12B: Calibrate Central Front opening force balance**, is still an independent balance package.
+## What is accepted in BG12G-R
 
-Its accepted automated experiment is currently eight Expedition task groups, with the canonical 24-campaign sample moving from the original Defender-dominant early-collapse pattern to a mixed result. BG12B must be completed or rejected on its own exact-head evidence. It must not be mixed into the tabletop presentation reset.
+The following are now accepted unless new evidence identifies a genuine defect:
 
-## Visual acceptance failure identified
+- normal combat uses exactly **2D6**;
+- base hit target is currently **7+**;
+- supply attack modifiers are `0 / -1 / -2` for supplied / strained / isolated;
+- terrain defence is compressed to `0 / +1` for the 2D6 curve;
+- fortification is binary `0 / +1` and does not stack in normal board-game combat;
+- natural double six is the critical roll;
+- one authoritative seeded RNG sample maps to one of 36 ordered D6 outcomes;
+- the engine stores both authoritative D6 faces plus their total;
+- presentation never decides the combat result;
+- save/reload, AI probability reasoning and human probability preview use the authoritative 2D6 model;
+- the canonical 24-campaign matrix currently resolves all campaigns at **9 Expedition wins / 15 Defender wins (37.5% / 62.5%)** and is classified as mixed;
+- the full regression/build/browser/balance/performance gate has been green on the accepted exact head.
 
-The current game is mechanically much closer to complete than its presentation suggests. The problem is composition:
+**The dice model is locked.** D20, 3D6 and 4D6 are not balance alternatives. Future balance work may tune documented 2D6 numerical calibration only when evidence justifies it.
 
-- the new board-game shell was layered around the retained original `App`;
-- legacy simulation state and workspaces still exist alongside authoritative board state;
-- `TabletopStatusShell` mounts status, cards, support controls, pass feedback, rules and onboarding together;
-- combat and activation panels are mounted as additional root-level surfaces;
-- BG1 deliberately kept old Regions / Engineer / Logistics / Intel screens accessible behind `More` as a safe migration bridge.
+## What failed
 
-That bridge has served its purpose. Keeping all of those surfaces visible or reachable as normal gameplay now works against the final game.
+The **BG12G-R dice presentation failed the manual visual gate on 4 September 2026**.
 
-The approved September 2026 concept direction therefore becomes a **design contract**, not an optional polish target.
+The automated capture proved that the UI was displaying the correct authoritative dice values, but the visual result was not acceptable. The dice read as **two flat 2D squares flopping around the tray**, not as solid physical cubes.
+
+Specific failure characteristics:
+
+- insufficient visible volume/depth;
+- motion read as transformed flat planes rather than objects with mass;
+- excessive/flailing movement instead of a contained throw and settle;
+- weak contact/grounding cues;
+- unstable/edge-on resting poses;
+- final result could visually resemble a thin tile/sliver rather than a D6;
+- overall interaction looked like CSS animation rather than a physical board-game component.
+
+This is a **presentation rejection only**. It does not reopen the accepted 2D6 rules, deterministic RNG, combat consequences or current balance calibration.
+
+## What has now passed in BG12G-R2
+
+The **R2A static true-3D D6 prototype passed the user visual gate on 4 September 2026**.
+
+The accepted direction is the isolated Three.js/WebGL bevelled D6 with conventional pip faces, real depth, lighting and tray/contact shadow. This approval covers the **static physical form only**. Throw/bounce/settle motion remains unapproved and must pass R2B separately.
 
 ---
 
 # Locked Architectural Decisions
 
-These remain non-negotiable throughout the rest of the project.
+These remain non-negotiable unless explicitly replaced by a later roadmap decision.
 
-1. **Protect the working map stack.** MapLibre/WebGL lifecycle, DEM/terrain setup, map mounting, camera, cities, landmarks and retained physical formation rendering are protected infrastructure.
-2. **Board state is authoritative.** UI, cards, dice animation and renderer presentation never decide game outcomes.
+1. **Protect the working map stack.** MapLibre/WebGL lifecycle, terrain/DEM setup, camera, cities, landmarks and formation projection are protected infrastructure.
+2. **Board state is authoritative.** UI, cards, dice animation and rendering never decide game outcomes.
 3. **No duplicate rules or RNG paths.** Movement, combat, cards, support, escalation and AI use the same authoritative APIs.
-4. **Physical presentation is a projection.** A die animation lands on the already-determined authoritative roll. A card animation displays the already-authoritative card state. Physics or animation never creates rules state.
-5. **One active interaction surface.** During ordinary play the map may be accompanied by the persistent tabletop chrome and **one** contextual action surface. Features do not get to create additional permanent floating panels.
-6. **Legacy simulation UI is no longer a product requirement.** It may remain temporarily behind an explicit diagnostics/developer path where renderer compatibility still depends on it, but it is removed from normal navigation and play.
-7. **Simplify systems aggressively.** Old operational logistics, engineering, intelligence, armour-detail and political-management interfaces are replaced by board state, tokens, cards, short actions and dice where their strategic meaning still matters.
-8. **Do not delete compatibility code before it is safe.** First quarantine old presentation, then prove the board-only presentation, then extract old simulation dependencies from the renderer.
-9. **Accessibility remains first-class.** Critical state cannot rely only on colour, sound or animation. Reduced-motion and keyboard/touch alternatives remain supported.
-10. **Real hardware wins.** Automated tests do not overrule a freeze, severe performance regression or obvious presentation failure on the accepted real PC/browser.
-11. **Small packages, exact-head gates.** Risky work remains divided into coherent PRs with deterministic tests and exact-head CI.
+4. **Physical presentation is a projection.** Dice motion must land on the already-determined authoritative result. Animation/physics never creates rules state.
+5. **One active interaction surface.** Normal play does not accumulate permanent floating dashboards.
+6. **Legacy simulation UI is not a product requirement.** Retain compatibility only where technically required until safe extraction.
+7. **Accessibility remains first-class.** Critical state cannot rely only on colour, sound or animation.
+8. **Real hardware/manual acceptance wins.** Green automation cannot overrule an obvious visual failure.
+9. **Small coherent packages and exact-head gates.** Do not merge a package whose exact head has not passed its required validation.
+10. **Combat dice standard is locked to 2D6.** Any future change away from 2D6 requires a new explicit rules decision plus migration and full deterministic/balance evidence.
 
 ---
 
 # Approved Tabletop Visual Direction
 
-## Normal desktop composition
+Normal desktop composition remains:
 
-The default Board view should read approximately as:
+- thin campaign/status strip;
+- minimal navigation;
+- dominant 2.5D map;
+- right-hand tabletop rail containing real game components;
+- physical cards/decks;
+- a physical dice tray;
+- one short contextual interaction surface when needed.
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│ FUTURE CONQUEST | R1/8 | EXPEDITION | ●●●● | 1/3 OBJ      │
-├────┬─────────────────────────────────────────┬─────────────┤
-│    │                                         │ ▰ DECK      │
-│ B  │                                         │ ▰ DECK      │
-│    │                                         │ ▰ DECK      │
-│ F  │               2.5D MAP                  │             │
-│    │                                         │  🂠 🂠 🂠   │
-│ R  │           physical formations           │             │
-│    │                                         │ ┌─────────┐ │
-│ ⚙  │                                         │ │ 🎲 DICE │ │
-│    │                     ┌───────────────┐   │ │  TRAY   │ │
-│    │                     │ MOVE ATTACK   │   │ └─────────┘ │
-│    │                     │ SUPPORT PASS  │   │             │
-└────┴─────────────────────────────────────────┴─────────────┘
-```
+The map should receive roughly **80–90% of visual attention**. The tabletop rail should feel like part of a physical table, not a generic application sidebar.
 
-The exact art can evolve; the composition cannot drift back into a collection of overlapping dashboards.
+## Physical dice visual contract
 
-## Surface budget
+The final combat presentation is **two classic pip D6s**.
 
-During ordinary play the persistent UI budget is:
+The player must immediately perceive:
 
-1. **thin top status strip**;
-2. **minimal navigation rail**;
-3. **right-hand tabletop rail** containing physical game components;
-4. **one contextual interaction surface** when required;
-5. **one small transient coach mark / toast** where needed.
+- two solid cubes, not squares/cards/tiles;
+- visible top and side surfaces giving clear depth;
+- conventional pip faces;
+- weight, contact and grounding;
+- two independent but restrained trajectories;
+- a short throw/bounce/settle rather than random flailing;
+- stable final resting poses;
+- both final values readable at a glance;
+- a recessed/contained dice-tray interaction;
+- the displayed arithmetic and combat outcome matching the authoritative result.
 
-No other permanent opaque surface should occupy map space.
-
-Target presentation:
-
-- map receives roughly **80-90% of visual attention**;
-- left navigation is narrow and quiet;
-- tabletop rail is visually part of the board/table rather than an application sidebar;
-- map overlays are transient and directly related to the current action;
-- normal play never produces a stack of overlapping panels.
-
-## Thin top strip
-
-The top strip should convey only high-value campaign state, for example:
-
-- Future Conquest / The Central Front;
-- Round X / 8;
-- active side/player;
-- Command Actions remaining;
-- current phase;
-- objective / breakthrough / victory progress.
-
-Do not put every value inside a large independent box.
-
-## Minimal navigation
-
-Target permanent navigation:
-
-- **Board**;
-- **Forces**;
-- **Rules / Save**;
-- **Settings**.
-
-Combat and Cards are game objects/interactions, not destinations that need full-screen workspaces.
-
-Legacy Regions / Engineer / Logistics / Intel routes are removed from normal navigation. Simplified Engineer / Logistics gameplay remains available contextually through authoritative board actions.
-
-## Right-hand tabletop rail
-
-The right side replaces the old Command Map / Current Activation hierarchy.
-
-It may contain:
-
-- authoritative card deck stacks;
-- discard piles where useful;
-- the player's physical-looking hand;
-- escalation/event deck presentation;
-- physical dice tray;
-- compact contextual action card.
-
-The rail should be collapsible so a player can maximise the map.
-
-### Important deck rule
-
-Visual deck stacks must reflect **real authoritative piles**. Do not split one authoritative deck into several fake rules decks merely to copy the concept art.
-
-If future rules explicitly create separate Command / Support / Event decks, they may be presented separately. Until then the tabletop may visually distinguish families inside the existing authoritative deck/hand while showing the actual escalation pile separately.
-
-## Physical cards
-
-Cards should look and behave like playing cards, not rectangular form buttons.
-
-Target behaviour:
-
-- consistent playing-card proportions;
-- card backs for hidden piles;
-- clear family/title/effect hierarchy;
-- artwork/iconography;
-- short rule text;
-- hover/focus lift;
-- selected-card raise/zoom;
-- hand fan/overlap;
-- draw and discard motion;
-- direct map target selection where practical.
-
-The existing authoritative `play-action-card` preview/dispatch path remains unchanged.
-
-Dropdowns/selects may remain as accessibility or fallback controls, but should not be the primary visual interaction when a target can be selected directly on the board.
-
-## Physical dice
-
-The current deterministic D20 combat remains authoritative, but the player should see an **actual die roll**.
-
-Initial target:
-
-- a physical-looking D20 in a dice tray;
-- tumble, bounce and roll animation;
-- final visible face equals the authoritative seeded result;
-- concise attack equation and HIT / MISS / CRITICAL result;
-- dice-clatter sound hook;
-- reduced-motion fallback that quickly reveals the final face.
-
-To protect the map renderer, the first implementation should prefer DOM/CSS 3D or another non-WebGL presentation rather than introducing a second WebGL/Three renderer beside MapLibre.
-
-If later card/rules design introduces additional dice, the same tray can support them; BG12G does not invent new combat dice merely for visual effect.
-
-## Contextual formation interaction
-
-Selecting a formation should expose a small interaction card such as:
-
-```text
-1ST ARMOURED       READY
-
-MOVE   ATTACK   SUPPORT   PASS
-```
-
-Only critical piece state belongs here. Detailed roster/stat information belongs in the optional Forces drawer.
-
-The same contextual surface changes state through the action flow rather than creating new panels:
-
-- Move -> choose highlighted destination -> confirm/cancel;
-- Attack -> choose legal enemy -> dice tray activates;
-- Support -> Recover / Engineer / Logistics choices relevant to that formation;
-- Pass -> concise confirmation/result.
-
-## Coach-mark onboarding
-
-The current first-turn guide logic remains useful; the giant explanatory card does not.
-
-Target:
-
-- highlight the relevant board object/control;
-- small copy such as `1/5 - Select one of your formations`;
-- optional `More info` into the rules reference;
-- Skip / Next where needed.
-
-The map must remain visible and usable during onboarding.
+The current CSS/DOM pseudo-3D implementation is **rejected and must not be iterated as the primary solution**.
 
 ---
 
-# Current Implementation Audit
+# BG12G-R2 — True 3D Physical Dice Revision
 
-## KEEP
+**Status: ACTIVE — R2A static form accepted; motion/integration still requires approval before PR #50 may merge.**
 
-These systems are fundamentally aligned with the target and should be preserved:
+BG12G-R2 is a visual/rendering revision inside the existing BG12G-R programme. It preserves the accepted 2D6 rules and replaces only the failed dice presentation layer.
 
-- MapLibre 2.5D terrain renderer and lifecycle;
-- physical formation renderer/projection;
-- authoritative board state/provider;
-- board action dispatcher and legality APIs;
-- deterministic save/reload;
-- alternating activations and Command Actions;
-- direct map selection and destination highlighting;
-- BG4 physical movement animation;
-- BG5 deterministic D20 combat rules;
-- BG6 escalation/reinforcement state;
-- BG7 simplified Recover / Engineer / Logistics actions;
-- BG8 strategic card state and authoritative card-play path;
-- BG9 computer-player legal-action path;
-- BG10 objectives/victory;
-- BG12A deterministic playtest matrix;
-- global settings/audio/accessibility preference infrastructure.
+## Goal
 
-## TRANSFORM / RECOMPOSE
+Create a dice roll that looks like **two actual board-game dice thrown into a tray** while preserving the deterministic authoritative combat system underneath.
 
-These are useful implementations with the wrong final composition:
+The target is not merely technically three-dimensional. The visual must convince a human observer immediately.
 
-- `TabletopStatusShell` -> slim status strip plus separately owned tabletop components;
-- `TabletopCardHandPanel` -> physical decks/hand in tabletop rail;
-- `TabletopCombatPanel` -> compact preview + physical dice tray;
-- `TabletopActivationPanel` -> small contextual formation action card;
-- `TabletopSupportPanel` -> contextual Support submenu/actions;
-- `TabletopPassReason` -> inline contextual reason, not another permanent surface;
-- `TabletopRulesReference` -> deliberate drawer/modal from Rules / Save;
-- `TabletopOnboarding` -> coach marks;
-- `CommandNavigation` -> Board / Forces / Rules & Save / Settings only;
-- map legends/layers/modes -> collapsed utilities unless immediately relevant.
+## Explicitly rejected approach
 
-## RETIRE FROM NORMAL PLAY
+Do **not** continue trying to rescue the current flat-element solution by adding more CSS rotations, more exaggerated keyframes or more random-looking translation.
 
-The following old presentation is no longer part of the intended game:
+The following are no longer accepted as the primary implementation:
 
-- legacy `More` menu and its normal-player routes;
-- Regions operational workspace;
-- old Engineer workspace;
-- old Logistics workspace;
-- old Intelligence workspace;
-- old operational Combat/Operations workspace where superseded by board combat;
-- Political Control strategic-view panel;
-- armour-degradation/operational-readiness dashboards from the simulation;
-- old operational logistics allocation/priorities UI;
-- Infrastructure management UI;
-- Interdiction-management UI where not represented by board cards/actions;
-- Defence management dashboards;
-- old Combat Reports workspace;
-- operational order queue/day-resolution controls;
-- giant supply diagnostics/adviser panels;
-- legacy simulation tutorial presentation;
-- duplicate Current Activation / selected-formation sidebars;
-- permanent large legends and map-mode boxes.
+- flat square elements masquerading as cubes;
+- perspective tricks whose silhouette becomes a thin tile;
+- independent CSS planes without convincing solid geometry;
+- frantic motion used to hide weak depth;
+- final orientations that can settle edge-on;
+- animation that looks like two cards/squares flipping across the panel.
 
-### State vs presentation distinction
-
-Retiring a dashboard does **not** automatically mean deleting the strategic concept.
-
-Examples:
-
-- territory control remains core, but the old Political Control panel goes;
-- simplified supply remains a board-game status/modifier, but the old logistics-management dashboard goes;
-- damage/readiness remain board-piece state, but detailed armour-degradation simulation UI goes;
-- fortification remains a board status, but it does not require an Engineer management screen.
-
-Underlying legacy state may temporarily remain if renderer compatibility still needs it. It is removed only in BG12O after a board-only renderer projection is proven.
+Historical CSS dice code may remain temporarily during replacement but must be removed/quarantined once the new implementation passes.
 
 ---
 
-# Completed Conversion History
+## Rendering strategy
 
-The detailed old forward plan is removed from this roadmap because these packages are no longer future work. Their dedicated docs and merged PRs remain the historical record.
+### Preferred implementation: small isolated true-3D dice scene
 
-| Package | Status | Result now carried forward |
-| --- | --- | --- |
-| BG0 | ACCEPTED | Golden working map/runtime baseline |
-| BG1 | COMPLETE / TRANSITIONAL UI NOW SUPERSEDED | Board-game identity and migration shell |
-| BG2 | COMPLETE | Authoritative deterministic board state |
-| BG3 | COMPLETE | Seats, rounds, Command Actions, alternating activations |
-| BG4 | COMPLETE | Physical pieces, direct map movement, movement animation |
-| BG5 | COMPLETE | Deterministic visible D20 combat |
-| BG6 | COMPLETE | Escalation and reinforcement deck system |
-| BG7 | COMPLETE | Simplified Recover / Engineer / Logistics board actions |
-| BG8 | COMPLETE | Strategic cards and authoritative card-play path |
-| BG9 | COMPLETE | Human/AI and AI/AI board-game play |
-| BG10 | COMPLETE | Central Front objectives, scoring and victory |
-| BG11 | MECHANICALLY COMPLETE; COMPOSITION SUPERSEDED | Onboarding, feedback, rules, card/dice/movement presentation and accessibility foundations |
-| BG12A | COMPLETE | Deterministic multi-seed board-game playtest matrix |
-| BG12B | IN PROGRESS | Opening-force balance calibration; PR #43 |
+BG12G-R2 may use a **small dice-only Three.js/WebGL renderer** inside the dice tray.
 
-BG11 is not being “undone”. Its useful logic is retained and recomposed into the new tabletop layout.
+This explicitly supersedes the previous blanket rule forbidding a second WebGL renderer. The visual rejection demonstrated that the restriction was preventing the required physical quality.
 
----
+Permission is narrow and conditional:
 
-# Active Roadmap
+- the renderer belongs only to the dice tray;
+- it must not replace, wrap, share or modify the MapLibre renderer/context;
+- it must not touch map camera, terrain, DEM, markers or formation projection;
+- it is lazy-created only when the dice interaction needs it;
+- it must stop its animation loop when idle;
+- it must dispose meshes/materials/renderer/context correctly when unmounted;
+- pixel ratio/render size must be capped to the minimum needed for a crisp tray;
+- context creation/loss must fail safely without damaging the map;
+- exact-head map/browser/performance gates remain mandatory.
 
-## BG12B - Finish Opening Balance Calibration
+If a second WebGL context proves unstable on the accepted hardware/browser, the fallback is a **pre-rendered true-3D dice animation/sprite approach**, not a return to flat CSS pseudo-cubes.
 
-**Status: IN PROGRESS — PR #43**
+### Scene design
 
-### Goal
+Use a deliberately small physical scene:
 
-Finish the already-started single-variable opening-force calibration without mixing presentation changes into it.
+- two bevelled cube meshes;
+- conventional pip indentation/marking or convincing pip material treatment;
+- matte/ivory or otherwise board-game-appropriate material;
+- soft directional/key light plus restrained fill;
+- contact shadows beneath both dice;
+- shallow recessed tray/floor and visible boundary/rim cues;
+- fixed slightly elevated camera angle so top and side faces remain readable;
+- no decorative scene complexity that competes with the map.
 
-### Rules
-
-- preserve the accepted experiment unless exact-head evidence identifies a real regression;
-- finish/fix only the BG12B regression contracts required by the balance change;
-- merge only a green exact head;
-- if the calibration is rejected, close/revert it cleanly rather than carrying half of it into the visual reset.
-
-### Gate
-
-BG12C implementation begins from green `main` after BG12B is resolved.
+Rounded/bevelled cube edges are strongly preferred because perfectly sharp computer cubes tend to read as generic boxes rather than manufactured dice.
 
 ---
 
-## BG12C - Visual Direction Lock and UI Inventory
+## Motion strategy
 
-### Goal
+The animation must be **controlled physical theatre**, not authoritative physics.
 
-Turn the approved concept into an engineering acceptance contract before deleting or moving runtime UI.
+Rules state is already resolved before animation begins.
 
-### Deliverables
+### Required motion character
 
-- inventory every normal-play surface and its owner/component;
-- classify each as KEEP / TRANSFORM / COLLAPSE / RETIRE / DEBUG-ONLY;
-- record current z-index/overlay relationships that can cause collisions;
-- define desktop and compact surface budgets;
-- define screenshot/browser assertions for “no box pile-up”;
-- identify legacy browser tests that currently depend on normal-player access to old workspaces;
-- specify the debug/compatibility route those tests will use after quarantine.
+- short launch into the tray;
+- modest upward/forward arc;
+- real three-axis rotation;
+- one or two readable bounces/contact beats;
+- noticeable deceleration/friction;
+- independent timing/trajectory for each die;
+- contained travel within the tray;
+- stable final rest;
+- total visual duration roughly in the range of a satisfying tabletop roll, not a long cinematic sequence.
 
-### Acceptance
+### Authoritative landing
 
-For every visible box in the current cluttered Board screenshot, the project can state exactly:
+For each stored authoritative face `1..6`, define a known final quaternion/orientation that presents that face clearly upward with useful side-face visibility.
 
-- why it exists;
-- whether it remains;
-- where it moves;
-- what replaces it;
-- when it is removed.
+The roll animation may use decorative deterministic variation, but:
 
-No gameplay rules change in BG12C.
+- presentation variation cannot change the stored result;
+- no presentation RNG may write to rules state;
+- final orientation is explicitly driven to the authoritative face;
+- the final 100–200 ms may smoothly converge to the known resting quaternion if necessary;
+- there must be no visible snap or edge-on final pose.
 
----
-
-## BG12D - Legacy Presentation Quarantine
-
-### Goal
-
-Make the **board game**, not the old simulation shell, the only normal play experience.
-
-### Work
-
-- remove legacy Regions / Engineer / Logistics / Intel from normal navigation;
-- remove `More` as a normal-player gateway to simulation screens;
-- suppress old operational Command Map/selected-formation/workspace chrome when the board game is active;
-- suppress Political Control, old operational status panels and redundant simulation warnings in normal Board view;
-- retain an explicit diagnostics/developer access path only where historical validation still needs a legacy workspace;
-- adapt historical probes to use that diagnostics path deliberately instead of requiring legacy UI in the product.
-
-A likely temporary diagnostic mechanism is a clearly named query flag such as `?legacy-ui=1`; the exact implementation should be chosen after the UI inventory.
-
-### Rules boundary
-
-No board mechanics, renderer lifecycle, RNG, save or AI changes.
-
-### Acceptance
-
-Fresh normal gameplay starts with essentially:
-
-- map;
-- board-game status/navigation;
-- no old simulation workspace competing for attention.
-
-This is the first major visual simplification milestone.
+A lightweight physics library may be used only if it materially improves motion quality and remains a presentation system. It must not be allowed to decide the final face. A controlled scripted/quaternion trajectory is preferred if it produces a more consistent visual result with less runtime complexity.
 
 ---
 
-## BG12E - Tabletop Layout Foundation
+# BG12G-R2 Implementation Stages
 
-### Goal
+## R2A — Solid Dice Prototype
 
-Create the final page composition around the unchanged map.
+**Status: USER VISUAL GATE PASSED — 4 September 2026.**
 
-### Work
+Build the smallest possible isolated prototype before full integration.
 
-- introduce a clear tabletop layout owner instead of unrelated root overlays;
-- compress the top status into a thin strip;
-- reduce permanent navigation to Board / Forces / Rules & Save / Settings;
-- create the right tabletop rail;
-- provide collapsed and expanded rail states;
-- assign stable component zones and z-index rules;
-- enforce “one contextual interaction surface” structurally;
-- ensure map controls remain reachable and unobscured.
+Deliverables:
 
-### Desktop target
+- one bevelled true-3D D6;
+- conventional pips on all six faces;
+- six verified readable resting orientations;
+- visible depth from the accepted camera angle;
+- tray floor plus contact shadow;
+- static screenshots for all six upward faces.
 
-The map should dominate. The right rail should read as physical table space, not a generic data sidebar.
+### R2A gate
 
-### Compact target
-
-The same composition may become a bottom tabletop drawer; do not solve full touch/mobile behaviour yet beyond avoiding layout breakage.
-
-### Manual visual gate
-
-**Required.** User checks the live desktop build before proceeding to the physical card/dice packages.
-
-Pass only if the empty/idle Board screen already resembles the approved concept in composition and no longer resembles the current box-heavy screenshot.
+**PASSED.** The user reviewed the six static face captures and accepted the true-3D physical direction as a substantial improvement over the rejected CSS dice.
 
 ---
 
-## BG12F - Physical Deck and Hand System
+## R2A.5 — Dice Theme Architecture
 
-### Goal
+Before motion is built around the accepted mesh/material implementation, make dice appearance deliberately configurable without building the player-facing cosmetics system yet.
 
-Make cards a primary tactile game component.
+This stage exists to prevent colour/material/style choices being hard-wired into the renderer while the dice component is still isolated and cheap to structure correctly.
 
-### Work
+Deliverables:
 
-- preserve authoritative deck/hand/discard state;
-- present real authoritative piles as physical deck stacks;
-- create card backs;
-- use playing-card proportions;
-- create reusable visual family/icon/art regions;
-- fan/overlap the hand naturally;
-- hover/focus lift and selected-card raise;
-- show playable/unplayable state without colour alone;
-- prefer direct formation/map target selection;
-- animate draw, selection, play and discard safely;
-- keep an accessibility fallback for controls that cannot be comfortably selected from the map.
+- one typed/default dice-theme configuration consumed by the renderer;
+- configurable body colour/material treatment;
+- configurable pip colour;
+- configurable bevel/edge treatment within safe geometry limits;
+- configurable roughness/gloss and restrained metallic/emissive properties where supported;
+- configurable tray/background treatment where it belongs to the dice presentation;
+- a clean extension point for later alternate pip shapes/symbol sets without changing authoritative dice values;
+- the accepted R2A appearance retained as the default theme;
+- no dependency from game rules, RNG or combat state onto cosmetic theme selection.
 
-### Art pipeline
+### R2A.5 scope boundary
 
-Initial cards may use coherent iconographic/placeholder illustration, but the component structure must support final card artwork without another layout rewrite.
+Do **not** build the final settings UI, unlock/progression system, cosmetics inventory/shop or a large style catalogue here. This is architecture only, with at most a minimal developer/test selector if useful for proving the contract.
 
-### Rules boundary
-
-Do not invent extra authoritative decks purely to match the concept. If deck rules change, that is a separate mechanics decision with its own tests.
-
-### Acceptance
-
-A screenshot should make it immediately obvious that the player is holding **cards**, not operating a card-management form.
+Player-facing dice customisation belongs in the later Settings/polish work once the core dice interaction is accepted.
 
 ---
 
-## BG12G - Physical Dice Tray and Rolling Dice
+## R2B — Two-Dice Throw, Bounce and Settle
 
-### Goal
+Add the second die and physical-looking motion.
 
-Make combat resolution tactile and satisfying while preserving deterministic combat.
+Deliverables:
 
-### Work
+- two independently moving dice;
+- restrained 3D throw paths;
+- bounce/contact beats;
+- deceleration;
+- no clipping through tray rim;
+- no obvious interpenetration between dice;
+- stable readable final orientations for all authoritative result pairs;
+- no edge-on final pose.
 
-- replace the floating dice-information box with a physical dice tray in the tabletop rail;
-- implement a real-looking animated D20;
-- engine resolves seeded roll first;
-- animation lands on exactly that result;
-- show concise target/modifier equation before roll;
-- show final die/result/consequences after roll;
-- support reduced-motion;
-- add sound hooks for dice roll/clatter;
-- do not create a second WebGL renderer unless a later measured need justifies it.
+### R2B gate
 
-### Acceptance
-
-The player presses **ROLL**, sees an actual die tumble/land, and can immediately understand the resulting attack.
-
-No animation result may disagree with saved/reloaded authoritative combat state.
+Capture video before integrating combat controls. Reject the motion if it still reads as flailing, floating or flipping tiles.
 
 ---
 
-## BG12H - Contextual Formation Interaction
+## R2C — Authoritative Combat Integration
 
-### Goal
+Replace the current dice visual layer inside `TabletopCombatPanel` without changing the accepted combat engine.
 
-Replace the permanent right-side activation/control hierarchy with a single short board-game interaction flow.
+Preserve:
 
-### Idle selected-formation state
+- existing attacker/target legality;
+- one-Command-Action combat dispatch;
+- stored authoritative dice faces/total;
+- current target/modifier equation;
+- double-six critical rule;
+- hit/miss/consequence resolution;
+- save/reload contract;
+- `future-conquest:dice-clatter` start/settled events;
+- shared probability helper;
+- AI use of the same probability model.
 
-Show only critical identity/status and:
-
-- Move;
-- Attack;
-- Support;
-- Pass.
-
-### Move flow
-
-1. select formation;
-2. choose Move;
-3. legal/blocked map destinations highlight;
-4. choose destination directly on map;
-5. compact confirm/cancel state;
-6. formation physically travels;
-7. contextual surface collapses.
-
-### Attack flow
-
-1. select formation;
-2. choose Attack;
-3. legal targets highlight;
-4. choose target;
-5. dice tray becomes the active interaction;
-6. roll/resolution;
-7. result feeds map markers/pieces.
-
-### Support flow
-
-Only relevant Recover / Engineer / Logistics choices appear for the selected formation. There is no permanent Support dashboard.
-
-### Acceptance
-
-A complete human activation can be played without opening a traditional application workspace.
-
-### Manual visual/gameplay gate
-
-**Required.** This is the first target build expected to feel substantially like the approved tabletop concept.
+The renderer receives the already-authoritative pair and only animates toward it.
 
 ---
 
-## BG12I - Map Information Reduction and Board Tokens
+## R2D — Accessibility and Failure Fallback
 
-### Goal
+Required behaviour:
 
-Make the board itself carry more information so the interface carries less.
-
-### Work
-
-- remove the permanent Political Control strategic-view box;
-- collapse layers/modes into one deliberate utility control where practical;
-- collapse large permanent legends/map keys;
-- add clear strategic objective tokens/markers for Paris, Brussels and Rhine-Ruhr;
-- represent relevant damage/readiness/supply/fortification state with compact piece/space markers where useful;
-- ensure territory ownership/control is readable directly from the map;
-- remove redundant textual status already obvious from board components.
-
-### Acceptance
-
-Most ordinary strategic state can be understood from:
-
-**map + pieces + markers + cards + dice**.
+- `prefers-reduced-motion` uses a very short settle/reveal rather than a full throw;
+- keyboard combat flow remains fully usable;
+- screen-reader output announces roll/result independently of the 3D canvas;
+- forced-colour/high-contrast mode retains semantic text outside the canvas;
+- if 3D renderer creation fails, show a clear static/isometric two-D6 fallback displaying the authoritative values;
+- a dice-renderer failure must never block combat resolution or damage the map renderer.
 
 ---
 
-## BG12J - Coach-Mark Onboarding
+## R2E — Automated Review Evidence
 
-### Goal
+The exact-head browser workflow must capture a **real legal production attack** and produce:
 
-Keep the useful BG11 onboarding logic but make the map remain the centre of attention.
+- pre-roll screenshot;
+- roll-start screenshot;
+- mid-roll screenshot;
+- settled screenshot;
+- MP4/WebM video of the complete roll;
+- JSON evidence containing attacker, target, authoritative dice pair, total and dice-clatter events.
 
-### Work
+Automated assertions must verify:
 
-- replace the large first-turn guide card with compact anchored coach marks;
-- highlight the actual objective/piece/action being taught;
-- keep detailed rule explanation behind Rules / More info;
-- maintain skip/replay preference;
-- verify pointer safety and keyboard/reduced-motion behaviour.
+- exactly two visible D6 objects;
+- final visible values equal authoritative stored faces;
+- total equals the two faces;
+- start and settled events fire correctly;
+- no duplicate dispatch;
+- no unexpected browser errors;
+- renderer/context is not leaking across repeated rolls/unmounts;
+- map continues rendering and remains interactive after dice use.
 
-### Acceptance
-
-A new player can learn the first turn without a tutorial window covering a large section of the board.
-
----
-
-## BG12K - Secondary Drawers: Forces, Rules/Save and Settings
-
-### Goal
-
-Keep useful depth without leaving it on the board during ordinary play.
-
-### Forces
-
-A deliberate roster/detail drawer for formation information that is too detailed for the contextual action card.
-
-### Rules / Save
-
-- compact rules reference;
-- save/load slots;
-- campaign restart/utility actions where appropriate.
-
-### Settings
-
-- music and sound;
-- reduced motion;
-- accessibility/colour assistance;
-- gameplay assistance;
-- warning preferences.
-
-### Acceptance
-
-Closing the drawer returns to an uncluttered board. None of these surfaces is permanently visible during normal play.
-
-### Manual visual gate
-
-**Required.** Desktop presentation should now be accepted before effects/audio refinement.
+Automation **does not** decide whether the animation looks good. It only proves correctness and supplies review evidence.
 
 ---
 
-## BG12L - Board-Game Effects and Motion Pass
+# BG12G-R2 Performance / Lifecycle Gate
 
-### Goal
+Because the preferred solution introduces a dice-only 3D renderer, the package must explicitly prove it does not destabilise the protected map.
 
-Make the already-clear interaction feel satisfying.
+Before manual acceptance:
 
-### Candidate effects
+- full regression suite green;
+- production build green;
+- exact-head terrain performance gate green;
+- browser runtime/map smoke green;
+- repeated dice-open/roll/close cycle without context leak;
+- map pan/zoom/selection works after repeated combat rolls;
+- no additional persistent animation frame loop while dice are idle/hidden;
+- renderer resources are disposed on unmount;
+- current-engine balance simulation still green;
+- canonical BG12 multi-seed matrix remains acceptable.
 
-- selected-piece lift/halo;
-- movement easing and arrival beat;
-- damage marker application;
-- elimination/removal;
-- objective capture;
-- card draw/play/discard;
-- escalation draw;
-- reinforcement arrival;
-- round/phase transition;
-- subtle campaign victory sequence.
+If the second renderer causes a map freeze, severe frame regression, WebGL-context exhaustion or instability on accepted hardware, stop and use the pre-rendered true-3D fallback strategy.
 
-### Rules
-
-- do not hide important state exclusively inside animation;
-- respect reduced motion;
-- animation must not create authoritative state;
-- no renderer-lifecycle regression.
+Do **not** compromise the proven map to save the dice implementation.
 
 ---
 
-## BG12M - Sound and Music Integration
+# BG12G-R2 Manual Visual/Gameplay Gate
 
-### Goal
+**This gate is mandatory and cannot be automated away. PR #50 must not merge before the user explicitly passes it.**
 
-Give physical tabletop actions appropriate audio feedback and integrate final music without turning the game into a noisy arcade UI.
+The delivered review video/live build must pass all of these human checks:
 
-### Sound targets
+1. **Immediate cube recognition** — first glance says “two dice”, not squares/cards/tiles.
+2. **Real depth** — top and side faces remain visibly three-dimensional during the roll.
+3. **Weight** — motion has gravity/contact/deceleration rather than floating/flopping.
+4. **Contained throw** — dice stay within a believable tray region instead of flying all over the panel.
+5. **Independent motion** — the dice do not move as one paired animation.
+6. **Readable bounce** — contact beats are believable rather than frantic.
+7. **Clean settle** — both dice finish flat/stable with no edge-on sliver.
+8. **Readable result** — both pip values and total can be understood immediately.
+9. **Authoritative match** — visible faces equal the stored combat result.
+10. **Board-game feel** — interaction feels like rolling real game components, not watching application chrome animate.
 
-- piece select/place/move;
-- card draw/shuffle/play/discard;
-- dice clatter;
-- attack hit/miss;
-- damage/elimination;
-- objective capture;
-- escalation/reinforcement;
-- restrained UI confirmation.
-
-### Music
-
-Use the existing settings/audio architecture. Final soundtrack assets can be integrated when approved; the roadmap does not block layout work on final music production.
-
-### Acceptance
-
-Sound reinforces physical actions but never carries essential state alone. Mute/volume controls work reliably.
+If the user says the dice still look fake, flat, weightless, chaotic or visually poor, BG12G-R2 remains open regardless of CI status.
 
 ---
 
-## BG12N - Responsive and Touch Tabletop
+# Merge Rule for PR #50
 
-### Goal
+PR #50 may merge only when **all** of the following are true on one exact head:
 
-Make the approved tabletop experience practical on smaller/touch screens without turning the desktop design back into generic panels.
+- locked 2D6 deterministic contracts pass;
+- full regression suite passes;
+- build passes;
+- balance/campaign evidence remains acceptable;
+- map/browser/performance gates pass;
+- BG12G-R2 review capture passes correctness assertions;
+- user explicitly accepts the dice presentation/gameplay.
 
-### Likely compact pattern
+Only after merge:
 
-- map remains primary;
-- tabletop rail becomes bottom drawer;
-- card hand becomes horizontal/fanned strip;
-- contextual actions become bottom action bar/card;
-- dice tray temporarily expands during combat;
-- minimum practical touch targets approximately 44px;
-- no horizontal overflow;
-- map gestures remain reliable.
-
-### Acceptance
-
-Desktop and compact modes share the same game mental model rather than two different applications.
+1. verify the real `main` merge SHA;
+2. verify deployment/live build;
+3. update development status if needed;
+4. begin BG12H.
 
 ---
 
-## BG12O - Legacy Simulation Extraction
+# Downstream Roadmap
 
-### Goal
+## BG12H — Contextual Formation Interaction
 
-Remove the old simulation engine/application dependency **after** the board-game presentation has proved itself stable.
+**Blocked by BG12G-R2 manual acceptance and PR #50 merge.**
 
-This is intentionally late because it is architecturally riskier than hiding obsolete UI.
+Replace the permanent activation/control hierarchy with a compact board-game flow:
 
-### Desired final data path
+- select formation;
+- Move / Attack / Support / Pass;
+- direct map destination/target selection;
+- compact confirm/cancel;
+- Attack activates the accepted 2D6 tray;
+- interaction collapses after resolution.
 
-```text
-BoardState
-   ↓
-RendererProjection
-   ↓
-2.5D Map / physical pieces
-```
+Manual gameplay/visual gate required.
 
-rather than the current transitional pattern where old simulation `GameState` still exists and board projection is applied into renderer-compatible state.
+## BG12I — Map Information Reduction and Board Tokens
 
-### Recommended subpackages
+Reduce permanent map UI and move important state onto pieces/markers/objective tokens. Remove redundant simulation-style status surfaces.
 
-#### BG12O1 - Dependency audit
+## BG12J — Coach-Mark Onboarding
 
-Identify every renderer or retained presentation read from legacy simulation state.
+Replace large tutorial presentation with compact anchored coach marks while keeping the map visible and usable.
 
-#### BG12O2 - Board-only renderer projection
+## BG12K — Secondary Drawers
 
-Provide the renderer everything it needs directly from authoritative board state/projection without changing renderer lifecycle.
+Provide deliberate Forces, Rules/Save and Settings drawers. Closing them returns to an uncluttered board.
 
-#### BG12O3 - Remove normal legacy state initialisation
+The Settings work should expose player-facing dice appearance customisation using the theme architecture established in R2A.5. Initial supported choices should remain a curated set of readable board-game styles rather than arbitrary shader controls. Candidate options include die body colour/style, pip colour/style and tray treatment, with all choices remaining cosmetic only.
 
-Stop constructing/advancing old simulation state in the normal board-game application path.
+Manual desktop visual acceptance required after BG12I-K.
 
-#### BG12O4 - Delete dead simulation modules/UI
+## BG12L — Board-Game Effects and Motion Pass
 
-Only after equivalence tests prove they are unused:
+Refine piece movement, damage/elimination, objective capture, card motion, escalation/reinforcement and round/victory effects without changing authoritative rules.
 
-- old operational engines/actions;
-- obsolete workspaces/components;
-- obsolete CSS;
-- historical compatibility adapters no longer needed;
-- tests whose only purpose was deleted simulation UI.
+This polish pass may expand the curated dice-style catalogue or add higher-fidelity cosmetic variants, provided the accepted dice readability, performance and authoritative result contracts remain unchanged.
 
-### Hard gate
+## BG12M — Sound and Music
 
-Any map freeze/performance regression stops this package and returns to the last accepted board-only projection state.
+Integrate physical-action sound cues and final music using the existing settings/audio architecture. Dice clatter must support but never carry essential state.
 
----
+## BG12N — Responsive and Touch Tabletop
 
-## BG12P - Structured Human Playtest Remediation
+Adapt the accepted desktop mental model to compact/touch screens, likely using a bottom tabletop drawer and touch-safe contextual controls.
 
-### Goal
+## BG12O — Legacy Simulation Extraction
 
-Return to the original purpose of BG12 once the game actually looks and operates like the intended product.
+Only after the board-game presentation is stable, remove normal-runtime dependence on the old simulation state through a proven board-only renderer projection. Any map regression blocks this work.
 
-### Required playtest modes
+## BG12P — Structured Human Playtest / Remediation
 
-- Human vs AI;
-- Human vs Human hot-seat;
-- save, close/reload and continue;
-- multiple seeds/openings;
-- complete campaigns.
+Run complete Human-vs-AI, Human-vs-Human, save/reload and multi-seed campaigns. Use human findings to drive narrowly scoped balance/pacing/rules/presentation remediation.
 
-### Questions
+## BG12Q — Release Candidate
 
-- Is it fun?
-- Are decisions frequent and clear?
-- Do turns flow quickly enough?
-- Are cards useful and understandable?
-- Is rolling satisfying rather than slow?
-- Are objectives obvious?
-- Does escalation produce a good campaign arc?
-- Are support actions meaningful without becoming fiddly?
-- Is eight Expedition task groups manageable in human play if BG12B is accepted?
-- Are there dominant strategies or unwinnable openings?
-- Does anything still feel like operating software rather than playing a board game?
+Release candidate requires:
 
-### Evidence
-
-Automated BG12 matrix remains a regression/balance instrument, not a substitute for human judgement.
-
-Human feedback may create narrowly scoped remediation packages for balance, pacing, rules wording, card effects or presentation.
-
----
-
-## BG12Q - Release Candidate and Final Presentation Gate
-
-### Release candidate requires
-
-- stable real-hardware map/runtime;
+- stable map/runtime;
 - complete campaign;
 - reliable save/reload;
-- Human vs Human;
-- Human vs AI;
-- clear victory conditions;
+- Human-vs-Human and Human-vs-AI;
 - acceptable automated and human-tested balance;
-- accepted gameplay direction;
 - accepted card/deck presentation;
-- accepted physical dice presentation;
+- **accepted true-3D physical 2D6 presentation**;
 - accepted desktop and compact layout;
 - accessibility/reduced-motion coverage;
 - no legacy simulation interface in normal play;
 - no known box-pile-up/overlap regression.
 
-### Screenshot acceptance
-
-A normal desktop screenshot should clearly show:
-
-- map as the dominant visual object;
-- physical-looking pieces;
-- physical cards/decks;
-- physical dice tray;
-- restrained campaign/status chrome;
-- no giant operational right-hand menu;
-- no Political Control dashboard;
-- no duplicate activation panels;
-- no permanent logistics/adviser warning box;
-- no giant tutorial card;
-- no unnecessary legacy workspaces.
-
-If the game again becomes a stack of boxes over the map, release is blocked even if every automated test is green.
-
----
-
-# Explicitly Obsolete Requirements from the Old Roadmap
-
-The following previous transitional assumptions are deleted as forward requirements:
-
-- keeping legacy simulation screens reachable through normal `More` navigation;
-- treating a permanent right-side Current Activation panel as the final interaction model;
-- treating Combat as a primary navigation destination;
-- treating Cards as a normal navigation destination instead of physical tabletop objects;
-- retaining old Regions / Engineer / Logistics / Intel workspaces for ordinary board-game play;
-- retaining Political Control and operational armour/logistics dashboards as player-facing strategy tools;
-- retaining the old simulation tutorial presentation;
-- allowing each new board-game feature to add another independently positioned root overlay;
-- considering the current BG11 card/dice boxes the final physical presentation merely because their mechanics are complete.
-
-These were useful migration steps. They are no longer the target.
-
 ---
 
 # Delivery Protocol
 
-Every implementation package continues to follow this sequence:
+Every implementation package follows this sequence:
 
-1. begin from current green `main`;
+1. start from the correct accepted head;
 2. inspect actual implementation before editing;
 3. make the smallest coherent change;
-4. add/update deterministic contracts;
-5. run relevant/full validation;
-6. open PR;
-7. require exact-head CI green;
-8. merge only the verified exact head;
-9. verify actual `main` SHA;
-10. deploy;
-11. perform manual real-hardware acceptance at the roadmap checkpoints.
+4. preserve authoritative rules boundaries;
+5. add/update deterministic contracts;
+6. run relevant/full validation;
+7. require exact-head evidence;
+8. perform mandatory manual acceptance where specified;
+9. merge only the accepted exact head;
+10. verify `main` SHA and deployed result.
 
-## Visual regression rule
+## Visual failure policy
 
-Browser tests must increasingly assert the **absence** of obsolete surfaces, not keep them alive because historical probes once expected them.
+When a manual visual gate fails:
 
-When an old test represents a deleted product requirement:
+- record the rejection in this roadmap;
+- preserve accepted mechanics unless the rejection identifies a mechanics problem;
+- identify the failed rendering/interaction technique explicitly;
+- do not keep polishing the same failed technique indefinitely;
+- replace the technique with one capable of meeting the visual contract;
+- generate new review evidence;
+- keep downstream packages blocked until acceptance.
 
-- update or retire the test deliberately;
-- preserve a diagnostics-only probe only if it still protects renderer/runtime behaviour;
-- do not reintroduce obsolete UI just to satisfy historical automation.
+## Map safety policy
 
-## Failure policy
-
-If a package causes the accepted machine/browser to freeze or materially destabilises the map:
+If any package causes the accepted machine/browser to freeze or materially destabilise the map:
 
 - stop progression;
 - isolate/revert the package;
-- do not compensate with a replacement map renderer;
-- return to the last accepted green point.
-
-If a package makes the UI materially more cluttered than the approved tabletop contract:
-
-- stop progression;
-- simplify/recompose before adding further features.
+- do not replace the proven map renderer to accommodate a secondary feature;
+- return to the last accepted green map state.
 
 ---
 
 # Immediate Sequence
 
-1. **Resolve BG12B PR #43** on its own evidence.
-2. **BG12C** - inventory and visual acceptance contract.
-3. **BG12D** - quarantine legacy simulation presentation.
-4. **BG12E** - build the clean tabletop composition.
-5. **MANUAL VISUAL CHECK.**
-6. **BG12F** - physical decks/cards.
-7. **BG12G** - real animated dice tray.
-8. **BG12H** - compact contextual piece/action flow.
+1. **BG12G-R2A — PASSED** — static true-3D D6 form accepted by the user on 4 September 2026.
+2. **BG12G-R2A.5** — add lightweight dice-theme architecture while the renderer is still isolated; keep the accepted R2A look as default.
+3. **BG12G-R2B** — add two-dice throw/bounce/settle and capture motion evidence.
+4. **BG12G-R2C/D** — integrate with authoritative combat plus accessibility/fallback.
+5. **BG12G-R2E** — exact-head automated video/screenshots and lifecycle/performance evidence.
+6. **MANUAL DICE/GAMEPLAY CHECK — USER MUST PASS.**
+7. **Merge PR #50** only after exact-head automation and manual acceptance.
+8. **BG12H** — compact contextual piece/action flow using the accepted 2D6 interaction.
 9. **MANUAL GAMEPLAY/VISUAL CHECK.**
-10. **BG12I-K** - reduce map clutter, coach marks, secondary drawers.
+10. **BG12I-K** — map information reduction, coach marks and secondary drawers, including player-facing dice appearance settings.
 11. **MANUAL VISUAL ACCEPTANCE.**
-12. **BG12L-N** - effects, sound/music, responsive/touch.
-13. **BG12O** - safely remove old simulation architecture from the normal runtime.
-14. **BG12P** - structured human playtest/remediation.
-15. **BG12Q** - final release candidate and presentation gate.
+12. **BG12L-N** — effects/cosmetic polish, sound/music and responsive/touch.
+13. **BG12O** — safely remove obsolete simulation architecture.
+14. **BG12P** — structured human playtest/remediation.
+15. **BG12Q** — final release candidate and presentation gate.
 
-The goal from this point onward is not to add more interface. It is to make the existing game systems feel like **one coherent physical board game**.
+The next objective is therefore very narrow: **make the accepted true-3D dice appearance configurable without changing its default look, then make the two authoritative D6s move like real physical dice without compromising the proven map.**

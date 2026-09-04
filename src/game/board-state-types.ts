@@ -30,7 +30,7 @@ export interface BoardSpace {
   id: string;
   control: SeatId | null;
   adjacentSpaceIds: string[];
-  /** Board-game defensive works. BG5 treats omitted values as zero. */
+  /** Board-game defensive works. Omitted values are unfortified; legacy values above one remain loadable. */
   fortification?: number;
 }
 
@@ -52,6 +52,9 @@ export interface BoardCombatModifiers {
 }
 
 export interface BoardCombatRoll {
+  /** BG12G-R authoritative pair. Optional only so pre-2D6 v3 saves remain loadable. */
+  dice?: [number, number];
+  /** Compatibility total. For current 2D6 combat this always equals dice[0] + dice[1]. */
   die: number;
   attackTotal: number;
   target: number;
@@ -74,8 +77,9 @@ export interface BoardCombatState {
   defenderPieceId: string;
   originSpaceId: string;
   targetSpaceId: string;
-  dieCount: 1;
-  dieSides: 20;
+  /** Current combat is 2D6; 1D20 is retained only for loading a legacy resolved v3 save. */
+  dieCount: 1 | 2;
+  dieSides: 6 | 20;
   baseTarget: number;
   modifiers: BoardCombatModifiers;
   roll: BoardCombatRoll | null;

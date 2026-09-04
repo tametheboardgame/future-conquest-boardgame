@@ -62,14 +62,52 @@ installWp6NotificationDisclosure();
 installWp66WarningPreferences();
 installR4UsabilityHotfix();
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <StartupExperience>
-      <BoardGameStateProvider>
-        <TabletopLayout>
-          <App />
-        </TabletopLayout>
-      </BoardGameStateProvider>
-    </StartupExperience>
-  </StrictMode>
-);
+const root = createRoot(document.getElementById('root')!);
+const query = new URLSearchParams(window.location.search);
+const bg12gR2bPrototype = query.get('bg12g-r2b') === '1';
+const bg12gR2aPrototype = query.get('bg12g-r2a') === '1';
+
+if (bg12gR2bPrototype) {
+  const requestedLeft = Number(query.get('left') ?? '3');
+  const requestedRight = Number(query.get('right') ?? '5');
+  const leftFace = Number.isFinite(requestedLeft) ? requestedLeft : 3;
+  const rightFace = Number.isFinite(requestedRight) ? requestedRight : 5;
+  const autoPlay = query.get('autoplay') === '1';
+
+  void import('./components/Bg12gR2bDiceMotionPrototype').then(({ Bg12gR2bDiceMotionPrototype }) => {
+    root.render(
+      <StrictMode>
+        <Bg12gR2bDiceMotionPrototype
+          leftFace={leftFace}
+          rightFace={rightFace}
+          autoPlay={autoPlay}
+        />
+      </StrictMode>
+    );
+  });
+} else if (bg12gR2aPrototype) {
+  const requestedFace = Number(query.get('face') ?? '1');
+  const face = Number.isFinite(requestedFace)
+    ? Math.max(1, Math.min(6, Math.round(requestedFace)))
+    : 1;
+
+  void import('./components/Bg12gR2aDicePrototype').then(({ Bg12gR2aDicePrototype }) => {
+    root.render(
+      <StrictMode>
+        <Bg12gR2aDicePrototype face={face} />
+      </StrictMode>
+    );
+  });
+} else {
+  root.render(
+    <StrictMode>
+      <StartupExperience>
+        <BoardGameStateProvider>
+          <TabletopLayout>
+            <App />
+          </TabletopLayout>
+        </BoardGameStateProvider>
+      </StartupExperience>
+    </StrictMode>
+  );
+}

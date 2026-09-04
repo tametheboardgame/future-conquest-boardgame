@@ -16,9 +16,10 @@ import type {
 } from './board-state-types';
 import type { Terrain } from './types';
 
-export const BOARD_COMBAT_DIE_COUNT = 1 as const;
-export const BOARD_COMBAT_DIE_SIDES = 20 as const;
-export const BOARD_COMBAT_BASE_TARGET = 11 as const;
+export const BOARD_COMBAT_DIE_COUNT = 2 as const;
+export const BOARD_COMBAT_DIE_SIDES = 6 as const;
+export const BOARD_COMBAT_DICE_OUTCOMES = 36 as const;
+export const BOARD_COMBAT_BASE_TARGET = 7 as const;
 export const BOARD_COMBAT_DAMAGE_PER_HIT = 1 as const;
 export const BOARD_COMBAT_CRITICAL_DAMAGE = 2 as const;
 export const BOARD_COMBAT_READINESS_LOSS = 25 as const;
@@ -29,8 +30,8 @@ export const BOARD_COMBAT_ELIMINATION_DAMAGE = 3 as const;
 const TERRAIN_DEFENCE_MODIFIER: Record<Terrain, number> = {
   'open-lowland': 0,
   'mixed-lowland': 1,
-  'mixed-upland': 2,
-  mountainous: 3
+  'mixed-upland': 1,
+  mountainous: 1
 };
 
 const SUPPLY_ATTACK_MODIFIER: Record<SupplyState, number> = {
@@ -38,6 +39,13 @@ const SUPPLY_ATTACK_MODIFIER: Record<SupplyState, number> = {
   strained: -1,
   isolated: -2
 };
+
+export interface BoardCombatHitChance {
+  minimumDiceTotal: number;
+  successfulOutcomes: number;
+  totalOutcomes: typeof BOARD_COMBAT_DICE_OUTCOMES;
+  percent: number;
+}
 
 export type BoardCombatPreview =
   | {
@@ -66,12 +74,33 @@ export type BoardCombatPreview =
 function getFortificationModifier(space: BoardSpace): number {
   const value = space.fortification ?? 0;
   if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.trunc(value));
+  return Math.trunc(value) > 0 ? 1 : 0;
 }
 
 function getTerrainModifier(spaceId: string): number {
   const territory = TERRITORIES[spaceId];
   return territory ? TERRAIN_DEFENCE_MODIFIER[territory.terrain] : 0;
+}
+
+/**
+ * Authoritative 2D6 probability helper shared by human preview and computer AI.
+ * It enumerates all 36 ordered pairs so presentation/policy never recreate the
+ * bell curve independently.
+ */
+export function getBoardCombatHitChance(target: number, attackModifier: number): BoardCombatHitChance {
+  const minimumDiceTotal = target - attackModifier;
+  let successfulOutcomes = 0;
+  for (let first = 1; first <= BOARD_COMBAT_DIE_SIDES; first += 1) {
+    for (let second = 1; second <= BOARD_COMBAT_DIE_SIDES; second += 1) {
+      if (first + second >= minimumDiceTotal) successfulOutcomes += 1;
+    }
+  }
+  return {
+    minimumDiceTotal,
+    successfulOutcomes,
+    totalOutcomes: BOARD_COMBAT_DICE_OUTCOMES,
+    percent: successfulOutcomes / BOARD_COMBAT_DICE_OUTCOMES * 100
+  };
 }
 
 function getCombatLegalityReason(
@@ -150,7 +179,7 @@ function buildLegalPreview(
     possibleOutcomes: [
       'Miss: no loss to the defender.',
       `Hit: +${BOARD_COMBAT_DAMAGE_PER_HIT} damage and -${BOARD_COMBAT_READINESS_LOSS} readiness.`,
-      `Natural 20: +${BOARD_COMBAT_CRITICAL_DAMAGE} damage and -${BOARD_COMBAT_CRITICAL_READINESS_LOSS} readiness.`,
+      `Double six: +${BOARD_COMBAT_CRITICAL_DAMAGE} damage and -${BOARD_COMBAT_CRITICAL_READINESS_LOSS} readiness.`,
       `At ${BOARD_COMBAT_RETREAT_THRESHOLD} readiness or lower the defender must retreat if a legal space exists.`,
       `${BOARD_COMBAT_ELIMINATION_DAMAGE} damage or 0 readiness eliminates the defender.`
     ]
@@ -230,7 +259,7 @@ export function declareBoardCombat(
     roll: null,
     log: [
       `${attackerPieceId} declared an attack on ${defenderPieceId} from ${preview.originSpaceId} into ${preview.targetSpaceId}.`,
-      `Roll 1D20 ${preview.attackModifier >= 0 ? '+' : ''}${preview.attackModifier} against target ${preview.target}.`
+      `Roll 2D6 ${preview.attackModifier >= 0 ? '+' : ''}${preview.attackModifier} against target ${preview.target}.`
     ]
   };
 
@@ -298,7 +327,7 @@ function chooseRetreatSpaceId(
 function resolveHitConsequences(
   state: BoardGameState,
   combat: BoardCombatState,
-  die: number
+  dice: [number, number]
 ): {
   pieces: BoardGameState['pieces'];
   spaces: BoardGameState['spaces'];
@@ -307,7 +336,7 @@ function resolveHitConsequences(
 } {
   const attacker = state.pieces[combat.attackerPieceId];
   const defender = state.pieces[combat.defenderPieceId];
-  const critical = die === BOARD_COMBAT_DIE_SIDES;
+  const critical = dice[0] === BOARD_COMBAT_DIE_SIDES && dice[1] === BOARD_COMBAT_DIE_SIDES;
   let readinessLoss = critical ? BOARD_COMBAT_CRITICAL_READINESS_LOSS : BOARD_COMBAT_READINESS_LOSS;
   let damageInflicted = critical ? BOARD_COMBAT_CRITICAL_DAMAGE : BOARD_COMBAT_DAMAGE_PER_HIT;
   let nextReadiness = Math.max(0, defender.readiness - readinessLoss);
@@ -403,8 +432,12 @@ function resolveHitConsequences(
 }
 
 /**
- * Resolves the committed D20 roll from authoritative RNG state and applies the
- * explicit BG5B damage/readiness/retreat/elimination/control procedure.
+ * Resolves the committed 2D6 roll from authoritative RNG state and applies the
+ * existing damage/readiness/retreat/elimination/control procedure.
+ *
+ * One PRNG sample selects one of the 36 ordered D6 pairs, preserving the
+ * historical one-call combat RNG cursor footprint while producing the correct
+ * joint distribution for two fair dice.
  */
 export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
   const rejectionReason = getResolutionRejectionReason(state);
@@ -419,7 +452,15 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
 
   const combat = state.combat as BoardCombatState;
   const random = nextBoardRandom(state.rng);
-  const die = Math.floor(random.value * BOARD_COMBAT_DIE_SIDES) + 1;
+  const orderedPairIndex = Math.min(
+    BOARD_COMBAT_DICE_OUTCOMES - 1,
+    Math.floor(random.value * BOARD_COMBAT_DICE_OUTCOMES)
+  );
+  const dice: [number, number] = [
+    Math.floor(orderedPairIndex / BOARD_COMBAT_DIE_SIDES) + 1,
+    orderedPairIndex % BOARD_COMBAT_DIE_SIDES + 1
+  ];
+  const die = dice[0] + dice[1];
   const attackModifier = combat.modifiers.supply;
   const target = combat.baseTarget + combat.modifiers.terrain + combat.modifiers.fortification;
   const attackTotal = die + attackModifier;
@@ -434,7 +475,7 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
   };
 
   const consequenceResult = outcome === 'hit'
-    ? resolveHitConsequences(state, combat, die)
+    ? resolveHitConsequences(state, combat, dice)
     : {
         pieces: state.pieces,
         spaces: state.spaces,
@@ -454,6 +495,7 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
     ...combat,
     status: 'resolved',
     roll: {
+      dice,
       die,
       attackTotal,
       target,
@@ -462,7 +504,7 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
     consequence: consequenceResult.consequence,
     log: [
       ...combat.log,
-      `D20 ${die} ${attackModifier >= 0 ? '+' : ''}${attackModifier} = ${attackTotal} vs ${target}: ${outcome.toUpperCase()}.`,
+      `2D6 ${dice[0]} + ${dice[1]} = ${die}; ${die} ${attackModifier >= 0 ? '+' : ''}${attackModifier} = ${attackTotal} vs ${target}: ${outcome.toUpperCase()}.`,
       ...consequenceResult.log
     ]
   };
@@ -481,14 +523,15 @@ export function resolveBoardCombat(state: BoardGameState): BoardActionResult {
   const resultSummary = outcome === 'miss'
     ? 'miss, defender held'
     : `${consequenceResult.consequence.critical ? 'critical ' : ''}hit, defender ${consequenceResult.consequence.defenderStatus}`;
+  const rollSummary = `${dice[0]} + ${dice[1]} = ${die}`;
 
   return {
     state: nextState,
     accepted: true,
     commandActionsSpent: 1,
     reason: nextSeat
-      ? `${combat.attackerPieceId} rolled ${die}: ${resultSummary}; activation progressed to ${nextSeat}.`
-      : `${combat.attackerPieceId} rolled ${die}: ${resultSummary}; all participating seats are exhausted.`
+      ? `${combat.attackerPieceId} rolled ${rollSummary}: ${resultSummary}; activation progressed to ${nextSeat}.`
+      : `${combat.attackerPieceId} rolled ${rollSummary}: ${resultSummary}; all participating seats are exhausted.`
   };
 }
 

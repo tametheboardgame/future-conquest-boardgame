@@ -1,0 +1,77 @@
+name: BG12G-R2E integrated true-3D dice gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BG12G_R2E_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  integrated-dice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact integrated dice head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BG12G_R2E_REF }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run BG12G-R source contracts
+        run: |
+          node --test tests/bg11c-dice-presentation.test.cjs tests/bg12g-physical-dice-tray.test.cjs tests/bg12g-r2a-dice-prototype.test.cjs tests/bg12g-r2b-dice-motion.test.cjs tests/bg12g-r2e-integrated-evidence.test.cjs
+
+      - name: Run full regression suite
+        run: npm test
+
+      - name: Build exact production game
+        run: npm run build
+
+      - name: Install browser evidence runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Start exact production preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/bg12g-r2e-preview.log 2>&1 &
+          for i in {1..45}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/bg12g-r2e-preview.log
+          exit 1
+
+      - name: Capture integrated combat, lifecycle, reduced-motion and fallback evidence
+        env:
+          BG12G_R2E_REF: ${{ env.BG12G_R2E_REF }}
+        run: node scripts/capture-bg12g-r2e-integrated.mjs
+
+      - name: Upload BG12G-R2E integrated evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12g-r2e-integrated-${{ env.BG12G_R2E_REF }}
+          path: |
+            artifacts/bg12g-r2e
+            /tmp/bg12g-r2e-preview.log
+          if-no-files-found: error
+          retention-days: 14
