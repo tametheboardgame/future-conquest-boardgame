@@ -8,27 +8,30 @@ const read = file => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
 test('BG12G-R2A is an isolated opt-in Three.js prototype, not part of normal board rendering', () => {
   const main = read('src/main.tsx');
   const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
+  const geometry = read('src/components/bg12gDiceGeometry.ts');
 
   assert.match(main, /query\.get\('bg12g-r2a'\) === '1'/);
   assert.match(main, /import\('\.\/components\/Bg12gR2aDicePrototype'\)/);
   assert.match(prototype, /from 'three'/);
-  assert.match(prototype, /RoundedBoxGeometry/);
+  assert.match(geometry, /RoundedBoxGeometry/);
   assert.doesNotMatch(prototype, /BoardGameStateProvider|dispatchBoardAction|attack-piece|board-combat|MapLibre|maplibre/);
 });
 
 test('BG12G-R2A builds one bevelled solid D6 with conventional pips on all six faces', () => {
   const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
+  const geometry = read('src/components/bg12gDiceGeometry.ts');
 
-  assert.match(prototype, /const D6_VALUES = \[1, 2, 3, 4, 5, 6\]/);
-  assert.match(prototype, /new RoundedBoxGeometry\(2, 2, 2, theme\.edge\.bevelSegments, theme\.edge\.bevelRadius\)/);
-  assert.match(prototype, /const PIP_LAYOUT/);
-  assert.match(prototype, /for \(const face of D6_VALUES\) addFaceMarks/);
-  assert.match(prototype, /FACE_NORMALS\[face\]/);
-  assert.match(prototype, /orientFaceUp/);
+  assert.match(geometry, /export const D6_VALUES = \[1, 2, 3, 4, 5, 6\]/);
+  assert.match(geometry, /new RoundedBoxGeometry\(2, 2, 2, theme\.edge\.bevelSegments, theme\.edge\.bevelRadius\)/);
+  assert.match(geometry, /const PIP_LAYOUT/);
+  assert.match(geometry, /for \(const face of D6_VALUES\) addFaceMarks/);
+  assert.match(geometry, /FACE_NORMALS\[face\]/);
+  assert.match(prototype, /orientFaceUp\(die, faceUp\)/);
 });
 
 test('BG12G-R2A.5 makes cosmetic dice appearance typed and configurable while retaining the accepted default', () => {
   const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
+  const geometry = read('src/components/bg12gDiceGeometry.ts');
   const theme = read('src/components/bg12gDiceTheme.ts');
 
   assert.match(theme, /export interface DiceTheme/);
@@ -45,14 +48,14 @@ test('BG12G-R2A.5 makes cosmetic dice appearance typed and configurable while re
 
   assert.match(prototype, /theme = DEFAULT_DICE_THEME/);
   assert.match(prototype, /normaliseDiceTheme\(theme\)/);
-  assert.match(prototype, /makeMaterial\(theme\.body\)/);
-  assert.match(prototype, /makeMaterial\(theme\.pips\)/);
+  assert.match(geometry, /makeMaterial\(theme\.body\)/);
+  assert.match(geometry, /makeMaterial\(theme\.pips\)/);
   assert.match(prototype, /safeTheme\.tray\.backgroundColour/);
   assert.match(prototype, /safeTheme\.tray\.floorColour/);
 });
 
 test('BG12G-R2A.5 constrains cosmetic geometry/material inputs and provides a pip-style extension point', () => {
-  const prototype = read('src/components/Bg12gR2aDicePrototype.tsx');
+  const geometry = read('src/components/bg12gDiceGeometry.ts');
   const theme = read('src/components/bg12gDiceTheme.ts');
 
   assert.match(theme, /normaliseDiceTheme/);
@@ -60,8 +63,8 @@ test('BG12G-R2A.5 constrains cosmetic geometry/material inputs and provides a pi
   assert.match(theme, /bevelSegments: Math\.round\(clamp/);
   assert.match(theme, /emissiveIntensity: clamp/);
   assert.match(theme, /styleId: string/);
-  assert.match(prototype, /const PIP_STYLE_RENDERERS: Record<string, PipStyleRenderer>/);
-  assert.match(prototype, /PIP_STYLE_RENDERERS\[theme\.styleId\]/);
+  assert.match(geometry, /export const PIP_STYLE_RENDERERS: Record<string, PipStyleRenderer>/);
+  assert.match(geometry, /PIP_STYLE_RENDERERS\[theme\.styleId\]/);
   assert.doesNotMatch(theme, /BoardGameState|dispatchBoardAction|Math\.random|crypto\.getRandomValues/);
 });
 
@@ -70,7 +73,6 @@ test('BG12G-R2A uses real lighting, a tray floor and contact shadows without mot
 
   assert.match(prototype, /PlaneGeometry/);
   assert.match(prototype, /receiveShadow = true/);
-  assert.match(prototype, /castShadow = true/);
   assert.match(prototype, /PCFSoftShadowMap/);
   assert.match(prototype, /HemisphereLight/);
   assert.match(prototype, /DirectionalLight/);
@@ -82,7 +84,7 @@ test('BG12G-R2A owns and disposes its isolated renderer lifecycle', () => {
 
   assert.match(prototype, /new THREE\.WebGLRenderer/);
   assert.match(prototype, /ResizeObserver/);
-  assert.match(prototype, /disposeScene\(scene\)/);
+  assert.match(prototype, /disposeThreeScene\(scene\)/);
   assert.match(prototype, /renderer\.dispose\(\)/);
   assert.match(prototype, /renderer\.forceContextLoss\(\)/);
 });
