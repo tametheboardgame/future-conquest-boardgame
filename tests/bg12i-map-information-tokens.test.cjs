@@ -106,4 +106,7 @@ test('BG12I browser gate measures tabletop budgets tokens accessibility and reta
   assert.match(capture, /2D accessible map/);
   assert.match(capture, /__r3TerrainMap/);
   assert.match(capture, /data-selected-piece/);
+  assert.match(capture, /data-rail-state/);
+  assert.match(capture, /compact formation selection did not reveal Actions rail/);
+  assert.match(capture, /interactionMapBox/);
 });

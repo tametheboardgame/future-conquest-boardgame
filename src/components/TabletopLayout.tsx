@@ -54,27 +54,24 @@ export function TabletopLayout({ children }: Props) {
 
   useEffect(() => {
     if (legacyDiagnostics) return;
+    const interaction = document.querySelector<HTMLElement>('.bg12h-formation-interaction');
+    if (!interaction) return;
 
-    let selectionFrame: number | null = null;
     const revealAcceptedCompactSelection = () => {
-      if (selectionFrame !== null) window.cancelAnimationFrame(selectionFrame);
-      selectionFrame = window.requestAnimationFrame(() => {
-        selectionFrame = null;
-        if (!window.matchMedia('(max-width: 900px)').matches) return;
-        const selectedPieceId = document
-          .querySelector<HTMLElement>('.bg12h-formation-interaction')
-          ?.dataset.selectedPiece;
-        if (!selectedPieceId) return;
-        setActiveSurface('formation');
-        setRailExpanded(true);
-      });
+      if (!window.matchMedia('(max-width: 900px)').matches) return;
+      if (!interaction.dataset.selectedPiece) return;
+      setActiveSurface('formation');
+      setRailExpanded(true);
     };
 
-    document.addEventListener('click', revealAcceptedCompactSelection);
-    return () => {
-      document.removeEventListener('click', revealAcceptedCompactSelection);
-      if (selectionFrame !== null) window.cancelAnimationFrame(selectionFrame);
-    };
+    const observer = new MutationObserver(revealAcceptedCompactSelection);
+    observer.observe(interaction, {
+      attributes: true,
+      attributeFilter: ['data-selected-piece']
+    });
+    revealAcceptedCompactSelection();
+
+    return () => observer.disconnect();
   }, [legacyDiagnostics]);
 
   if (legacyDiagnostics) {

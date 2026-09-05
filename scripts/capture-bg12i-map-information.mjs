@@ -55,6 +55,7 @@ for (const reviewCase of cases) {
       await closeGuide.first().click();
     }
 
+    const layout = page.locator('.bg12e-tabletop-layout').first();
     const shell = page.locator('.r3-terrain-prototype-shell').first();
     await shell.waitFor({ state: 'visible', timeout: 30000 });
     await page.waitForFunction(() => {
@@ -194,12 +195,24 @@ for (const reviewCase of cases) {
     await page.waitForFunction(id => document.querySelector('.bg12h-formation-interaction')?.getAttribute('data-selected-piece') === id,
       markerId, { timeout: 5000 });
 
+    if (reviewCase.id === 'compact') {
+      await page.waitForFunction(() => document.querySelector('.bg12e-tabletop-layout')?.getAttribute('data-rail-state') === 'expanded',
+        null, { timeout: 5000 });
+    }
+    const railStateAfterSelection = await layout.getAttribute('data-rail-state');
+    if (reviewCase.id === 'compact') {
+      assert(railStateAfterSelection === 'expanded', `compact formation selection did not reveal Actions rail: ${railStateAfterSelection}`);
+      assert(await page.locator('#bg12e-rail-content').isVisible(), 'compact Actions rail content stayed hidden after formation selection');
+    }
+
+    const interactionMapBox = await mapCanvas.boundingBox();
+    assert(interactionMapBox, `${reviewCase.id} MapLibre canvas lost measurable geometry after formation selection`);
     const beforeCamera = await page.evaluate(() => {
       const map = window.__r3TerrainMap;
       return map ? { zoom: map.getZoom(), center: map.getCenter().toArray() } : null;
     });
     assert(beforeCamera, `${reviewCase.id} MapLibre runtime was unavailable after token projection`);
-    await page.mouse.move(mapBox.x + mapBox.width * 0.55, mapBox.y + mapBox.height * 0.55);
+    await page.mouse.move(interactionMapBox.x + interactionMapBox.width * 0.55, interactionMapBox.y + interactionMapBox.height * 0.55);
     await page.mouse.wheel(0, -220);
     await page.waitForTimeout(300);
     const afterCamera = await page.evaluate(() => {
@@ -228,6 +241,8 @@ for (const reviewCase of cases) {
       controlCount,
       controlGlyphs,
       markerId,
+      railStateAfterSelection,
+      interactionMapBox,
       beforeCamera,
       afterCamera,
       diagnosticJson,
