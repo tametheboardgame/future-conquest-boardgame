@@ -48,6 +48,7 @@ import './bg1-compact-guidance.css';
 import './bg12d-legacy-presentation-quarantine.css';
 import './bg12e-tabletop-layout.css';
 import './bg12e-settings-access.css';
+import './bg12h-contextual-combat-fit.css';
 import { installMapTrackpadGuard } from './map-trackpad-guard';
 import { installR3MapVisualGrading } from './presentation/r3-map-visual-grading';
 import { installWp6NotificationDisclosure } from './wp6-notification-disclosure';
