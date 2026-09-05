@@ -125,23 +125,30 @@ try {
   await page.waitForTimeout(420);
   await page.screenshot({ path: path.join(outputDir, '04-attack-rolling.png'), fullPage: false });
   await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
-  await page.waitForTimeout(120);
-  await page.screenshot({ path: path.join(outputDir, '05-attack-settled.png'), fullPage: false });
 
-  const dice = await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray .bg12g-d6-stage').evaluateAll(nodes =>
-    nodes.map(node => Number(node.getAttribute('data-authoritative-result')))
-  );
+  const settledRenderer = page.locator('.bg12h-contextual-combat .bg12g-resolved-tray .bg12g-integrated-dice[data-authoritative="true"]').first();
+  await settledRenderer.waitFor({ state: 'visible', timeout: 1000 });
+  const dice = [
+    Number(await settledRenderer.getAttribute('data-left-face')),
+    Number(await settledRenderer.getAttribute('data-right-face'))
+  ];
+  const renderedTotal = Number(await settledRenderer.getAttribute('data-total'));
   const events = await page.evaluate(() => window.__bg12hDiceEvents ?? []);
   const settled = events.find(event => event?.diceType === '2d6' && event?.phase === 'settled');
   assert(dice.length === 2 && dice.every(value => Number.isInteger(value) && value >= 1 && value <= 6),
     `invalid authoritative D6 faces after contextual attack: ${JSON.stringify(dice)}`);
+  assert(renderedTotal === dice[0] + dice[1],
+    `authoritative renderer total diverged from visible dice: ${JSON.stringify({ dice, renderedTotal })}`);
   assert(events.some(event => event?.diceType === '2d6' && event?.phase === 'start'),
     `contextual attack emitted no 2D6 start event: ${JSON.stringify(events)}`);
   assert(settled, `contextual attack emitted no 2D6 settled event: ${JSON.stringify(events)}`);
   assert(Array.isArray(settled.dice) && settled.dice[0] === dice[0] && settled.dice[1] === dice[1],
-    `contextual attack settled event diverged from visible dice: ${JSON.stringify({ dice, settled })}`);
-  assert(settled.total === dice[0] + dice[1],
-    `contextual attack settled total diverged from visible dice: ${JSON.stringify({ dice, settled })}`);
+    `contextual attack settled event diverged from rendered dice: ${JSON.stringify({ dice, settled })}`);
+  assert(settled.total === renderedTotal,
+    `contextual attack settled total diverged from authoritative renderer: ${JSON.stringify({ renderedTotal, settled })}`);
+
+  await page.waitForTimeout(120);
+  await page.screenshot({ path: path.join(outputDir, '05-attack-settled.png'), fullPage: false });
 
   await page.waitForFunction(() => {
     const surface = document.querySelector('.bg12h-formation-interaction');
@@ -173,7 +180,7 @@ try {
     targetLabel,
     previewCopy,
     dice,
-    total: settled.total,
+    total: renderedTotal,
     clatterEvents: events,
     knownTerrainWarnings: knownTerrainWarnings.length,
     mapBox,
@@ -191,7 +198,7 @@ try {
   };
 
   fs.writeFileSync(path.join(outputDir, 'evidence.json'), `${JSON.stringify(evidence, null, 2)}\n`);
-  console.log(`BG12H contextual browser capture passed: ${attacker} -> ${targetLabel}, ${dice.join('+')} = ${settled.total}.`);
+  console.log(`BG12H contextual browser capture passed: ${attacker} -> ${targetLabel}, ${dice.join('+')} = ${renderedTotal}.`);
 } finally {
   await context.close();
   if (video) {

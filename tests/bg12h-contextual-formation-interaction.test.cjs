@@ -59,6 +59,18 @@ test('BG12H keeps accepted combat presentation mounted across activation handoff
   assert.match(source, /combatRolling, humanActivation, mode, selectedPieceId/);
 });
 
+test('BG12H browser evidence reads the authoritative renderer before contextual collapse', () => {
+  const capture = read('scripts/capture-bg12h-contextual-formation.mjs');
+
+  assert.match(capture, /bg12g-integrated-dice\[data-authoritative="true"\]/);
+  assert.match(capture, /data-left-face/);
+  assert.match(capture, /data-right-face/);
+  assert.match(capture, /data-total/);
+  assert.match(capture, /__bg12hDiceEvents/);
+  assert.doesNotMatch(capture, /bg12g-d6-stage/,
+    'BG12H evidence must not depend on the historical hidden WP9 dice markers');
+});
+
 test('BG12H confirmation and completion flow collapses accepted formation interactions', () => {
   const source = read('src/components/TabletopFormationInteraction.tsx');
 
