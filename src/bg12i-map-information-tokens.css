@@ -21,6 +21,49 @@
   }
 }
 
+/* Compact normal play used to fall back to the terrain prototype's historical
+   430px minimum because the retained command shell switches its workspace to
+   normal block flow below 900px. Re-establish one definite height chain inside
+   BG12E's board zone and reserve only the locked compact navigation thickness.
+   The fixed navigation sits directly above the tabletop drawer, whether that
+   drawer is collapsed or open. Diagnostics mode does not receive these rules. */
+@media (max-width: 900px) {
+  html.bg12d-board-ui .bg12e-board-zone > .command-app-shell {
+    box-sizing: border-box;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 0 52px !important;
+    overflow: hidden;
+  }
+
+  html.bg12d-board-ui .command-workspace,
+  html.bg12d-board-ui .command-stage,
+  html.bg12d-board-ui .command-stage-map,
+  html.bg12d-board-ui .command-map-workspace,
+  html.bg12d-board-ui .command-map-workspace > .map-panel,
+  html.bg12d-board-ui .r3-terrain-prototype-shell,
+  html.bg12d-board-ui .r3-terrain-prototype {
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  html.bg12d-board-ui .command-workspace {
+    display: block;
+  }
+
+  html.bg12d-board-ui .command-navigation {
+    bottom: var(--bg12e-rail-height);
+    min-height: 0;
+  }
+
+  html.bg12d-board-ui .command-nav-items button {
+    height: 52px;
+    min-height: 52px;
+    padding-top: 6px;
+    padding-bottom: 5px;
+  }
+}
+
 .r3-terrain-prototype-toolbar {
   right: auto;
   width: auto;

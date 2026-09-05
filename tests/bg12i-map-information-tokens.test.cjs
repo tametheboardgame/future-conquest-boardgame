@@ -62,6 +62,9 @@ test('BG12I materially reduces permanent map chrome while retaining accessible i
   assert.match(css, /--wp6-rail-width:\s*70px/);
   assert.match(css, /--wp66-rail-control-width:\s*64px/);
   assert.match(css, /--bg12e-rail-width:\s*min\(300px, 22vw\)/);
+  assert.match(css, /@media \(max-width: 900px\)[\s\S]*\.bg12e-board-zone > \.command-app-shell[\s\S]*padding:\s*0 0 52px !important/);
+  assert.match(css, /@media \(max-width: 900px\)[\s\S]*\.command-navigation[\s\S]*bottom:\s*var\(--bg12e-rail-height\)/);
+  assert.match(css, /@media \(max-width: 900px\)[\s\S]*\.command-nav-items button[\s\S]*height:\s*52px[\s\S]*min-height:\s*52px/);
   assert.match(css, /\.r3-terrain-prototype-toolbar[\s\S]*right: auto/);
   assert.match(css, /\.r3-terrain-map-key[\s\S]*clip: rect\(0, 0, 0, 0\)/);
   assert.match(css, /\.r3-strategic-information-control[\s\S]*max-width: min\(184px/);
