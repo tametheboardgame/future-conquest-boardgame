@@ -6,6 +6,8 @@ const helper = fs.readFileSync('src/presentation/bg12i-board-token-projection.ts
 const wrapper = fs.readFileSync('src/components/TerrainMapPrototype.tsx', 'utf8');
 const css = fs.readFileSync('src/bg12i-map-information-tokens.css', 'utf8');
 const packageDoc = fs.readFileSync('docs/BG12I-MAP-INFORMATION-BOARD-TOKENS.md', 'utf8');
+const workflow = fs.readFileSync('.github/workflows/bg12i-map-information-tokens.yml', 'utf8');
+const capture = fs.readFileSync('scripts/capture-bg12i-map-information.mjs', 'utf8');
 
 test('BG12I annotates the existing marker layer from the authoritative board render projection', () => {
   assert.match(helper, /import type \{ BoardPresentationController, BoardRenderProjection \}/);
@@ -69,4 +71,30 @@ test('BG12I remains presentation-only and does not take rules MapLibre or BG12K 
   assert.match(packageDoc, /MapLibre retains map lifecycle, camera, terrain, DEM and geographic projection ownership/);
   assert.match(packageDoc, /BG12K remains responsible for the later general secondary-drawer architecture/);
   assert.doesNotMatch(wrapper, /secondary drawer|BG12K/);
+});
+
+test('BG12I exact-head workflow gates source contracts regression build and browser evidence', () => {
+  assert.match(workflow, /BG12I_REF: \$\{\{ github\.event_name == 'pull_request'/);
+  assert.match(workflow, /ref: \$\{\{ env\.BG12I_REF \}\}/);
+  assert.match(workflow, /node --test tests\/bg12i-map-information-tokens\.test\.cjs/);
+  assert.match(workflow, /npm test/);
+  assert.match(workflow, /npm run build/);
+  assert.match(workflow, /capture-bg12i-map-information\.mjs/);
+  assert.match(workflow, /artifacts\/bg12i/);
+});
+
+test('BG12I browser gate measures tabletop budgets tokens accessibility and retained map interaction', () => {
+  assert.match(capture, /1900, height: 829/);
+  assert.match(capture, /1366, height: 768/);
+  assert.match(capture, /640, height: 900/);
+  assert.match(capture, /minMapWidthRatio: 0\.70/);
+  assert.match(capture, /minMapHeightRatio: 0\.60/);
+  assert.match(capture, /overflow <= 2/);
+  assert.match(capture, /data-bg12i-formation-tokens/);
+  assert.match(capture, /data-bg12i-control-tokens/);
+  assert.match(capture, /\.bg12i-formation-state/);
+  assert.match(capture, /\.bg12i-control-token/);
+  assert.match(capture, /2D accessible map/);
+  assert.match(capture, /__r3TerrainMap/);
+  assert.match(capture, /data-selected-piece/);
 });
