@@ -1,0 +1,243 @@
+/* BG12I keeps the map dominant by shrinking permanent map chrome and projecting
+   authoritative board state onto the existing physical formation/territory layer. */
+
+.r3-terrain-prototype-toolbar {
+  right: auto;
+  width: auto;
+  max-width: calc(100% - 78px);
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border-color: rgba(164, 214, 209, .18);
+  border-radius: 7px;
+  background: rgba(4, 15, 19, .72);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+}
+
+.r3-terrain-prototype-toolbar > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.r3-terrain-prototype-toolbar > div {
+  gap: 3px;
+}
+
+.r3-terrain-prototype-toolbar button,
+.r3-terrain-prototype-toolbar .r3-terrain-layer-control summary {
+  min-height: 26px;
+  padding: 4px 6px;
+  font-size: 9px;
+  letter-spacing: .02em;
+}
+
+.r3-terrain-map-key {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.r3-strategic-information-control {
+  left: 12px;
+  bottom: 28px;
+  width: auto;
+  max-width: min(184px, calc(100% - 92px));
+  padding: 4px 5px;
+  border-color: rgba(191, 215, 205, .18);
+  border-radius: 6px;
+  background: rgba(16, 29, 31, .74);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .22);
+  backdrop-filter: blur(5px);
+}
+
+.r3-strategic-information-control label {
+  grid-template-columns: auto minmax(86px, 1fr);
+  gap: 5px;
+  margin: 0;
+  font-size: .58rem;
+}
+
+.r3-strategic-information-control label + label {
+  margin-top: 3px;
+}
+
+.r3-strategic-information-control select {
+  min-height: 26px;
+  padding: 3px 5px;
+  font-size: .65rem;
+}
+
+.r3-strategic-information-legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.r3-terrain-use-svg {
+  right: 10px;
+  bottom: 8px;
+  padding: 4px 6px;
+  border-color: rgba(155, 205, 199, .28);
+  background: rgba(4, 15, 19, .72);
+  font-size: 8px;
+}
+
+/* Existing DOM formation markers remain the pointer/keyboard hit target around
+   the physical Three.js piece. BG12I removes their card skin but keeps a small
+   state tab sourced from BoardRenderProjection. */
+.r3-terrain-task-group-marker .bg12i-formation-state {
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.bg12i-state-chip {
+  min-width: 20px;
+  padding: 2px 4px;
+  border: 1px solid rgba(210, 236, 229, .42);
+  border-radius: 999px;
+  background: rgba(5, 20, 24, .9);
+  color: #e9faf6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5);
+  font: 700 7px/1.1 IBM Plex Mono, monospace;
+  letter-spacing: .015em;
+  text-align: center;
+}
+
+.bg12i-state-damage {
+  border-style: double;
+  border-color: rgba(255, 168, 126, .75);
+}
+
+.bg12i-state-supply {
+  border-style: dashed;
+  border-color: rgba(255, 205, 112, .78);
+}
+
+.r3-terrain-task-group-marker.bg12i-formation-isolated .bg12i-state-supply {
+  border-width: 2px;
+}
+
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker {
+  opacity: 1;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker > strong,
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker > span:not(.bg12i-formation-state) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible {
+  opacity: 1;
+  border-color: rgba(234, 255, 120, .72);
+  outline: 2px solid #eaff78;
+  outline-offset: 3px;
+}
+
+/* Territory labels already sit on authoritative geography. The small shape token
+   communicates control without requiring colour interpretation or another panel. */
+.r3-terrain-territory-label .bg12i-control-token {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  min-width: 14px;
+  height: 14px;
+  place-items: center;
+  padding: 0 2px;
+  border: 1px solid rgba(228, 239, 232, .55);
+  border-radius: 4px;
+  background: rgba(6, 18, 21, .92);
+  color: #eaf7f3;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .48);
+  font: 700 8px/1 IBM Plex Mono, monospace;
+  pointer-events: none;
+}
+
+.r3-terrain-territory-label .bg12i-control-token[data-controller='player'] {
+  border-radius: 50%;
+}
+
+.r3-terrain-territory-label .bg12i-control-token[data-controller='enemy'] {
+  border-style: double;
+}
+
+.r3-terrain-territory-label .bg12i-control-token[data-controller='neutral'] {
+  border-style: dashed;
+}
+
+.r3-terrain-prototype-shell[data-terrain-profile='compact'] .r3-terrain-prototype-toolbar {
+  right: auto;
+  align-items: center;
+}
+
+.r3-terrain-prototype-shell[data-terrain-profile='compact'] .r3-strategic-information-control {
+  left: 8px;
+  bottom: 28px;
+  width: auto;
+  max-width: min(164px, calc(100% - 78px));
+  padding: 4px;
+}
+
+.r3-terrain-prototype-shell[data-terrain-profile='compact'] .r3-strategic-information-control label {
+  grid-template-columns: 1fr;
+  gap: 2px;
+  font-size: .54rem;
+}
+
+@media (max-width: 600px) {
+  .r3-terrain-prototype-toolbar {
+    right: auto;
+    flex-direction: row;
+    max-width: calc(100% - 54px);
+  }
+
+  .r3-terrain-prototype-toolbar > div {
+    flex-wrap: wrap;
+  }
+
+  .r3-strategic-information-control {
+    left: 8px;
+    bottom: 26px;
+    max-width: min(156px, calc(100% - 76px));
+  }
+
+  .r3-terrain-task-group-marker .bg12i-formation-state {
+    bottom: -10px;
+  }
+
+  .bg12i-state-chip {
+    min-width: 18px;
+    padding: 2px 3px;
+    font-size: 6px;
+  }
+}
