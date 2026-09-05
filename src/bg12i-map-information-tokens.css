@@ -166,6 +166,21 @@
   opacity: 1 !important;
 }
 
+/* R4 hides every descendant span on its compatibility selector. The BG12I state
+   strip therefore has to re-enable its nested chips explicitly, rather than only
+   the outer span. */
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector > .bg12i-formation-state > .bg12i-state-chip {
+  display: inline-block !important;
+  opacity: 1 !important;
+}
+
+/* R4 also hides the selected compatibility target because the physical miniature
+   already communicates selection. BG12I needs that transparent target visible so
+   the adjacent state strip remains visible; the old identity/card skin stays off. */
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector[data-r3-marker-kind='selected-formation'] {
+  opacity: 1 !important;
+}
+
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible,
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker[data-r3-marker-kind='selected-formation']:focus-visible,
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector[data-r3-marker-kind='selected-formation']:focus-visible {
