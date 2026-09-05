@@ -103,7 +103,9 @@
 
 /* Existing DOM formation markers remain the pointer/keyboard hit target around
    the physical Three.js piece. BG12I removes their card skin but keeps a small
-   state tab sourced from BoardRenderProjection. */
+   state tab sourced from BoardRenderProjection. WP3.5 previously hid the entire
+   marker with !important once physical pieces were ready, so BG12I explicitly
+   supersedes that compatibility rule and hides only the legacy card children. */
 .r3-terrain-task-group-marker .bg12i-formation-state {
   position: absolute;
   left: 50%;
@@ -144,7 +146,7 @@
 }
 
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker {
-  opacity: 1;
+  opacity: 1 !important;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
@@ -156,8 +158,9 @@
   pointer-events: none;
 }
 
-.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible {
-  opacity: 1;
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible,
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker[data-r3-marker-kind='selected-formation']:focus-visible {
+  opacity: 1 !important;
   border-color: rgba(234, 255, 120, .72);
   outline: 2px solid #eaff78;
   outline-offset: 3px;
