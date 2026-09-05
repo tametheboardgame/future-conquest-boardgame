@@ -25,7 +25,8 @@ test('R3 programme records terrain completion and the approved physical-map refi
   assert.ok(recovery > wp3 && stabilisation > recovery && wp35 > stabilisation);
   assert.ok(wp36 > wp35 && wp37 > wp36 && wp38 > wp37 && wp4 > wp38);
   assert.match(status, /active product programme is the board-game conversion and tabletop-completion plan/i);
-  assert.match(status, /previous R3-WP6\.6 status text in this file is historical and no longer selects work/i);
+  assert.match(status, /Historical R3 package documents and earlier board-game package documents remain implementation records only/i);
+  assert.match(status, /September 2026 board-game roadmap is the forward authority/i);
   assert.match(status, /\*\*BG12G-R — Physical 2D6 Dice Tray and Combat Recalibration\*\*/);
   assert.match(refinement, /R3-WP3\.6 - Future Soldier Army Miniatures/);
   assert.match(refinement, /R3-WP3\.7 - End-of-Day Operational Movement Beat/);
