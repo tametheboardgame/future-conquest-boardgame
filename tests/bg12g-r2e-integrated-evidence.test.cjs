@@ -17,6 +17,18 @@ test('BG12G-R2E exact-head workflow validates integrated production combat befor
   assert.match(workflow, /bg12g-r2e-integrated-\$\{\{ env\.BG12G_R2E_REF \}\}/);
 });
 
+test('BG12G-R2E browser evidence follows BG12H contextual Attack rather than the retired Combat rail', () => {
+  const capture = read('scripts/capture-bg12g-r2e-integrated.mjs');
+
+  assert.match(capture, /bg12h-formation-interaction/);
+  assert.match(capture, /bg12h-action-row/);
+  assert.match(capture, /bg12h-contextual-combat/);
+  assert.match(capture, /selectContextualAttacker/);
+  assert.match(capture, /stressContextualRendererLifecycle/);
+  assert.doesNotMatch(capture, /getByRole\('button', \{ name: 'Combat', exact: true \}\)/,
+    'R2E must not restore or depend on the retired permanent Combat tab');
+});
+
 test('BG12G-R2E browser evidence proves exactly two authoritative dice and one start/settled event pair', () => {
   const capture = read('scripts/capture-bg12g-r2e-integrated.mjs');
 
