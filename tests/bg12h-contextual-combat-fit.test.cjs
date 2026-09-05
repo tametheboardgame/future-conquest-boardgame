@@ -27,7 +27,7 @@ test('BG12H contextual combat remains available in the compact mobile drawer', (
 test('BG12H combat fit remains presentation-only and scoped to the contextual owner', () => {
   const css = read('src/bg12h-contextual-combat-fit.css');
 
-  assert.doesNotMatch(css, /tabletop-combat-panel\s*\{(?![\s\S]*?bg12h-contextual-combat)/,
+  assert.doesNotMatch(css, /^\s*\.tabletop-combat-panel\b/m,
     'fit rules must not globally restyle the accepted combat panel');
   assert.doesNotMatch(css, /MapLibre|maplibregl|attack-piece|Math\.random|seededRandom/);
 });
