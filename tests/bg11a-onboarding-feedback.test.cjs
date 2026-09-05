@@ -35,17 +35,24 @@ test('BG11A replaces the visible legacy simulation tutorial without mutating tut
   assert.doesNotMatch(onboarding, /skipTutorial|progressTutorial|moveTutorial|state\.tutorial/);
 });
 
-test('BG11A exposes disabled action reasons as visible status content', () => {
+test('BG11A unavailable-action feedback remains accessible after BG12H contextualises formation actions', () => {
   const passReason = read('src/components/TabletopPassReason.tsx');
   const support = read('src/components/TabletopSupportPanel.tsx');
   const cards = read('src/components/TabletopCardHandPanel.tsx');
   const cardCss = read('src/components/tabletop-card-hand.css');
+  const interaction = read('src/components/TabletopFormationInteraction.tsx');
   const layout = read('src/components/TabletopLayout.tsx');
 
   assert.match(passReason, /Pass unavailable:/);
   assert.match(passReason, /preview\.reason/);
   assert.match(passReason, /role="status"/);
-  assert.match(layout, /activeSurface === 'activation'[\s\S]*?<TabletopPassReason \/>/);
+
+  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(interaction, /disabled=\{!supportAvailable\}/);
+  assert.match(interaction, /supportPreviews\.map\(action => `\$\{action\.label\}: \$\{action\.preview\?\.reason \?\? 'Unavailable'\}`\)/);
+  assert.match(interaction, /disabled=\{!passPreview\.accepted\}/);
+  assert.match(interaction, /title=\{passPreview\.reason\}/);
+  assert.match(interaction, /className="bg12h-feedback" role="status" aria-live="polite"/);
 
   assert.match(support, /unavailableReasons/);
   assert.match(support, /Unavailable support action reasons/);
