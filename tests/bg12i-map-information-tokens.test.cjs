@@ -59,6 +59,9 @@ test('BG12I preserves the physical miniature hit target while superseding the R4
 });
 
 test('BG12I materially reduces permanent map chrome while retaining accessible information', () => {
+  assert.match(css, /--wp6-rail-width:\s*70px/);
+  assert.match(css, /--wp66-rail-control-width:\s*64px/);
+  assert.match(css, /--bg12e-rail-width:\s*min\(300px, 22vw\)/);
   assert.match(css, /\.r3-terrain-prototype-toolbar[\s\S]*right: auto/);
   assert.match(css, /\.r3-terrain-map-key[\s\S]*clip: rect\(0, 0, 0, 0\)/);
   assert.match(css, /\.r3-strategic-information-control[\s\S]*max-width: min\(184px/);

@@ -1,6 +1,26 @@
 /* BG12I keeps the map dominant by shrinking permanent map chrome and projecting
    authoritative board state onto the existing physical formation/territory layer. */
 
+/* BG12C capped ordinary desktop navigation at 72px and the tabletop rail at
+   320px while requiring at least 70% of laptop width to remain map. WP6.6 later
+   widened the retained icon rail to 100px. Restore the accepted navigation
+   budget and use a slightly narrower responsive tabletop rail now that BG12H/I
+   move formation state and actions onto compact contextual surfaces. */
+@media (min-width: 901px) {
+  :root {
+    --wp6-rail-width: 70px;
+    --wp66-rail-control-width: 64px;
+  }
+
+  .bg12e-tabletop-layout {
+    --bg12e-rail-width: min(300px, 22vw);
+  }
+
+  .bg12e-tabletop-layout[data-rail-state="collapsed"] {
+    --bg12e-rail-width: 44px;
+  }
+}
+
 .r3-terrain-prototype-toolbar {
   right: auto;
   width: auto;
