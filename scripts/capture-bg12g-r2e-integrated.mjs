@@ -205,9 +205,6 @@ async function runNormalCase(browser) {
     await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').click();
     await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.rolling').waitFor({ state: 'visible', timeout: 5000 });
     await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray canvas[data-bg12g-integrated-dice-renderer="three"]').waitFor({ state: 'visible', timeout: 5000 });
-    await page.screenshot({ path: `${outputDir}/02-integrated-roll-start.png`, fullPage: false });
-    await page.waitForTimeout(430);
-    await page.screenshot({ path: `${outputDir}/03-integrated-roll-mid.png`, fullPage: false });
     await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
     const settledMs = performance.now() - startedAt;
     const dice = await readAuthoritativeDice(page);
@@ -329,8 +326,6 @@ try {
     fallback,
     screenshots: [
       '01-integrated-pre-roll.png',
-      '02-integrated-roll-start.png',
-      '03-integrated-roll-mid.png',
       '04-integrated-roll-settled.png',
       '05-map-after-dice-lifecycle.png',
       '06-reduced-motion-settled.png',
