@@ -47,12 +47,13 @@ test('BG12I territory control uses shape tokens on existing geographic labels', 
   assert.match(css, /bg12i-control-token\[data-controller='enemy'\][\s\S]*border-style: double/);
 });
 
-test('BG12I preserves the physical miniature hit target while removing the duplicate card skin', () => {
-  assert.match(css, /data-physical-formations='ready'[\s\S]*r3-terrain-task-group-marker[\s\S]*opacity: 1 !important/);
-  assert.match(css, /span:not\(\.bg12i-formation-state\)[\s\S]*opacity: 0/);
+test('BG12I preserves the physical miniature hit target while superseding the R4 selector skin', () => {
+  assert.match(css, /r4-formation-selector[\s\S]*opacity: 1 !important/);
+  assert.match(css, /r4-formation-selector[\s\S]*background: transparent !important/);
+  assert.match(css, /r4-formation-selector > strong[\s\S]*opacity: 0 !important/);
+  assert.match(css, /r4-formation-selector > \.bg12i-formation-state[\s\S]*display: flex !important[\s\S]*opacity: 1 !important/);
+  assert.match(css, /span:not\(\.bg12i-formation-state\)[\s\S]*opacity: 0 !important/);
   assert.match(css, /selected-formation'\]:focus-visible[\s\S]*opacity: 1 !important/);
-  assert.match(css, /border-color: transparent/);
-  assert.match(css, /background: transparent/);
   assert.match(css, /\.bg12i-formation-state/);
   assert.doesNotMatch(css, /\.r3-terrain-task-group-marker\s*\{[^}]*display:\s*none/s);
 });
