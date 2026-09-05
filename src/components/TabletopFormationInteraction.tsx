@@ -307,12 +307,13 @@ export function TabletopFormationInteraction() {
 
   useEffect(() => {
     if (!selectedPieceId) return;
+    if (mode === 'attack' && (combatRolling || completionTimerRef.current !== null)) return;
     const piece = boardState.pieces[selectedPieceId];
     if (humanActivation && piece?.seatId === boardState.activeSeat) return;
     collapseInteraction(activeSeat.controller === 'computer'
       ? 'Computer activation in progress.'
       : 'Select one of your formations on the board.');
-  }, [activeSeat.controller, boardState.activeSeat, boardState.pieces, collapseInteraction, humanActivation, selectedPieceId]);
+  }, [activeSeat.controller, boardState.activeSeat, boardState.pieces, collapseInteraction, combatRolling, humanActivation, mode, selectedPieceId]);
 
   useEffect(() => {
     const onMapClick = (event: MouseEvent) => {

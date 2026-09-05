@@ -50,6 +50,15 @@ test('BG12H keeps map selection primary and reuses the accepted authoritative co
     'BG12H must compose the accepted combat owner rather than duplicate dice/combat dispatch');
 });
 
+test('BG12H keeps accepted combat presentation mounted across activation handoff', () => {
+  const source = read('src/components/TabletopFormationInteraction.tsx');
+
+  assert.match(source, /if \(mode === 'attack' && \(combatRolling \|\| completionTimerRef\.current !== null\)\) return;/);
+  assert.match(source, /detail\?\.phase === 'start'[\s\S]*?setCombatRolling\(true\)/);
+  assert.match(source, /detail\?\.phase !== 'settled'[\s\S]*?completionTimerRef\.current = window\.setTimeout/);
+  assert.match(source, /combatRolling, humanActivation, mode, selectedPieceId/);
+});
+
 test('BG12H confirmation and completion flow collapses accepted formation interactions', () => {
   const source = read('src/components/TabletopFormationInteraction.tsx');
 
