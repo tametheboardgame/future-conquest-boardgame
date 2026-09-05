@@ -46,14 +46,21 @@ test('activation panel keeps board rules authoritative while using retained rend
   assert.match(panel, /data-bg-movement="BG4C"/);
 });
 
-test('BG12E keeps board action panels under the provider but gives layout ownership to the tabletop rail', () => {
+test('BG12H keeps board actions under the provider while normal layout ownership moves to the contextual formation surface', () => {
   const main = read('src/main.tsx');
   const layout = read('src/components/TabletopLayout.tsx');
+  const interaction = read('src/components/TabletopFormationInteraction.tsx');
 
   assert.match(main, /<BoardGameStateProvider>[\s\S]*?<TabletopLayout>[\s\S]*?<App \/>[\s\S]*?<\/TabletopLayout>[\s\S]*?<\/BoardGameStateProvider>/);
   assert.match(layout, /<TabletopStatusShell \/>/);
-  assert.match(layout, /activeSurface === 'combat'[\s\S]*?<TabletopCombatPanel \/>/);
-  assert.match(layout, /activeSurface === 'activation'[\s\S]*?<TabletopActivationPanel \/>/);
+  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /activeSurface === 'cards'[\s\S]*?<TabletopCardHandPanel \/>/);
+  assert.doesNotMatch(layout, /id: 'activation', label: 'Turn'/);
+  assert.doesNotMatch(layout, /id: 'combat', label: 'Combat'/);
+  assert.doesNotMatch(layout, /id: 'support', label: 'Support'/);
+  assert.match(interaction, /useBoardGameDispatch/);
+  assert.match(interaction, /getBoardMoveDestinations/);
+  assert.match(interaction, /<TabletopCombatPanel \/>/);
   assert.match(main, /bg1-current-activation\.css/);
   assert.match(main, /bg12e-tabletop-layout\.css/);
 });
