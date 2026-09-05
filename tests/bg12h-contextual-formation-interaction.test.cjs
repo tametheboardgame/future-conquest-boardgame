@@ -11,7 +11,7 @@ test('BG12H replaces permanent Turn Combat Support navigation with one formation
 
   assert.match(layout, /type RailSurface = 'formation' \| 'cards'/);
   assert.match(layout, /id: 'formation', label: 'Actions'/);
-  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /data-surface="formation"[\s\S]*?hidden=\{activeSurface !== 'formation'\}[\s\S]*?<TabletopFormationInteraction \/>/);
   assert.match(layout, /activeSurface === 'cards'[\s\S]*?<TabletopCardHandPanel \/>/);
   assert.doesNotMatch(layout, /id: 'activation', label: 'Turn'/);
   assert.doesNotMatch(layout, /id: 'combat', label: 'Combat'/);
