@@ -54,36 +54,81 @@ async function enterCampaign(page, query = '?terrain=1') {
   await page.locator('.bg12e-tabletop-layout').waitFor({ state: 'visible', timeout: 30000 });
   const closeGuide = page.getByRole('button', { name: /close guide/i });
   if (await closeGuide.count() > 0 && await closeGuide.first().isVisible()) await closeGuide.first().click();
+  const actionsTab = page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Actions', exact: true });
+  await actionsTab.waitFor({ state: 'visible', timeout: 10000 });
+  await actionsTab.click();
+  await page.locator('.bg12h-formation-interaction[data-bg-package="BG12H"]').waitFor({ state: 'visible', timeout: 10000 });
 }
 
-async function openCombat(page) {
-  await page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Combat', exact: true }).click();
-  await page.locator('.tabletop-combat-panel[data-bg-dice-renderer="BG12G-R2C-THREE"]').waitFor({ state: 'visible', timeout: 8000 });
-  await page.waitForFunction(() => {
-    const select = document.querySelector('.tabletop-combat-attacker select');
-    return select && !select.disabled;
-  }, null, { timeout: 10000 });
-}
-
-async function selectLegalCombat(page) {
-  const attackerSelect = page.locator('.tabletop-combat-attacker select');
-  const attackerValues = await attackerSelect.locator('option').evaluateAll(options =>
-    options.map(option => option.value).filter(Boolean)
-  );
-  let attacker = null;
-  for (const value of attackerValues) {
-    await attackerSelect.selectOption(value);
-    await page.waitForTimeout(100);
-    if (await page.locator('.tabletop-combat-targets button').count() > 0) {
-      attacker = value;
-      break;
+async function selectContextualAttacker(page) {
+  await page.waitForFunction(() => document.querySelectorAll('.r3-terrain-task-group-marker[data-group-id], .task-group-marker').length > 0, null, { timeout: 30000 });
+  const markerIds = await page.evaluate(() => {
+    const ids = [];
+    for (const node of document.querySelectorAll('.r3-terrain-task-group-marker[data-group-id], .task-group-marker')) {
+      const terrainId = node instanceof HTMLElement ? node.dataset.groupId : undefined;
+      const markerText = node.querySelector('.marker-id')?.textContent ?? '';
+      const match = markerText.match(/TG\s*(\d+)/i);
+      const id = terrainId || (match ? `TG-${match[1]}` : null);
+      if (id && !ids.includes(id)) ids.push(id);
     }
+    return ids;
+  });
+
+  let attacker = null;
+  for (const id of markerIds) {
+    const clicked = await page.evaluate(pieceId => {
+      for (const node of document.querySelectorAll('.r3-terrain-task-group-marker[data-group-id], .task-group-marker')) {
+        const terrainId = node instanceof HTMLElement ? node.dataset.groupId : undefined;
+        const markerText = node.querySelector('.marker-id')?.textContent ?? '';
+        const match = markerText.match(/TG\s*(\d+)/i);
+        const id = terrainId || (match ? `TG-${match[1]}` : null);
+        if (id !== pieceId) continue;
+        if (node instanceof HTMLElement || node instanceof SVGElement) {
+          node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+          return true;
+        }
+      }
+      return false;
+    }, id);
+    if (!clicked) continue;
+    await page.waitForTimeout(100);
+
+    const selected = await page.locator('.bg12h-formation-interaction').getAttribute('data-selected-piece');
+    if (selected !== id) continue;
+    const attackButton = page.locator('.bg12h-action-row').getByRole('button', { name: 'Attack', exact: true });
+    if (await attackButton.count() === 0 || await attackButton.isDisabled()) continue;
+    attacker = id;
+    break;
   }
-  assert(attacker, 'no human formation exposed a legal authoritative combat target');
-  const targetButton = page.locator('.tabletop-combat-targets button').first();
+
+  assert(attacker, `no normal BG12H formation exposed a legal contextual Attack action: ${JSON.stringify(markerIds)}`);
+  return attacker;
+}
+
+async function openCombat(page, attacker = null) {
+  const selectedAttacker = attacker ?? await selectContextualAttacker(page);
+  const interaction = page.locator('.bg12h-formation-interaction');
+  assert(await interaction.getAttribute('data-selected-piece') === selectedAttacker,
+    `BG12H did not retain selected attacker ${selectedAttacker}`);
+
+  const attackButton = page.locator('.bg12h-action-row').getByRole('button', { name: 'Attack', exact: true });
+  await attackButton.waitFor({ state: 'visible', timeout: 5000 });
+  assert(!(await attackButton.isDisabled()), `contextual Attack became unavailable for ${selectedAttacker}`);
+  await attackButton.click();
+  await page.locator('.bg12h-contextual-combat .tabletop-combat-panel[data-bg-dice-renderer="BG12G-R2C-THREE"]').waitFor({ state: 'visible', timeout: 8000 });
+  await page.waitForFunction(expected => {
+    const select = document.querySelector('.bg12h-contextual-combat .tabletop-combat-attacker select');
+    return select && !select.disabled && select.value === expected;
+  }, selectedAttacker, { timeout: 10000 });
+  return selectedAttacker;
+}
+
+async function selectLegalCombat(page, attacker) {
+  const targetButton = page.locator('.bg12h-contextual-combat .tabletop-combat-targets button').first();
+  await targetButton.waitFor({ state: 'visible', timeout: 5000 });
   const targetLabel = (await targetButton.innerText()).replace(/\s+/g, ' ').trim();
   await targetButton.click();
-  await page.locator('.bg12g-pre-roll .bg12g-roll-button').waitFor({ state: 'visible', timeout: 5000 });
+  await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').waitFor({ state: 'visible', timeout: 5000 });
   return { attacker, targetLabel };
 }
 
@@ -119,6 +164,25 @@ async function assertEventPair(page, dice) {
   return events;
 }
 
+async function stressContextualRendererLifecycle(page, attacker) {
+  const cycles = [];
+  for (let index = 0; index < 4; index += 1) {
+    const cancel = page.locator('.bg12h-contextual-combat .bg12h-action-detail-heading').getByRole('button', { name: 'Cancel', exact: true });
+    await cancel.click();
+    await page.waitForFunction(() => (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 0, null, { timeout: 5000 });
+    const disposed = await page.evaluate(() => ({ ...window.__bg12gDiceRendererLifecycle }));
+
+    await openCombat(page, attacker);
+    await selectLegalCombat(page, attacker);
+    await page.waitForFunction(() => (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 1, null, { timeout: 5000 });
+    const mounted = await page.evaluate(() => ({ ...window.__bg12gDiceRendererLifecycle }));
+    cycles.push({ disposed, mounted });
+    assert(mounted.active === 1, `expected one live dice renderer after contextual Attack remount: ${JSON.stringify(mounted)}`);
+    assert(mounted.created - mounted.disposed === mounted.active, `renderer lifecycle became unbalanced: ${JSON.stringify(mounted)}`);
+  }
+  return cycles;
+}
+
 async function runNormalCase(browser) {
   const context = await createContext(browser, { recordVideo: true });
   const page = await context.newPage();
@@ -130,46 +194,35 @@ async function runNormalCase(browser) {
     await enterCampaign(page, '?terrain=1');
     const mapCanvas = page.locator('.maplibregl-canvas').first();
     await mapCanvas.waitFor({ state: 'visible', timeout: 30000 });
-    await openCombat(page);
-    const selection = await selectLegalCombat(page);
+
+    const attacker = await openCombat(page);
+    const selection = await selectLegalCombat(page, attacker);
+    await page.waitForFunction(() => (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 1, null, { timeout: 5000 });
+    const cycles = await stressContextualRendererLifecycle(page, attacker);
     await page.screenshot({ path: `${outputDir}/01-integrated-pre-roll.png`, fullPage: false });
 
     const startedAt = performance.now();
-    await page.locator('.bg12g-pre-roll .bg12g-roll-button').click();
-    await page.locator('.bg12g-resolved-tray.rolling').waitFor({ state: 'visible', timeout: 5000 });
-    await page.locator('.bg12g-resolved-tray canvas[data-bg12g-integrated-dice-renderer="three"]').waitFor({ state: 'visible', timeout: 5000 });
-    await page.screenshot({ path: `${outputDir}/02-integrated-roll-start.png`, fullPage: false });
-    await page.waitForTimeout(430);
-    await page.screenshot({ path: `${outputDir}/03-integrated-roll-mid.png`, fullPage: false });
-    await page.locator('.bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').click();
+    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.rolling').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray canvas[data-bg12g-integrated-dice-renderer="three"]').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
     const settledMs = performance.now() - startedAt;
-    await page.waitForTimeout(100);
     const dice = await readAuthoritativeDice(page);
+    const lifecycleAfterRoll = await page.evaluate(() => window.__bg12gDiceRendererLifecycle ?? null);
+    assert(lifecycleAfterRoll && lifecycleAfterRoll.active >= 1, `missing active renderer lifecycle evidence immediately after settle: ${JSON.stringify(lifecycleAfterRoll)}`);
     assert(dice.renderer === 'three', `normal case did not use Three.js renderer: ${JSON.stringify(dice)}`);
     assert(dice.motionState === 'settled', `normal case renderer did not settle: ${JSON.stringify(dice)}`);
     const events = await assertEventPair(page, dice);
-    const resultCopy = (await page.locator('.bg12g-resolved-tray').innerText()).replace(/\s+/g, ' ').trim();
+    const resultCopy = (await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray').innerText()).replace(/\s+/g, ' ').trim();
     assert(resultCopy.includes(`${dice.left} + ${dice.right} = ${dice.total}`), `semantic result does not match authoritative dice: ${resultCopy}`);
     await page.screenshot({ path: `${outputDir}/04-integrated-roll-settled.png`, fullPage: false });
 
-    const lifecycleAfterRoll = await page.evaluate(() => window.__bg12gDiceRendererLifecycle ?? null);
-    assert(lifecycleAfterRoll && lifecycleAfterRoll.active >= 1, `missing active renderer lifecycle evidence: ${JSON.stringify(lifecycleAfterRoll)}`);
-
-    const cycles = [];
-    for (let index = 0; index < 4; index += 1) {
-      await page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Cards', exact: true }).click();
-      await page.waitForFunction(() => (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 0, null, { timeout: 5000 });
-      const disposed = await page.evaluate(() => ({ ...window.__bg12gDiceRendererLifecycle }));
-      await page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Combat', exact: true }).click();
-      await page.locator('.bg12g-resolved-tray .bg12g-integrated-dice').waitFor({ state: 'visible', timeout: 5000 });
-      const mounted = await page.evaluate(() => ({ ...window.__bg12gDiceRendererLifecycle }));
-      cycles.push({ disposed, mounted });
-      assert(mounted.active === 1, `expected one live dice renderer after combat remount: ${JSON.stringify(mounted)}`);
-      assert(mounted.created - mounted.disposed === mounted.active, `renderer lifecycle became unbalanced: ${JSON.stringify(mounted)}`);
-    }
-
-    await page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Cards', exact: true }).click();
-    await page.waitForFunction(() => (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 0, null, { timeout: 5000 });
+    await page.waitForFunction(() => {
+      const interaction = document.querySelector('.bg12h-formation-interaction');
+      return interaction?.getAttribute('data-selected-piece') === ''
+        && interaction?.getAttribute('data-action-mode') === 'select'
+        && (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 0;
+    }, null, { timeout: 5000 });
     const lifecycleFinal = await page.evaluate(() => ({ ...window.__bg12gDiceRendererLifecycle }));
     assert(lifecycleFinal.created === lifecycleFinal.disposed, `dice WebGL contexts did not fully dispose: ${JSON.stringify(lifecycleFinal)}`);
     assert(lifecycleFinal.peak <= 2, `dice renderer lifecycle showed unbounded concurrent contexts: ${JSON.stringify(lifecycleFinal)}`);
@@ -218,11 +271,11 @@ async function runReducedMotionCase(browser) {
   page.on('pageerror', error => errors.push(serialisePageError(error)));
   try {
     await enterCampaign(page, '?terrain=0');
-    await openCombat(page);
-    await selectLegalCombat(page);
+    const attacker = await openCombat(page);
+    await selectLegalCombat(page, attacker);
     const startedAt = performance.now();
-    await page.locator('.bg12g-pre-roll .bg12g-roll-button').click();
-    await page.locator('.bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 3000 });
+    await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').click();
+    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 3000 });
     const settledMs = performance.now() - startedAt;
     const dice = await readAuthoritativeDice(page);
     const events = await assertEventPair(page, dice);
@@ -242,15 +295,15 @@ async function runFallbackCase(browser) {
   page.on('pageerror', error => errors.push(serialisePageError(error)));
   try {
     await enterCampaign(page, '?terrain=0&bg12g-force-dice-fallback=1');
-    await openCombat(page);
-    await selectLegalCombat(page);
-    await page.locator('.bg12g-pre-roll .bg12g-roll-button').click();
-    await page.locator('.bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 3000 });
+    const attacker = await openCombat(page);
+    await selectLegalCombat(page, attacker);
+    await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').click();
+    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 3000 });
     const dice = await readAuthoritativeDice(page);
     assert(dice.renderer === 'fallback', `forced fallback did not activate: ${JSON.stringify(dice)}`);
-    await page.locator('.bg12g-resolved-tray [data-bg12g-dice-fallback="true"]').waitFor({ state: 'visible', timeout: 3000 });
+    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray [data-bg12g-dice-fallback="true"]').waitFor({ state: 'visible', timeout: 3000 });
     const events = await assertEventPair(page, dice);
-    const copy = (await page.locator('.bg12g-resolved-tray').innerText()).replace(/\s+/g, ' ').trim();
+    const copy = (await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray').innerText()).replace(/\s+/g, ' ').trim();
     assert(copy.includes(`${dice.left} + ${dice.right} = ${dice.total}`), `fallback semantic result mismatch: ${copy}`);
     assert(relevantErrors(errors).length === 0, `fallback browser errors: ${JSON.stringify(relevantErrors(errors))}`);
     await page.screenshot({ path: `${outputDir}/07-forced-fallback-settled.png`, fullPage: false });
@@ -273,8 +326,6 @@ try {
     fallback,
     screenshots: [
       '01-integrated-pre-roll.png',
-      '02-integrated-roll-start.png',
-      '03-integrated-roll-mid.png',
       '04-integrated-roll-settled.png',
       '05-map-after-dice-lifecycle.png',
       '06-reduced-motion-settled.png',

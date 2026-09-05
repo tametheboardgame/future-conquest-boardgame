@@ -1,0 +1,71 @@
+/* BG12H contextual combat embeds the accepted BG5/BG12G combat owner inside
+   the compact tabletop rail. These rules alter composition only: combat,
+   dice authority and renderer behaviour remain owned by the existing panel. */
+
+.bg12h-contextual-combat,
+.bg12h-contextual-combat .tabletop-combat-panel,
+.bg12h-contextual-combat .tabletop-combat-targets,
+.bg12h-contextual-combat .tabletop-combat-preview,
+.bg12h-contextual-combat .tabletop-combat-result,
+.bg12h-contextual-combat .bg12g-pre-roll,
+.bg12h-contextual-combat .bg12g-resolved-tray,
+.bg12h-contextual-combat .bg12g-tray,
+.bg12h-contextual-combat .bg12g-integrated-dice {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.bg12h-contextual-combat .tabletop-combat-panel {
+  width: 100% !important;
+  padding: 10px !important;
+  overflow-x: hidden !important;
+}
+
+.bg12h-contextual-combat .tabletop-combat-targets button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.bg12h-contextual-combat .bg12g-tray {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding: 10px;
+}
+
+.bg12h-contextual-combat .bg12g-integrated-dice {
+  width: 100%;
+  min-width: 0;
+  height: 118px;
+}
+
+.bg12h-contextual-combat .bg12g-tray-copy {
+  min-width: 0;
+  text-align: left;
+}
+
+.bg12h-contextual-combat .tabletop-roll-equation {
+  grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr);
+  gap: 4px;
+  padding-inline: 5px;
+}
+
+.bg12h-contextual-combat .tabletop-combat-result > div,
+.bg12h-contextual-combat .bg12g-result-summary {
+  min-width: 0;
+}
+
+.bg12h-contextual-combat .tabletop-combat-result > div {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .bg12h-contextual-combat .tabletop-combat-panel {
+    display: block !important;
+  }
+
+  .bg12h-contextual-combat .bg12g-integrated-dice {
+    height: 126px;
+  }
+}

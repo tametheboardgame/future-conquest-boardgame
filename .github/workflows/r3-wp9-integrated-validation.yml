@@ -145,132 +145,10 @@ jobs:
           for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
           cat /tmp/r3-wp9-preview.log
           exit 1
-      - name: Capture BG12G-R authoritative 2D6 manual-review evidence
+      - name: Capture current BG12H contextual 2D6 evidence
         env:
-          BG12G_R_REF: ${{ env.R3_WP9_REF }}
-        run: |
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          import path from 'node:path';
-          import { chromium } from 'playwright';
-
-          const outputDir = 'artifacts/bg12g-r';
-          fs.mkdirSync(outputDir, { recursive: true });
-          const browser = await chromium.launch({ headless: true });
-          const context = await browser.newContext({
-            viewport: { width: 1600, height: 900 },
-            reducedMotion: 'no-preference',
-            recordVideo: { dir: `${outputDir}/raw-video`, size: { width: 1600, height: 900 } }
-          });
-          await context.addInitScript(() => {
-            localStorage.setItem('future-conquest:intro-seen:v3', 'true');
-            localStorage.setItem('future-conquest-tutorial-seen-v1', 'true');
-            window.__bg12gDiceReviewEvents = [];
-            window.addEventListener('future-conquest:dice-clatter', event => {
-              window.__bg12gDiceReviewEvents.push(event.detail);
-            });
-          });
-          const page = await context.newPage();
-          const video = page.video();
-          const errors = [];
-          page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-          page.on('pageerror', error => errors.push(error.message));
-
-          const assert = (condition, message) => {
-            if (!condition) throw new Error(message);
-          };
-
-          try {
-            await page.goto('http://127.0.0.1:4173/?terrain=0', { waitUntil: 'domcontentloaded' });
-            await page.getByRole('button', { name: 'BEGIN CAMPAIGN', exact: true }).click();
-            await page.locator('.bg12e-tabletop-layout').waitFor({ state: 'visible', timeout: 30000 });
-            await page.locator('.bg12e-rail-switcher').getByRole('button', { name: 'Combat', exact: true }).click();
-            await page.locator('.tabletop-combat-panel[data-bg-dice-model="BG12G-R-2D6"]').waitFor({ state: 'visible', timeout: 5000 });
-
-            const closeGuide = page.getByRole('button', { name: /close guide/i });
-            if (await closeGuide.count() > 0 && await closeGuide.first().isVisible()) {
-              await closeGuide.first().click();
-            }
-
-            await page.waitForFunction(() => {
-              const select = document.querySelector('.tabletop-combat-attacker select');
-              return select && !select.disabled;
-            }, null, { timeout: 10000 });
-
-            const attackerSelect = page.locator('.tabletop-combat-attacker select');
-            const attackerValues = await attackerSelect.locator('option').evaluateAll(options =>
-              options.map(option => option.value).filter(Boolean)
-            );
-            let attacker = null;
-            for (const value of attackerValues) {
-              await attackerSelect.selectOption(value);
-              await page.waitForTimeout(120);
-              if (await page.locator('.tabletop-combat-targets button').count() > 0) {
-                attacker = value;
-                break;
-              }
-            }
-            assert(attacker, 'no human formation exposed a legal BG12G-R combat target');
-
-            const targetButton = page.locator('.tabletop-combat-targets button').first();
-            const targetLabel = (await targetButton.innerText()).replace(/\s+/g, ' ').trim();
-            await targetButton.click();
-            await page.locator('.bg12g-pre-roll .bg12g-roll-button').waitFor({ state: 'visible', timeout: 5000 });
-            const previewLabel = await page.locator('.bg12g-pre-roll .bg12g-tray').getAttribute('aria-label');
-            const previewCopy = (await page.locator('.bg12g-pre-roll').innerText()).replace(/\s+/g, ' ').trim();
-            await page.screenshot({ path: `${outputDir}/01-pre-roll.png`, fullPage: false });
-
-            await page.locator('.bg12g-pre-roll .bg12g-roll-button').click();
-            await page.locator('.bg12g-resolved-tray.rolling').waitFor({ state: 'visible', timeout: 5000 });
-            await page.screenshot({ path: `${outputDir}/02-roll-start.png`, fullPage: false });
-            await page.waitForTimeout(420);
-            await page.screenshot({ path: `${outputDir}/03-roll-mid.png`, fullPage: false });
-            await page.locator('.bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
-            await page.waitForTimeout(120);
-            await page.screenshot({ path: `${outputDir}/04-roll-settled.png`, fullPage: false });
-
-            const dice = await page.locator('.bg12g-resolved-tray .bg12g-d6-stage').evaluateAll(nodes =>
-              nodes.map(node => Number(node.getAttribute('data-authoritative-result')))
-            );
-            const resultLabel = await page.locator('.bg12g-resolved-tray .bg12g-tray').getAttribute('aria-label');
-            const resultCopy = (await page.locator('.bg12g-resolved-tray').innerText()).replace(/\s+/g, ' ').trim();
-            const events = await page.evaluate(() => window.__bg12gDiceReviewEvents ?? []);
-            const relevantErrors = errors.filter(error => !/favicon|ERR_ABORTED|Failed to load resource.*404/i.test(error));
-
-            assert(dice.length === 2 && dice.every(value => Number.isInteger(value) && value >= 1 && value <= 6), `invalid authoritative D6 faces: ${JSON.stringify(dice)}`);
-            assert(events.some(event => event?.diceType === '2d6' && event?.phase === 'start'), `missing 2D6 start event: ${JSON.stringify(events)}`);
-            const settled = events.find(event => event?.diceType === '2d6' && event?.phase === 'settled');
-            assert(settled, `missing 2D6 settled event: ${JSON.stringify(events)}`);
-            assert(Array.isArray(settled.dice) && settled.dice[0] === dice[0] && settled.dice[1] === dice[1], `settled event faces diverged from visible authoritative dice: ${JSON.stringify({ dice, settled })}`);
-            assert(settled.total === dice[0] + dice[1], `settled total does not equal visible D6 faces: ${JSON.stringify({ dice, settled })}`);
-            assert(relevantErrors.length === 0, `browser errors during 2D6 review capture: ${JSON.stringify(relevantErrors)}`);
-
-            fs.writeFileSync(`${outputDir}/evidence.json`, `${JSON.stringify({
-              schemaVersion: 1,
-              head: process.env.BG12G_R_REF ?? process.env.GITHUB_SHA ?? null,
-              attacker,
-              targetLabel,
-              previewLabel,
-              previewCopy,
-              dice,
-              total: settled.total,
-              resultLabel,
-              resultCopy,
-              clatterEvents: events,
-              screenshots: ['01-pre-roll.png', '02-roll-start.png', '03-roll-mid.png', '04-roll-settled.png'],
-              video: 'bg12g-r-dice-roll.webm'
-            }, null, 2)}\n`);
-            await page.waitForTimeout(900);
-            console.log(`BG12G-R manual-review capture passed: ${attacker} rolled ${dice.join('+')} = ${settled.total}.`);
-          } finally {
-            await context.close();
-            if (video) {
-              const rawVideo = await video.path();
-              fs.copyFileSync(rawVideo, path.join(outputDir, 'bg12g-r-dice-roll.webm'));
-            }
-            await browser.close();
-          }
-          NODE
+          BG12G_R2E_REF: ${{ env.R3_WP9_REF }}
+        run: node scripts/capture-bg12g-r2e-integrated.mjs
       - name: Prove BG12D normal-play quarantine and diagnostics route
         run: node scripts/probe-bg12d-legacy-quarantine.mjs
       - name: Review historical map shell, notifications and keyboard access in diagnostics mode
@@ -290,7 +168,7 @@ jobs:
         with:
           name: r3-wp9-integrated-browser-${{ env.R3_WP9_REF }}
           path: |
-            artifacts/bg12g-r
+            artifacts/bg12g-r2e
             artifacts/r3-wp6
             artifacts/r3-wp6-5
             artifacts/r3-wp9

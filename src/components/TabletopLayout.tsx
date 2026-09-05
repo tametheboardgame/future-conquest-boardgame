@@ -3,23 +3,22 @@ import { TabletopActivationPanel } from './TabletopActivationPanel';
 import { TabletopCardHandPanel } from './TabletopCardHandPanel';
 import { TabletopCombatPanel } from './TabletopCombatPanel';
 import { TabletopContextHint } from './TabletopContextHint';
+import { TabletopFormationInteraction } from './TabletopFormationInteraction';
 import { TabletopOnboarding } from './TabletopOnboarding';
 import { TabletopPassReason } from './TabletopPassReason';
 import { TabletopRulesReference } from './TabletopRulesReference';
 import { TabletopStatusShell } from './TabletopStatusShell';
 import { TabletopSupportPanel } from './TabletopSupportPanel';
 
-type RailSurface = 'activation' | 'combat' | 'cards' | 'support';
+type RailSurface = 'formation' | 'cards';
 
 type Props = {
   children: ReactNode;
 };
 
 const RAIL_SURFACES: Array<{ id: RailSurface; label: string }> = [
-  { id: 'activation', label: 'Turn' },
-  { id: 'combat', label: 'Combat' },
-  { id: 'cards', label: 'Cards' },
-  { id: 'support', label: 'Support' }
+  { id: 'formation', label: 'Actions' },
+  { id: 'cards', label: 'Cards' }
 ];
 
 function startsExpanded() {
@@ -34,17 +33,14 @@ function isLegacyDiagnostics() {
 
 /**
  * BG12E owns normal board-game composition around the preserved map.
- * Existing authoritative interaction components are deliberately retained,
- * but only one rail interaction surface is mounted at a time.
- *
- * BG12D's explicit legacy diagnostics route bypasses BG12E composition so the
- * quarantined historical workspaces and their browser probes keep the geometry
- * they had before the tabletop rebuild.
+ * BG12H replaces the old Turn / Combat / Support surface switcher with one
+ * contextual formation action surface while retaining Cards as a physical
+ * tabletop component. Legacy diagnostics keep the historical components.
  */
 export function TabletopLayout({ children }: Props) {
   const legacyDiagnostics = isLegacyDiagnostics();
   const [railExpanded, setRailExpanded] = useState(startsExpanded);
-  const [activeSurface, setActiveSurface] = useState<RailSurface>('activation');
+  const [activeSurface, setActiveSurface] = useState<RailSurface>('formation');
 
   useEffect(() => {
     if (legacyDiagnostics) return;
@@ -74,6 +70,7 @@ export function TabletopLayout({ children }: Props) {
   return <div
     className="bg12e-tabletop-layout"
     data-bg-package="BG12E"
+    data-bg-formation-interaction="BG12H"
     data-rail-state={railExpanded ? 'expanded' : 'collapsed'}
   >
     <div className="bg12e-status-zone">
@@ -110,18 +107,11 @@ export function TabletopLayout({ children }: Props) {
         </nav>
 
         <div className="bg12e-context-zone" data-active-surface={activeSurface}>
-          {activeSurface === 'activation' && <div className="bg12e-context-surface" data-surface="activation">
-            <TabletopActivationPanel />
-            <TabletopPassReason />
-          </div>}
-          {activeSurface === 'combat' && <div className="bg12e-context-surface" data-surface="combat">
-            <TabletopCombatPanel />
+          {activeSurface === 'formation' && <div className="bg12e-context-surface" data-surface="formation">
+            <TabletopFormationInteraction />
           </div>}
           {activeSurface === 'cards' && <div className="bg12e-context-surface" data-surface="cards">
             <TabletopCardHandPanel />
-          </div>}
-          {activeSurface === 'support' && <div className="bg12e-context-surface" data-surface="support">
-            <TabletopSupportPanel />
           </div>}
         </div>
       </div>}

@@ -1,0 +1,69 @@
+name: BG12H contextual formation interaction
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BG12H_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  exact-head-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact BG12H head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BG12H_REF }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run BG12H source contracts
+        run: node --test tests/bg12h-contextual-formation-interaction.test.cjs tests/bg12e-tabletop-layout.test.cjs tests/bg1-current-activation.test.cjs tests/bg5b-combat-shell.test.cjs tests/bg11a-onboarding-feedback.test.cjs
+
+      - name: Run full regression suite
+        run: npm test
+
+      - name: Build exact production game
+        run: npm run build
+
+      - name: Install browser evidence runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Start exact production preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/bg12h-preview.log 2>&1 &
+          for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/bg12h-preview.log
+          exit 1
+
+      - name: Capture contextual formation interaction evidence
+        env:
+          BG12H_REF: ${{ env.BG12H_REF }}
+        run: node scripts/capture-bg12h-contextual-formation.mjs
+
+      - name: Upload BG12H evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12h-contextual-formation-${{ env.BG12H_REF }}
+          path: |
+            artifacts/bg12h
+            /tmp/bg12h-preview.log
+          if-no-files-found: warn

@@ -1,0 +1,367 @@
+.bg12e-tabletop-rail .bg12e-rail-switcher {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bg12h-formation-interaction {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(111, 134, 140, .58);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(37, 51, 57, .94), rgba(13, 26, 32, .96));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .22);
+  color: #dce6e5;
+}
+
+.bg12h-formation-heading,
+.bg12h-action-detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bg12h-formation-heading > div,
+.bg12h-action-detail-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.bg12h-formation-heading span,
+.bg12h-action-detail-heading span,
+.bg12h-selected-formation small,
+.bg12h-selected-formation dt,
+.bg12h-confirm-card small {
+  color: #94a7aa;
+  font: 600 7px/1.25 IBM Plex Mono, monospace;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.bg12h-formation-heading strong,
+.bg12h-action-detail-heading strong {
+  color: #f1eee0;
+  font: 700 14px/1.05 Barlow Condensed, sans-serif;
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+
+.bg12h-clear-selection,
+.bg12h-action-detail-heading button,
+.bg12h-confirm-card button,
+.bg12h-accessible-fallback button {
+  min-height: 30px;
+  border: 1px solid #607279;
+  border-radius: 3px;
+  color: #dbe5e4;
+  background: #17272d;
+  font: 700 8px/1 IBM Plex Mono, monospace;
+  cursor: pointer;
+}
+
+.bg12h-clear-selection:focus-visible,
+.bg12h-action-detail-heading button:focus-visible,
+.bg12h-action-row button:focus-visible,
+.bg12h-confirm-card button:focus-visible,
+.bg12h-support-actions button:focus-visible,
+.bg12h-accessible-fallback button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.bg12h-selection-prompt {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 14px 10px;
+  border: 1px dashed rgba(126, 153, 158, .48);
+  border-radius: 4px;
+  text-align: center;
+  background: rgba(6, 17, 22, .48);
+}
+
+.bg12h-selection-prompt strong {
+  color: #f1eee0;
+  font: 700 15px/1.15 Barlow Condensed, sans-serif;
+  text-transform: uppercase;
+}
+
+.bg12h-selection-prompt span,
+.bg12h-selection-prompt:not(div) {
+  color: #a9b8ba;
+  font: 500 9px/1.45 IBM Plex Sans, sans-serif;
+}
+
+.bg12h-selected-formation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid rgba(117, 144, 149, .5);
+  border-radius: 4px;
+  background: rgba(5, 16, 21, .6);
+}
+
+.bg12h-selected-formation > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.bg12h-selected-formation > div:first-child strong {
+  color: #f3e8c2;
+  font: 700 18px/1 Barlow Condensed, sans-serif;
+}
+
+.bg12h-selected-formation > div:first-child span {
+  overflow: hidden;
+  color: #b7c4c5;
+  font: 500 8px/1.25 IBM Plex Mono, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bg12h-selected-formation dl {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 7px;
+  margin: 0;
+}
+
+.bg12h-selected-formation dl div {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-width: 42px;
+  padding-left: 7px;
+  border-left: 1px solid rgba(118, 139, 145, .3);
+}
+
+.bg12h-selected-formation dd {
+  margin: 2px 0 0;
+  color: #e9efeb;
+  font: 700 12px/1 IBM Plex Mono, monospace;
+}
+
+.bg12h-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bg12h-action-row button {
+  min-height: 44px;
+  border: 1px solid #64767c;
+  border-radius: 4px;
+  color: #edf2ed;
+  background: linear-gradient(180deg, #34464d, #1b2d34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+  font: 700 13px/1 Barlow Condensed, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bg12h-action-row button:not(:disabled):hover {
+  border-color: #a4bbb9;
+  background: linear-gradient(180deg, #41565d, #233941);
+}
+
+.bg12h-action-row button:disabled,
+.bg12h-action-detail button:disabled,
+.bg12h-support-actions button:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+
+.bg12h-action-detail {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(119, 141, 146, .35);
+}
+
+.bg12h-action-detail > p {
+  margin: 0;
+  color: #aebbbc;
+  font: 500 9px/1.4 IBM Plex Sans, sans-serif;
+}
+
+.bg12h-accessible-fallback {
+  border: 1px solid rgba(99, 121, 126, .38);
+  border-radius: 3px;
+  background: rgba(6, 17, 22, .38);
+}
+
+.bg12h-accessible-fallback summary {
+  padding: 7px 8px;
+  color: #aebbbc;
+  font: 700 8px/1 IBM Plex Mono, monospace;
+  cursor: pointer;
+}
+
+.bg12h-accessible-fallback[open] {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 6px;
+}
+
+.bg12h-accessible-fallback button {
+  margin: 0 6px;
+  text-align: left;
+}
+
+.bg12h-accessible-fallback button.selected {
+  border-color: #e6cd83;
+  color: #fff0b5;
+}
+
+.bg12h-accessible-fallback ul {
+  display: grid;
+  gap: 4px;
+  margin: 4px 8px 0;
+  padding-left: 14px;
+  color: #9cabad;
+  font: 500 8px/1.35 IBM Plex Sans, sans-serif;
+}
+
+.bg12h-confirm-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #7c765d;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(79, 72, 49, .3), rgba(15, 24, 27, .72));
+}
+
+.bg12h-confirm-card > span,
+.bg12h-confirm-card > strong {
+  min-width: 0;
+  color: #e9e5d4;
+  font: 700 10px/1.25 IBM Plex Mono, monospace;
+}
+
+.bg12h-confirm-card > b {
+  color: #e6cd83;
+}
+
+.bg12h-confirm-card > small {
+  grid-column: 1 / -1;
+}
+
+.bg12h-confirm-card > div {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+}
+
+.bg12h-confirm-card button.confirm {
+  border-color: #b39a55;
+  color: #fff2bf;
+  background: #4f4328;
+}
+
+.bg12h-support-actions {
+  display: grid;
+  gap: 5px;
+}
+
+.bg12h-support-actions button {
+  display: grid;
+  gap: 3px;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid #596c72;
+  border-radius: 3px;
+  color: #e3ebea;
+  text-align: left;
+  background: #15262c;
+  cursor: pointer;
+}
+
+.bg12h-support-actions button.selected {
+  border-color: #d6bc73;
+  background: #3b3424;
+}
+
+.bg12h-support-actions button strong {
+  font: 700 11px/1 Barlow Condensed, sans-serif;
+  text-transform: uppercase;
+}
+
+.bg12h-support-actions button small {
+  color: #9dafb1;
+  font: 500 8px/1.25 IBM Plex Sans, sans-serif;
+}
+
+.bg12h-contextual-combat .tabletop-combat-attacker,
+.bg12h-contextual-combat .tabletop-combat-panel > header {
+  display: none;
+}
+
+.bg12h-contextual-combat .tabletop-combat-panel {
+  border-top: 1px solid rgba(119, 141, 146, .28) !important;
+  background: rgba(4, 14, 19, .72) !important;
+  box-shadow: none !important;
+}
+
+.bg12h-contextual-combat .tabletop-combat-targets {
+  max-height: 150px;
+  overflow: auto;
+}
+
+.bg12h-feedback {
+  min-height: 18px;
+  margin: 0;
+  padding-top: 7px;
+  border-top: 1px solid rgba(119, 141, 146, .28);
+  color: #aebbbc;
+  font: 500 8.5px/1.4 IBM Plex Sans, sans-serif;
+}
+
+@media (max-width: 900px) {
+  .bg12h-formation-interaction {
+    padding: 9px;
+  }
+
+  .bg12h-action-row button {
+    min-height: 46px;
+  }
+
+  .bg12h-selected-formation {
+    grid-template-columns: 1fr;
+  }
+
+  .bg12h-selected-formation dl div:first-child {
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg12h-formation-interaction *,
+  .bg12h-formation-interaction *::before,
+  .bg12h-formation-interaction *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .bg12h-formation-interaction,
+  .bg12h-selected-formation,
+  .bg12h-action-row button,
+  .bg12h-action-detail,
+  .bg12h-confirm-card,
+  .bg12h-support-actions button {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}

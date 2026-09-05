@@ -29,11 +29,16 @@ test('BG5B runtime provider sends board actions through the unified dispatcher',
   assert.match(dispatcher, /applyCoreBoardAction/);
 });
 
-test('BG5B removes retained simulation attack controls from player presentation', () => {
+test('BG5B removes retained simulation attack controls while BG12H composes the accepted combat owner contextually', () => {
   const css = read('src/bg5-dice-combat.css');
   const layout = read('src/components/TabletopLayout.tsx');
+  const interaction = read('src/components/TabletopFormationInteraction.tsx');
 
   assert.match(css, /\[data-tutorial="attack-action"\][\s\S]*display: none !important/);
   assert.match(css, /\.tabletop-activation-actions \.attack/);
-  assert.match(layout, /activeSurface === 'combat'[\s\S]*?<TabletopCombatPanel \/>/);
+  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.doesNotMatch(layout, /id: 'combat', label: 'Combat'/);
+  assert.match(interaction, /mode === 'attack'[\s\S]*?<TabletopCombatPanel \/>/);
+  assert.doesNotMatch(interaction, /type: 'attack-piece'/,
+    'BG12H must continue to delegate authoritative attack dispatch to TabletopCombatPanel');
 });

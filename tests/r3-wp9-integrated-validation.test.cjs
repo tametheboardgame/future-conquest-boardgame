@@ -33,6 +33,22 @@ test('WP9 orchestrates regression, visual, persistence, performance and campaign
   assert.match(workflow, /trace-current-engine-balance\.mjs/);
 });
 
+test('WP9 reuses the maintained contextual 2D6 evidence instead of retired combat UI', () => {
+  const match = workflow.match(
+    /- name: Capture current BG12H contextual 2D6 evidence[\s\S]*?(?=\n      - name: Prove BG12D)/
+  );
+  assert.ok(match, 'current contextual dice evidence step must remain present');
+  const diceStep = match[0];
+
+  assert.match(diceStep, /BG12G_R2E_REF: \$\{\{ env\.R3_WP9_REF \}\}/);
+  assert.match(diceStep, /node scripts\/capture-bg12g-r2e-integrated\.mjs/);
+  assert.doesNotMatch(diceStep, /legacy-ui=1/);
+  assert.doesNotMatch(diceStep, /name: 'Combat'/);
+  assert.doesNotMatch(diceStep, /bg12g-d6-stage/);
+  assert.doesNotMatch(diceStep, /node --input-type=module/);
+  assert.match(workflow, /artifacts\/bg12g-r2e/);
+});
+
 test('WP9 browser continuity follows the real launcher and campaign save controls', () => {
   assert.match(probe, /BEGIN CAMPAIGN/);
   assert.match(probe, /data-command-view="campaign"/);
