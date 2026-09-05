@@ -103,9 +103,10 @@
 
 /* Existing DOM formation markers remain the pointer/keyboard hit target around
    the physical Three.js piece. BG12I removes their card skin but keeps a small
-   state tab sourced from BoardRenderProjection. WP3.5 previously hid the entire
-   marker with !important once physical pieces were ready, so BG12I explicitly
-   supersedes that compatibility rule and hides only the legacy card children. */
+   state tab sourced from BoardRenderProjection. WP3.5 hid the whole marker and
+   R4 later restored a tiny selector skin while hiding every span. BG12I narrowly
+   supersedes both presentation rules: the hit target survives, the R4 identity
+   skin stays invisible, and only the board-state tab is rendered. */
 .r3-terrain-task-group-marker .bg12i-formation-state {
   position: absolute;
   left: 50%;
@@ -145,23 +146,31 @@
   border-width: 2px;
 }
 
-.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker {
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker,
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector {
   opacity: 1 !important;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker > strong,
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector > strong,
 .r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker > span:not(.bg12i-formation-state) {
-  opacity: 0;
+  opacity: 0 !important;
   pointer-events: none;
 }
 
-.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible,
-.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker[data-r3-marker-kind='selected-formation']:focus-visible {
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector > .bg12i-formation-state {
+  display: flex !important;
   opacity: 1 !important;
-  border-color: rgba(234, 255, 120, .72);
+}
+
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker:focus-visible,
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker[data-r3-marker-kind='selected-formation']:focus-visible,
+.r3-terrain-prototype[data-physical-formations='ready'] .r3-terrain-task-group-marker.r4-formation-selector[data-r3-marker-kind='selected-formation']:focus-visible {
+  opacity: 1 !important;
+  border-color: rgba(234, 255, 120, .72) !important;
   outline: 2px solid #eaff78;
   outline-offset: 3px;
 }
