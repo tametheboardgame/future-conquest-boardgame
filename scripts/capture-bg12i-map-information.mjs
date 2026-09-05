@@ -102,6 +102,70 @@ for (const reviewCase of cases) {
     assert(mapKeyState.width <= 2 && mapKeyState.height <= 2,
       `${reviewCase.id} permanent map key still consumes visual space: ${JSON.stringify(mapKeyState)}`);
 
+    const tokenVisibilityDiagnostic = await page.evaluate(() => {
+      const states = [...document.querySelectorAll('.r3-terrain-task-group-marker[data-bg12i-readiness] .bg12i-formation-state')].slice(0, 5);
+      const snapshot = element => {
+        if (!(element instanceof HTMLElement)) return null;
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return {
+          tagName: element.tagName,
+          className: element.className,
+          id: element.id || null,
+          display: style.display,
+          visibility: style.visibility,
+          opacity: style.opacity,
+          position: style.position,
+          overflow: style.overflow,
+          overflowX: style.overflowX,
+          overflowY: style.overflowY,
+          clip: style.clip,
+          clipPath: style.clipPath,
+          transform: style.transform,
+          contentVisibility: style.contentVisibility,
+          width: rect.width,
+          height: rect.height,
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          clientWidth: element.clientWidth,
+          clientHeight: element.clientHeight,
+          offsetWidth: element.offsetWidth,
+          offsetHeight: element.offsetHeight,
+          clientRects: element.getClientRects().length,
+          offsetParent: element.offsetParent instanceof HTMLElement ? element.offsetParent.className : null,
+          inlineStyle: element.getAttribute('style'),
+          ariaHidden: element.getAttribute('aria-hidden')
+        };
+      };
+
+      return states.map(state => {
+        const marker = state.closest('.r3-terrain-task-group-marker');
+        const chips = [...state.querySelectorAll('.bg12i-state-chip')];
+        const ancestors = [];
+        let current = state.parentElement;
+        while (current && ancestors.length < 6) {
+          ancestors.push(snapshot(current));
+          current = current.parentElement;
+        }
+        return {
+          groupId: marker instanceof HTMLElement ? marker.dataset.groupId ?? null : null,
+          readiness: marker instanceof HTMLElement ? marker.dataset.bg12iReadiness ?? null : null,
+          state: snapshot(state),
+          marker: snapshot(marker),
+          chips: chips.map(snapshot),
+          ancestors
+        };
+      });
+    });
+
+    const diagnosticJson = `${reviewCase.id}-token-visibility-diagnostic.json`;
+    fs.writeFileSync(path.join(outputDir, diagnosticJson), `${JSON.stringify(tokenVisibilityDiagnostic, null, 2)}\n`);
+    const diagnosticScreenshot = `00-${reviewCase.id}-token-visibility-diagnostic.png`;
+    await page.screenshot({ path: path.join(outputDir, diagnosticScreenshot), fullPage: false });
+    console.log(`BG12I ${reviewCase.id} token visibility diagnostic: ${JSON.stringify(tokenVisibilityDiagnostic)}`);
+
     const formationToken = page.locator('.r3-terrain-task-group-marker[data-bg12i-readiness] .bg12i-formation-state').first();
     await formationToken.waitFor({ state: 'visible', timeout: 5000 });
     const formationMarker = page.locator('.r3-terrain-task-group-marker[data-bg12i-readiness]').first();
@@ -166,6 +230,8 @@ for (const reviewCase of cases) {
       markerId,
       beforeCamera,
       afterCamera,
+      diagnosticJson,
+      diagnosticScreenshot,
       screenshot
     });
   } finally {
