@@ -59,12 +59,12 @@ test('BG12I materially reduces permanent map chrome while retaining accessible i
   assert.match(css, /\.r3-strategic-information-control[\s\S]*max-width: min\(184px/);
   assert.match(css, /\.r3-strategic-information-legend[\s\S]*clip: rect\(0, 0, 0, 0\)/);
   assert.match(wrapper, /aria-label="Strategic information layer"/);
-  assert.match(wrapper, />2D accessible map</);
+  assert.match(wrapper, />\s*2D accessible map\s*</);
 });
 
 test('BG12I remains presentation-only and does not take rules MapLibre or BG12K drawer ownership', () => {
-  assert.doesNotMatch(helper, /Math\.random|dispatchBoardAction|attack-piece|move-piece|new Map\s*\(/);
-  assert.doesNotMatch(helper, /from ['"]maplibre-gl['"]/);
+  assert.doesNotMatch(helper, /Math\.random|dispatchBoardAction|attack-piece|move-piece/);
+  assert.doesNotMatch(helper, /from ['"]maplibre-gl['"]|maplibregl\.Map|new maplibregl/i);
   assert.doesNotMatch(helper, /from ['"]three['"]/);
   assert.match(packageDoc, /MapLibre retains map lifecycle, camera, terrain, DEM and geographic projection ownership/);
   assert.match(packageDoc, /BG12K remains responsible for the later general secondary-drawer architecture/);
