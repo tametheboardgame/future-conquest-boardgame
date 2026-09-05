@@ -36,7 +36,7 @@ test('BG5B removes retained simulation attack controls while BG12H composes the 
 
   assert.match(css, /\[data-tutorial="attack-action"\][\s\S]*display: none !important/);
   assert.match(css, /\.tabletop-activation-actions \.attack/);
-  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /data-surface="formation"[\s\S]*?hidden=\{activeSurface !== 'formation'\}[\s\S]*?<TabletopFormationInteraction \/>/);
   assert.doesNotMatch(layout, /id: 'combat', label: 'Combat'/);
   assert.match(interaction, /mode === 'attack'[\s\S]*?<TabletopCombatPanel \/>/);
   assert.doesNotMatch(interaction, /type: 'attack-piece'/,

@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { GeoJSONSource, type GeoJSONSourceSpecification, type Map } from 'maplibre-gl';
 import activeGeojson from '../assets/vertical-slice-map.json';
 import { useLiveGlobalSettings } from './StartupExperience';
+import { useBoardGameState } from './BoardGameStateProvider';
 import { getThreatenedTerritories } from '../game/operational-clarity';
+import { projectBoardStateForRenderer } from '../game/board-state-render-projection';
 import { STRATEGIC_NODES, STRATEGIC_ROUTES } from '../game/strategic-network-data';
 import {
   chooseTerrainPresentationProfile,
@@ -26,10 +28,12 @@ import {
   type R3ResourceMetric,
   type R3StrategicOverlay
 } from '../presentation/r3-strategic-information-layers';
+import { applyBg12iBoardTokens } from '../presentation/bg12i-board-token-projection';
 import { terrainOperationalTerritoryCentres } from '../presentation/r3-terrain-operational-markers';
 import '../wp3-5-physical-overlay.css';
 import '../wp5-strategic-information.css';
 import '../r3-wp8-accessibility.css';
+import '../bg12i-map-information-tokens.css';
 import {
   TerrainMapPrototypeImpl,
   prewarmTerrainRuntime,
@@ -68,9 +72,12 @@ function strategicPreferences(): StrategicPreferences {
 }
 
 export function TerrainMapPrototype(props: TerrainMapPrototypeProps) {
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const [profile, setProfile] = useState<TerrainPresentationProfile>(browserTerrainProfile);
   const [preferences, setPreferences] = useState<StrategicPreferences>(strategicPreferences);
   const { reducedMotion, motionScale, colourBlindAssist } = useLiveGlobalSettings();
+  const boardState = useBoardGameState();
+  const boardProjection = useMemo(() => projectBoardStateForRenderer(boardState), [boardState]);
   const { onFallback, state } = props;
   const legend = useMemo(
     () => r3StrategicOverlayLegend(preferences.overlay, preferences.resource),
@@ -90,6 +97,35 @@ export function TerrainMapPrototype(props: TerrainMapPrototypeProps) {
   useEffect(() => {
     window.localStorage.setItem(STRATEGIC_PREFERENCES_KEY, JSON.stringify(preferences));
   }, [preferences]);
+
+  useEffect(() => {
+    if (profile === 'svg-fallback') return;
+    let frame = 0;
+    let attempts = 0;
+    let disposed = false;
+
+    const projectTokens = () => {
+      if (disposed) return;
+      const root = shellRef.current;
+      if (!root) {
+        if (attempts++ < 180) frame = window.requestAnimationFrame(projectTokens);
+        return;
+      }
+
+      const evidence = applyBg12iBoardTokens(root, boardProjection);
+      root.dataset.bg12iFormationTokens = String(evidence.formationMarkers);
+      root.dataset.bg12iControlTokens = String(evidence.controlMarkers);
+      if (evidence.formationMarkers === 0 && attempts++ < 180) {
+        frame = window.requestAnimationFrame(projectTokens);
+      }
+    };
+
+    frame = window.requestAnimationFrame(projectTokens);
+    return () => {
+      disposed = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [profile, state, boardProjection]);
 
   useEffect(() => {
     if (profile === 'svg-fallback') {
@@ -206,6 +242,7 @@ export function TerrainMapPrototype(props: TerrainMapPrototypeProps) {
   }
 
   return <div
+    ref={shellRef}
     className="r3-terrain-prototype-shell"
     data-terrain-profile={profile}
     data-reduced-motion={reducedMotion ? 'true' : 'false'}

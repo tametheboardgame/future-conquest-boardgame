@@ -53,7 +53,7 @@ test('BG12H keeps board actions under the provider while normal layout ownership
 
   assert.match(main, /<BoardGameStateProvider>[\s\S]*?<TabletopLayout>[\s\S]*?<App \/>[\s\S]*?<\/TabletopLayout>[\s\S]*?<\/BoardGameStateProvider>/);
   assert.match(layout, /<TabletopStatusShell \/>/);
-  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /data-surface="formation"[\s\S]*?hidden=\{activeSurface !== 'formation'\}[\s\S]*?<TabletopFormationInteraction \/>/);
   assert.match(layout, /activeSurface === 'cards'[\s\S]*?<TabletopCardHandPanel \/>/);
   assert.doesNotMatch(layout, /id: 'activation', label: 'Turn'/);
   assert.doesNotMatch(layout, /id: 'combat', label: 'Combat'/);

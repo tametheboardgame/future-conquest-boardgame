@@ -25,12 +25,26 @@ test('BG12H supersedes the four-way rail hierarchy with one formation surface pl
   const layout = read('src/components/TabletopLayout.tsx');
 
   assert.match(layout, /type RailSurface = 'formation' \| 'cards'/);
-  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /data-surface="formation"[\s\S]*?<TabletopFormationInteraction \/>/);
   assert.match(layout, /activeSurface === 'cards'[\s\S]*?<TabletopCardHandPanel \/>/);
   assert.match(layout, /data-active-surface=\{activeSurface\}/);
   assert.doesNotMatch(layout, /activeSurface === 'activation'/);
   assert.doesNotMatch(layout, /activeSurface === 'combat'/);
   assert.doesNotMatch(layout, /activeSurface === 'support'/);
+});
+
+test('BG12H keeps its formation interaction owner mounted behind a collapsed rail and reveals accepted compact selections', () => {
+  const layout = read('src/components/TabletopLayout.tsx');
+
+  assert.match(layout, /id="bg12e-rail-content"[\s\S]*?hidden=\{!railExpanded\}[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /data-surface="formation"[\s\S]*?hidden=\{activeSurface !== 'formation'\}/);
+  assert.match(layout, /querySelector<HTMLElement>\('\.bg12h-formation-interaction'\)/);
+  assert.match(layout, /new MutationObserver\(revealAcceptedCompactSelection\)/);
+  assert.match(layout, /attributeFilter: \['data-selected-piece'\]/);
+  assert.match(layout, /interaction\.dataset\.selectedPiece/);
+  assert.match(layout, /matchMedia\('\(max-width: 900px\)'\)\.matches[\s\S]*?setActiveSurface\('formation'\)[\s\S]*?setRailExpanded\(true\)/);
+  assert.doesNotMatch(layout, /document\.addEventListener\('click', revealAcceptedCompactSelection\)/);
+  assert.doesNotMatch(layout, /\{railExpanded && <div id="bg12e-rail-content"/);
 });
 
 test('BG12E bypasses its composition on the explicit BG12D legacy diagnostics route', () => {
