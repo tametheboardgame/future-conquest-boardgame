@@ -196,10 +196,9 @@ async function runNormalCase(browser) {
     await mapCanvas.waitFor({ state: 'visible', timeout: 30000 });
 
     const attacker = await openCombat(page);
-    let selection = await selectLegalCombat(page, attacker);
+    const selection = await selectLegalCombat(page, attacker);
     await page.waitForFunction(() => (window.__bg12gDiceRendererLifecycle?.active ?? -1) === 1, null, { timeout: 5000 });
     const cycles = await stressContextualRendererLifecycle(page, attacker);
-    selection = await selectLegalCombat(page, attacker).catch(() => selection);
     await page.screenshot({ path: `${outputDir}/01-integrated-pre-roll.png`, fullPage: false });
 
     const startedAt = performance.now();
@@ -212,15 +211,14 @@ async function runNormalCase(browser) {
     await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
     const settledMs = performance.now() - startedAt;
     const dice = await readAuthoritativeDice(page);
+    const lifecycleAfterRoll = await page.evaluate(() => window.__bg12gDiceRendererLifecycle ?? null);
+    assert(lifecycleAfterRoll && lifecycleAfterRoll.active >= 1, `missing active renderer lifecycle evidence immediately after settle: ${JSON.stringify(lifecycleAfterRoll)}`);
     assert(dice.renderer === 'three', `normal case did not use Three.js renderer: ${JSON.stringify(dice)}`);
     assert(dice.motionState === 'settled', `normal case renderer did not settle: ${JSON.stringify(dice)}`);
     const events = await assertEventPair(page, dice);
     const resultCopy = (await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray').innerText()).replace(/\s+/g, ' ').trim();
     assert(resultCopy.includes(`${dice.left} + ${dice.right} = ${dice.total}`), `semantic result does not match authoritative dice: ${resultCopy}`);
     await page.screenshot({ path: `${outputDir}/04-integrated-roll-settled.png`, fullPage: false });
-
-    const lifecycleAfterRoll = await page.evaluate(() => window.__bg12gDiceRendererLifecycle ?? null);
-    assert(lifecycleAfterRoll && lifecycleAfterRoll.active >= 1, `missing active renderer lifecycle evidence: ${JSON.stringify(lifecycleAfterRoll)}`);
 
     await page.waitForFunction(() => {
       const interaction = document.querySelector('.bg12h-formation-interaction');
