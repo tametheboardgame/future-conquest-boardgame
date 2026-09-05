@@ -186,6 +186,18 @@ for (const reviewCase of cases) {
     assert(controlGlyphs.every(glyph => ['●', '◆', '□'].includes(glyph)),
       `${reviewCase.id} control tokens do not use the locked non-colour glyph set: ${JSON.stringify(controlGlyphs)}`);
 
+    const objectiveTokens = page.locator('.r3-terrain-territory-label[data-bg12i-objective] > .bg12i-objective-token');
+    const objectiveCount = await objectiveTokens.count();
+    assert(objectiveCount === 3, `${reviewCase.id} expected exactly three BG10 objective tokens, found ${objectiveCount}`);
+    const objectiveLabels = (await objectiveTokens.evaluateAll(nodes => nodes
+      .map(node => node.parentElement?.getAttribute('data-bg12i-objective'))
+      .filter(Boolean))).sort();
+    assert(JSON.stringify(objectiveLabels) === JSON.stringify(['Brussels', 'Paris', 'Rhine-Ruhr']),
+      `${reviewCase.id} objective token labels drifted from BG10: ${JSON.stringify(objectiveLabels)}`);
+    const objectiveGlyphs = await objectiveTokens.evaluateAll(nodes => [...new Set(nodes.map(node => node.textContent?.trim()).filter(Boolean))]);
+    assert(objectiveGlyphs.length === 1 && objectiveGlyphs[0] === '★',
+      `${reviewCase.id} objective tokens lost the locked star cue: ${JSON.stringify(objectiveGlyphs)}`);
+
     const accessibleMap = page.getByRole('button', { name: '2D accessible map', exact: true });
     assert(await accessibleMap.isVisible(), `${reviewCase.id} accessible 2D map control is no longer reachable`);
 
@@ -240,6 +252,9 @@ for (const reviewCase of cases) {
       formationState,
       controlCount,
       controlGlyphs,
+      objectiveCount,
+      objectiveLabels,
+      objectiveGlyphs,
       markerId,
       railStateAfterSelection,
       interactionMapBox,

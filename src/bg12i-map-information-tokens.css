@@ -285,6 +285,28 @@
   border-style: dashed;
 }
 
+/* BG10 already defines exactly three Central Front objectives. A sparse star on
+   the existing territory label carries that state onto the board without adding
+   another MapLibre marker or legend panel. Symbol plus double outline keeps the
+   meaning independent of colour. */
+.r3-terrain-territory-label .bg12i-objective-token {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 2px double rgba(241, 214, 145, .9);
+  border-radius: 50%;
+  background: rgba(24, 20, 10, .92);
+  color: #f3d58a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .55);
+  font: 700 8px/1 IBM Plex Mono, monospace;
+  font-style: normal;
+  pointer-events: none;
+}
+
 .r3-terrain-prototype-shell[data-terrain-profile='compact'] .r3-terrain-prototype-toolbar {
   right: auto;
   align-items: center;
@@ -329,5 +351,11 @@
     min-width: 18px;
     padding: 2px 3px;
     font-size: 6px;
+  }
+
+  .r3-terrain-territory-label .bg12i-objective-token {
+    width: 14px;
+    height: 14px;
+    font-size: 7px;
   }
 }

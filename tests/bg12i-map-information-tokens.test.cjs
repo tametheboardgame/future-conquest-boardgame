@@ -47,6 +47,18 @@ test('BG12I territory control uses shape tokens on existing geographic labels', 
   assert.match(css, /bg12i-control-token\[data-controller='enemy'\][\s\S]*border-style: double/);
 });
 
+test('BG12I projects only the existing BG10 strategic objectives onto territory labels', () => {
+  assert.match(helper, /import \{ CENTRAL_FRONT_CAMPAIGN_OBJECTIVES \} from ['"]\.\.\/game\/board-campaign['"]/);
+  assert.match(helper, /CENTRAL_FRONT_CAMPAIGN_OBJECTIVES\.map\(objective => \[objective\.spaceId, objective\]/);
+  assert.match(helper, /marker\.dataset\.bg12iObjective = objective\.label/);
+  assert.match(helper, /token\.textContent = '★'/);
+  assert.match(helper, /Strategic objective: \$\{objective\.label\}/);
+  assert.doesNotMatch(helper, /FR-02|BE-01|DE-02|Paris|Brussels|Rhine-Ruhr/,
+    'presentation helper must consume the BG10 registry rather than duplicate objective definitions');
+  assert.match(css, /\.bg12i-objective-token[\s\S]*border:\s*2px double/);
+  assert.match(css, /\.bg12i-objective-token[\s\S]*pointer-events:\s*none/);
+});
+
 test('BG12I preserves the physical miniature hit target while superseding the R4 selector skin', () => {
   assert.match(css, /r4-formation-selector[\s\S]*opacity: 1 !important/);
   assert.match(css, /r4-formation-selector[\s\S]*background: transparent !important/);
@@ -103,6 +115,10 @@ test('BG12I browser gate measures tabletop budgets tokens accessibility and reta
   assert.match(capture, /data-bg12i-control-tokens/);
   assert.match(capture, /\.bg12i-formation-state/);
   assert.match(capture, /\.bg12i-control-token/);
+  assert.match(capture, /\.bg12i-objective-token/);
+  assert.match(capture, /objectiveCount === 3/);
+  assert.match(capture, /\['Brussels', 'Paris', 'Rhine-Ruhr'\]/);
+  assert.match(capture, /objectiveGlyphs\[0\] === '★'/);
   assert.match(capture, /2D accessible map/);
   assert.match(capture, /__r3TerrainMap/);
   assert.match(capture, /data-selected-piece/);

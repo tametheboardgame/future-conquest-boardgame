@@ -1,10 +1,13 @@
+import { CENTRAL_FRONT_CAMPAIGN_OBJECTIVES } from '../game/board-campaign';
 import type { BoardPresentationController, BoardRenderProjection } from '../game/board-state-render-projection';
 
 export interface Bg12iBoardTokenEvidence {
   formationMarkers: number;
   controlMarkers: number;
+  objectiveMarkers: number;
   projectedFormationIds: string[];
   projectedSpaceIds: string[];
+  projectedObjectiveSpaceIds: string[];
 }
 
 const SUPPLY_LABELS = {
@@ -24,6 +27,10 @@ const CONTROL_LABELS: Record<BoardPresentationController, string> = {
   enemy: 'Defender control',
   neutral: 'Neutral control'
 };
+
+const OBJECTIVE_BY_SPACE = new Map(
+  CENTRAL_FRONT_CAMPAIGN_OBJECTIVES.map(objective => [objective.spaceId, objective] as const)
+);
 
 function baseAccessibleLabel(element: HTMLElement): string {
   const saved = element.dataset.bg12iBaseLabel;
@@ -61,10 +68,21 @@ function controlTokenHost(marker: HTMLElement): HTMLElement {
   return token;
 }
 
+function objectiveTokenHost(marker: HTMLElement): HTMLElement {
+  const existing = marker.querySelector<HTMLElement>(':scope > .bg12i-objective-token');
+  if (existing) return existing;
+  const token = document.createElement('i');
+  token.className = 'bg12i-objective-token';
+  token.setAttribute('aria-hidden', 'true');
+  marker.append(token);
+  return token;
+}
+
 /**
  * BG12I presentation seam. Annotates the existing MapLibre DOM marker layer with
- * already-authoritative board projection values. It never moves markers, mutates
- * board state, creates map objects or invents a second token data model.
+ * already-authoritative board projection values and the existing BG10 objective
+ * registry. It never moves markers, mutates board state, creates map objects or
+ * invents a second token data model.
  */
 export function applyBg12iBoardTokens(
   root: ParentNode,
@@ -73,6 +91,7 @@ export function applyBg12iBoardTokens(
   const pieceById = new Map(projection.pieces.map(piece => [piece.id, piece]));
   const projectedFormationIds: string[] = [];
   const projectedSpaceIds: string[] = [];
+  const projectedObjectiveSpaceIds: string[] = [];
 
   const formationMarkers = [...root.querySelectorAll<HTMLElement>('.r3-terrain-task-group-marker[data-group-id]')];
   for (const marker of formationMarkers) {
@@ -112,29 +131,57 @@ export function applyBg12iBoardTokens(
   const territoryMarkers = [...root.querySelectorAll<HTMLElement>('.r3-terrain-territory-label[data-territory-id]')];
   for (const marker of territoryMarkers) {
     const territoryId = marker.dataset.territoryId;
-    const controller = territoryId ? projection.spaceControllers[territoryId] : undefined;
-    if (!territoryId || !controller) {
+    if (!territoryId) {
       marker.querySelector(':scope > .bg12i-control-token')?.remove();
+      marker.querySelector(':scope > .bg12i-objective-token')?.remove();
       delete marker.dataset.bg12iController;
+      delete marker.dataset.bg12iObjective;
       continue;
     }
 
-    marker.dataset.bg12iController = controller;
-    const token = controlTokenHost(marker);
-    token.textContent = CONTROL_GLYPHS[controller];
-    token.dataset.controller = controller;
-    token.title = CONTROL_LABELS[controller];
+    const controller = projection.spaceControllers[territoryId];
+    const objective = OBJECTIVE_BY_SPACE.get(territoryId);
+    const labels: string[] = [];
+
+    if (controller) {
+      marker.dataset.bg12iController = controller;
+      const token = controlTokenHost(marker);
+      token.textContent = CONTROL_GLYPHS[controller];
+      token.dataset.controller = controller;
+      token.title = CONTROL_LABELS[controller];
+      labels.push(CONTROL_LABELS[controller]);
+      projectedSpaceIds.push(territoryId);
+    } else {
+      marker.querySelector(':scope > .bg12i-control-token')?.remove();
+      delete marker.dataset.bg12iController;
+    }
+
+    if (objective) {
+      marker.dataset.bg12iObjective = objective.label;
+      const token = objectiveTokenHost(marker);
+      token.textContent = '★';
+      token.dataset.objective = objective.label;
+      token.title = `Strategic objective: ${objective.label}`;
+      labels.push(`Strategic objective: ${objective.label}`);
+      projectedObjectiveSpaceIds.push(territoryId);
+    } else {
+      marker.querySelector(':scope > .bg12i-objective-token')?.remove();
+      delete marker.dataset.bg12iObjective;
+    }
 
     const baseLabel = baseAccessibleLabel(marker);
-    const controlLabel = CONTROL_LABELS[controller];
-    marker.setAttribute('aria-label', baseLabel ? `${baseLabel}. ${controlLabel}.` : controlLabel);
-    projectedSpaceIds.push(territoryId);
+    const projectedLabel = labels.join('. ');
+    if (baseLabel && projectedLabel) marker.setAttribute('aria-label', `${baseLabel}. ${projectedLabel}.`);
+    else if (projectedLabel) marker.setAttribute('aria-label', projectedLabel);
+    else if (baseLabel) marker.setAttribute('aria-label', baseLabel);
   }
 
   return {
     formationMarkers: projectedFormationIds.length,
     controlMarkers: projectedSpaceIds.length,
+    objectiveMarkers: projectedObjectiveSpaceIds.length,
     projectedFormationIds,
-    projectedSpaceIds
+    projectedSpaceIds,
+    projectedObjectiveSpaceIds
   };
 }
