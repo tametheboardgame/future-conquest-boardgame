@@ -52,6 +52,31 @@ export function TabletopLayout({ children }: Props) {
     return () => compact.removeEventListener('change', handleViewportChange);
   }, [legacyDiagnostics]);
 
+  useEffect(() => {
+    if (legacyDiagnostics) return;
+
+    let selectionFrame: number | null = null;
+    const revealAcceptedCompactSelection = () => {
+      if (selectionFrame !== null) window.cancelAnimationFrame(selectionFrame);
+      selectionFrame = window.requestAnimationFrame(() => {
+        selectionFrame = null;
+        if (!window.matchMedia('(max-width: 900px)').matches) return;
+        const selectedPieceId = document
+          .querySelector<HTMLElement>('.bg12h-formation-interaction')
+          ?.dataset.selectedPiece;
+        if (!selectedPieceId) return;
+        setActiveSurface('formation');
+        setRailExpanded(true);
+      });
+    };
+
+    document.addEventListener('click', revealAcceptedCompactSelection);
+    return () => {
+      document.removeEventListener('click', revealAcceptedCompactSelection);
+      if (selectionFrame !== null) window.cancelAnimationFrame(selectionFrame);
+    };
+  }, [legacyDiagnostics]);
+
   if (legacyDiagnostics) {
     return <>
       <TabletopStatusShell />
@@ -93,7 +118,12 @@ export function TabletopLayout({ children }: Props) {
         <b>{railExpanded ? 'Close rail' : 'Open rail'}</b>
       </button>
 
-      {railExpanded && <div id="bg12e-rail-content" className="bg12e-rail-content">
+      <div
+        id="bg12e-rail-content"
+        className="bg12e-rail-content"
+        hidden={!railExpanded}
+        aria-hidden={!railExpanded}
+      >
         <nav className="bg12e-rail-switcher" aria-label="Tabletop components">
           {RAIL_SURFACES.map(surface => <button
             key={surface.id}
@@ -107,14 +137,19 @@ export function TabletopLayout({ children }: Props) {
         </nav>
 
         <div className="bg12e-context-zone" data-active-surface={activeSurface}>
-          {activeSurface === 'formation' && <div className="bg12e-context-surface" data-surface="formation">
+          <div
+            className="bg12e-context-surface"
+            data-surface="formation"
+            hidden={activeSurface !== 'formation'}
+            aria-hidden={activeSurface !== 'formation'}
+          >
             <TabletopFormationInteraction />
-          </div>}
+          </div>
           {activeSurface === 'cards' && <div className="bg12e-context-surface" data-surface="cards">
             <TabletopCardHandPanel />
           </div>}
         </div>
-      </div>}
+      </div>
     </aside>
 
     <div className="bg12e-secondary-utilities" data-tabletop-zone="utilities">
