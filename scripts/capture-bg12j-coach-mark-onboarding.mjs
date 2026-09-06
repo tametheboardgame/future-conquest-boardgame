@@ -124,6 +124,7 @@ for (const reviewCase of cases) {
     const coachArea = coachBox.width * coachBox.height;
     assert(coachArea / viewportArea < (reviewCase.id === 'compact' ? 0.16 : 0.10),
       `${reviewCase.id} coach mark consumes too much viewport area: ${coachArea / viewportArea}`);
+    assert(errors.length === 0, `${reviewCase.id} browser errors: ${JSON.stringify(errors)}`);
 
     const filename = `${reviewCase.id}-${reviewCase.width}x${reviewCase.height}.png`;
     await page.screenshot({ path: path.join(outputDir, filename), fullPage: false });
@@ -137,6 +138,7 @@ for (const reviewCase of cases) {
       mapBox,
       overflow,
       coachAreaRatio: coachArea / viewportArea,
+      browserErrors: errors,
       screenshot: filename
     });
   } finally {
@@ -145,10 +147,6 @@ for (const reviewCase of cases) {
 }
 
 await browser.close();
-assert(errorsAreAbsent(evidence), 'BG12J evidence did not complete');
+assert(evidence.cases.length === cases.length, 'BG12J evidence did not complete');
 fs.writeFileSync(path.join(outputDir, 'evidence.json'), `${JSON.stringify(evidence, null, 2)}\n`);
 console.log(JSON.stringify(evidence, null, 2));
-
-function errorsAreAbsent(result) {
-  return result.cases.length === cases.length;
-}
