@@ -16,6 +16,25 @@ function knownTerrainWarning(text = '') {
     && /(R3 terrain source warning|TerrainMapPrototype|setFeatureState|initializeTileState|_tileLoaded|_loadTile)/i.test(text);
 }
 
+async function waitForPortalBeforeTutorial(page, timeout = 60000) {
+  const handle = await page.waitForFunction(() => {
+    const portal = document.querySelector('.r3-portal-arrival');
+    const shell = document.querySelector('.startup-game-shell');
+    const tutorialCount = document.querySelectorAll('.tutorial-guide').length;
+    const formationsWithheld = document.documentElement.dataset.r3WithholdFormations === 'true';
+    const arrivalClass = shell?.classList.contains('portal-arrival-active') ?? false;
+    if (!portal || tutorialCount !== 0 || !formationsWithheld || !arrivalClass) return false;
+    return {
+      portalPresent: true,
+      portalPhase: portal.getAttribute('data-phase'),
+      tutorialCount,
+      formationsWithheld,
+      arrivalClass
+    };
+  }, null, { timeout, polling: 'raf' });
+  return handle.jsonValue();
+}
+
 const cases = [
   { id: 'wide', width: 1900, height: 829, maxWidth: 320, maxHeight: 310 },
   { id: 'laptop', width: 1366, height: 768, maxWidth: 320, maxHeight: 310 },
@@ -54,10 +73,9 @@ for (const reviewCase of cases) {
     await page.getByRole('button', { name: 'BEGIN CAMPAIGN', exact: true }).click();
     await page.locator('.startup-game-shell').waitFor({ state: 'visible', timeout: 20000 });
 
+    const portalBeforeTutorial = await waitForPortalBeforeTutorial(page);
     const arrival = page.locator('.r3-portal-arrival');
-    if (await arrival.count()) {
-      await arrival.waitFor({ state: 'detached', timeout: 60000 });
-    }
+    await arrival.waitFor({ state: 'detached', timeout: 60000 });
 
     const guide = page.locator('.tutorial-guide').first();
     const coach = page.locator('.tutorial-overlay').first();
@@ -66,6 +84,17 @@ for (const reviewCase of cases) {
     await coach.waitFor({ state: 'visible', timeout: 10000 });
     await spotlight.waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForTimeout(500);
+
+    const afterArrival = await page.evaluate(() => ({
+      portalCount: document.querySelectorAll('.r3-portal-arrival').length,
+      tutorialCount: document.querySelectorAll('.tutorial-guide').length,
+      arrivalClass: document.querySelector('.startup-game-shell')?.classList.contains('portal-arrival-active') ?? false,
+      formationsWithheld: document.documentElement.dataset.r3WithholdFormations === 'true'
+    }));
+    assert(afterArrival.portalCount === 0, `${reviewCase.id} portal remained mounted when coach mark began`);
+    assert(afterArrival.tutorialCount === 1, `${reviewCase.id} coach mark did not begin after portal completion`);
+    assert(!afterArrival.arrivalClass, `${reviewCase.id} portal presentation class remained active`);
+    assert(!afterArrival.formationsWithheld, `${reviewCase.id} formations remained withheld after portal completion`);
 
     const coachBox = await coach.boundingBox();
     const spotlightBox = await spotlight.boundingBox();
@@ -131,6 +160,8 @@ for (const reviewCase of cases) {
 
     evidence.cases.push({
       ...reviewCase,
+      portalBeforeTutorial,
+      afterArrival,
       coachBox,
       spotlightBox,
       styles,
