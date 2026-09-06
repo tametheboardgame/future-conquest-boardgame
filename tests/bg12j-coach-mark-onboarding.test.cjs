@@ -4,6 +4,8 @@ const fs = require('node:fs');
 
 const overlay = fs.readFileSync('src/components/TutorialOverlay.tsx', 'utf8');
 const css = fs.readFileSync('src/components/tutorial-explanation.css', 'utf8');
+const compatibilityCss = fs.readFileSync('src/bg12j-coach-mark-onboarding.css', 'utf8');
+const legacyOnboarding = fs.readFileSync('src/components/TabletopOnboarding.tsx', 'utf8');
 const clarity = fs.readFileSync('src/game/operational-clarity.ts', 'utf8');
 const app = fs.readFileSync('src/App.tsx', 'utf8');
 const packageDoc = fs.readFileSync('docs/BG12J-COACH-MARK-ONBOARDING.md', 'utf8');
@@ -26,14 +28,23 @@ test('BG12J keeps the existing tutorial state machine and anchored positioning e
 test('BG12J coach mark is materially smaller and removes the old full-screen dimming treatment', () => {
   assert.match(css, /BG12J — Coach-mark onboarding/);
   assert.match(css, /width: min\(312px, calc\(100vw - 20px\)\)/);
-  assert.match(css, /max-height: min\(42vh, 300px\)/);
   assert.match(css, /width: min\(300px, calc\(100vw - 16px\)\)/);
-  assert.match(css, /max-height: min\(34vh, 270px\)/);
+  assert.match(compatibilityCss, /max-height: min\(38vh, 260px\)/);
+  assert.match(compatibilityCss, /max-height: min\(25vh, 225px\)/);
   assert.match(css, /@keyframes bg12jCoachPulse/);
   const bg12jSection = css.split('/* BG12J — Coach-mark onboarding.')[1];
   assert.ok(bg12jSection, 'BG12J CSS section missing');
   assert.doesNotMatch(bg12jSection, /9999px/);
   assert.match(css, /tutorial-actions \.primary[\s\S]*width: auto/);
+});
+
+test('BG12J keeps only one automatic onboarding surface visible', () => {
+  assert.match(legacyOnboarding, /const \[open, setOpen\] = useState\(false\)/);
+  assert.doesNotMatch(legacyOnboarding, /useState\(\(\) => !readCompleted\(\)\)/);
+  assert.match(legacyOnboarding, /required 2D6 total/);
+  assert.match(compatibilityCss, /\.tutorial-guide\.action,[\s\S]*\.tutorial-guide\.explanation[\s\S]*display: block !important/);
+  assert.match(compatibilityCss, /body:has\(\.tutorial-guide\) \.tabletop-guide-button/);
+  assert.match(compatibilityCss, /body:has\(\.tutorial-guide\) \.tabletop-onboarding-card/);
 });
 
 test('BG12J preserves action context, navigation and accessibility instead of hiding tutorial state', () => {
@@ -62,18 +73,21 @@ test('BG12J remains presentation-only and does not take rules renderer or BG12K 
   assert.doesNotMatch(packageDoc, /new victory|new combat|new movement rule/i);
 });
 
-test('BG12J exact-head browser gate measures coach budgets, board visibility and interaction semantics', () => {
+test('BG12J exact-head browser gate measures coach budgets, single-surface guidance and interaction semantics', () => {
   assert.match(capture, /1900, height: 829/);
   assert.match(capture, /1366, height: 768/);
   assert.match(capture, /640, height: 900/);
-  assert.match(capture, /maxWidth: 320, maxHeight: 310/);
-  assert.match(capture, /maxWidth: 308, maxHeight: 280/);
+  assert.match(capture, /maxWidth: 320, maxHeight: 270/);
+  assert.match(capture, /maxWidth: 308, maxHeight: 235/);
+  assert.match(capture, /legacyFirstTurnGuideCount === 0/);
+  assert.match(capture, /guideButtonDisplay === 'none'/);
   assert.match(capture, /spotlightBoxShadow\.includes\('9999px'\)/);
   assert.match(capture, /guidePointerEvents === 'none'/);
   assert.match(capture, /coachPointerEvents === 'auto'/);
   assert.match(capture, /overflow <= 2/);
   assert.match(capture, /\.maplibregl-canvas/);
   assert.match(capture, /Skip tutorial/);
+  assert.match(capture, /reviewCase\.id === 'compact' \? 0\.13 : 0\.085/);
 });
 
 test('BG12J workflow validates exact head, legacy tutorial contracts, full regression, build and evidence', () => {
