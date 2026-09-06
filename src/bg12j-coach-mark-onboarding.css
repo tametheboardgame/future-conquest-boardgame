@@ -1,0 +1,9 @@
+/* BG12J coach-mark compatibility override.
+ * Older presentation layers suppress the action guide wrapper together with
+ * the retired manual-forward treatment. The action guide is now the coach-mark
+ * anchor shell; restore only that wrapper. The historical Forward control
+ * remains hidden by r3-wp6-5-interface-polish.css.
+ */
+.tutorial-guide.action {
+  display: block !important;
+}
