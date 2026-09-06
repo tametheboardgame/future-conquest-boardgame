@@ -203,8 +203,9 @@ async function runNormalCase(browser) {
 
     const startedAt = performance.now();
     await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').click();
-    await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.rolling').waitFor({ state: 'visible', timeout: 5000 });
+    await page.waitForFunction(() => (window.__bg12gDiceReviewEvents ?? []).some(event => event?.diceType === '2d6' && event?.phase === 'start'), null, { timeout: 5000 });
     await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray canvas[data-bg12g-integrated-dice-renderer="three"]').waitFor({ state: 'visible', timeout: 5000 });
+    await page.waitForFunction(() => (window.__bg12gDiceReviewEvents ?? []).some(event => event?.diceType === '2d6' && event?.phase === 'settled'), null, { timeout: 5000 });
     await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
     const settledMs = performance.now() - startedAt;
     const dice = await readAuthoritativeDice(page);
