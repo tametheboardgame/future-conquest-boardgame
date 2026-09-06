@@ -81,7 +81,54 @@ for (const reviewCase of cases) {
     const coach = page.locator('.tutorial-overlay').first();
     const spotlight = page.locator('.tutorial-spotlight').first();
     await guide.waitFor({ state: 'attached', timeout: 15000 });
-    await coach.waitFor({ state: 'visible', timeout: 15000 });
+    await coach.waitFor({ state: 'attached', timeout: 15000 });
+    await page.waitForTimeout(750);
+
+    const visibilityDiagnostic = await page.evaluate(() => {
+      const coach = document.querySelector('.tutorial-overlay');
+      if (!(coach instanceof HTMLElement)) return null;
+      const chain = [];
+      let element = coach;
+      while (element && chain.length < 8) {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        chain.push({
+          tag: element.tagName,
+          className: element.className,
+          styleAttribute: element.getAttribute('style'),
+          visibility: style.visibility,
+          display: style.display,
+          opacity: style.opacity,
+          contentVisibility: style.contentVisibility,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left
+        });
+        element = element.parentElement;
+      }
+      return {
+        placement: coach.dataset.placement ?? null,
+        mode: coach.dataset.mode ?? null,
+        chain
+      };
+    });
+    fs.writeFileSync(
+      path.join(outputDir, `${reviewCase.id}-visibility-diagnostic.json`),
+      `${JSON.stringify(visibilityDiagnostic, null, 2)}\n`
+    );
+    assert(visibilityDiagnostic, `${reviewCase.id} coach visibility diagnostic unavailable`);
+    const coachDiagnostic = visibilityDiagnostic.chain[0];
+    assert(
+      coachDiagnostic.visibility === 'visible'
+        && coachDiagnostic.display !== 'none'
+        && Number(coachDiagnostic.opacity) > 0
+        && coachDiagnostic.width > 0
+        && coachDiagnostic.height > 0,
+      `${reviewCase.id} coach remains hidden after portal release: ${JSON.stringify(visibilityDiagnostic)}`
+    );
+
+    await coach.waitFor({ state: 'visible', timeout: 5000 });
     await spotlight.waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForTimeout(500);
 
@@ -162,6 +209,7 @@ for (const reviewCase of cases) {
       ...reviewCase,
       portalBeforeTutorial,
       afterArrival,
+      visibilityDiagnostic,
       coachBox,
       spotlightBox,
       styles,
