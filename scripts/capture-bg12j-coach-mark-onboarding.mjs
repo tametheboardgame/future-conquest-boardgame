@@ -36,13 +36,13 @@ async function waitForPortalBeforeTutorial(page, timeout = 60000) {
 }
 
 const cases = [
-  { id: 'wide', width: 1900, height: 829, maxWidth: 320, maxHeight: 310 },
-  { id: 'laptop', width: 1366, height: 768, maxWidth: 320, maxHeight: 310 },
-  { id: 'compact', width: 640, height: 900, maxWidth: 308, maxHeight: 280 }
+  { id: 'wide', width: 1900, height: 829, maxWidth: 320, maxHeight: 270 },
+  { id: 'laptop', width: 1366, height: 768, maxWidth: 320, maxHeight: 270 },
+  { id: 'compact', width: 640, height: 900, maxWidth: 308, maxHeight: 235 }
 ];
 
 const evidence = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   head: process.env.BG12J_REF ?? process.env.GITHUB_SHA ?? null,
   cases: []
 };
@@ -56,6 +56,7 @@ for (const reviewCase of cases) {
     localStorage.setItem('future-conquest:intro-seen:v3', 'true');
     localStorage.removeItem('future-conquest-tutorial-seen-v1');
     localStorage.removeItem('future-conquest-tutorial-replay-v1');
+    localStorage.removeItem('future-conquest-bg11-onboarding-v1');
     sessionStorage.removeItem('future-conquest:r3-wp39c-arrival-played');
   });
 
@@ -135,11 +136,20 @@ for (const reviewCase of cases) {
     const afterArrival = await page.evaluate(() => ({
       portalCount: document.querySelectorAll('.r3-portal-arrival').length,
       tutorialCount: document.querySelectorAll('.tutorial-guide').length,
+      legacyFirstTurnGuideCount: document.querySelectorAll('.tabletop-onboarding-card').length,
+      guideButtonDisplay: (() => {
+        const button = document.querySelector('.tabletop-guide-button');
+        return button instanceof HTMLElement ? getComputedStyle(button).display : null;
+      })(),
       arrivalClass: document.querySelector('.startup-game-shell')?.classList.contains('portal-arrival-active') ?? false,
       formationsWithheld: document.documentElement.dataset.r3WithholdFormations === 'true'
     }));
     assert(afterArrival.portalCount === 0, `${reviewCase.id} portal remained mounted when coach mark began`);
     assert(afterArrival.tutorialCount === 1, `${reviewCase.id} coach mark did not begin after portal completion`);
+    assert(afterArrival.legacyFirstTurnGuideCount === 0,
+      `${reviewCase.id} duplicate FIRST TURN GUIDE remained mounted beside the coach mark`);
+    assert(afterArrival.guideButtonDisplay === 'none',
+      `${reviewCase.id} legacy Guide launcher remained visible while Guided Campaign was active`);
     assert(!afterArrival.arrivalClass, `${reviewCase.id} portal presentation class remained active`);
     assert(!afterArrival.formationsWithheld, `${reviewCase.id} formations remained withheld after portal completion`);
 
@@ -198,7 +208,7 @@ for (const reviewCase of cases) {
 
     const viewportArea = reviewCase.width * reviewCase.height;
     const coachArea = coachBox.width * coachBox.height;
-    assert(coachArea / viewportArea < (reviewCase.id === 'compact' ? 0.16 : 0.10),
+    assert(coachArea / viewportArea < (reviewCase.id === 'compact' ? 0.13 : 0.085),
       `${reviewCase.id} coach mark consumes too much viewport area: ${coachArea / viewportArea}`);
     assert(errors.length === 0, `${reviewCase.id} browser errors: ${JSON.stringify(errors)}`);
 
