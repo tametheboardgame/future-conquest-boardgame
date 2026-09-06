@@ -80,8 +80,8 @@ for (const reviewCase of cases) {
     const guide = page.locator('.tutorial-guide').first();
     const coach = page.locator('.tutorial-overlay').first();
     const spotlight = page.locator('.tutorial-spotlight').first();
-    await guide.waitFor({ state: 'visible', timeout: 15000 });
-    await coach.waitFor({ state: 'visible', timeout: 10000 });
+    await guide.waitFor({ state: 'attached', timeout: 15000 });
+    await coach.waitFor({ state: 'visible', timeout: 15000 });
     await spotlight.waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForTimeout(500);
 
