@@ -121,9 +121,10 @@ try {
   await page.screenshot({ path: path.join(outputDir, '03-attack-ready.png'), fullPage: false });
 
   await page.locator('.bg12h-contextual-combat .bg12g-pre-roll .bg12g-roll-button').click();
-  await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.rolling').waitFor({ state: 'visible', timeout: 5000 });
-  await page.waitForTimeout(420);
+  await page.waitForFunction(() => (window.__bg12hDiceEvents ?? []).some(event => event?.diceType === '2d6' && event?.phase === 'start'), null, { timeout: 5000 });
+  await page.waitForTimeout(120);
   await page.screenshot({ path: path.join(outputDir, '04-attack-rolling.png'), fullPage: false });
+  await page.waitForFunction(() => (window.__bg12hDiceEvents ?? []).some(event => event?.diceType === '2d6' && event?.phase === 'settled'), null, { timeout: 5000 });
   await page.locator('.bg12h-contextual-combat .bg12g-resolved-tray.settled').waitFor({ state: 'visible', timeout: 5000 });
 
   const settledRenderer = page.locator('.bg12h-contextual-combat .bg12g-resolved-tray .bg12g-integrated-dice[data-authoritative="true"]').first();

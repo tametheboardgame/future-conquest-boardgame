@@ -47,7 +47,7 @@ test('BG11A unavailable-action feedback remains accessible after BG12H contextua
   assert.match(passReason, /preview\.reason/);
   assert.match(passReason, /role="status"/);
 
-  assert.match(layout, /activeSurface === 'formation'[\s\S]*?<TabletopFormationInteraction \/>/);
+  assert.match(layout, /data-surface="formation"[\s\S]*?hidden=\{activeSurface !== 'formation'\}[\s\S]*?<TabletopFormationInteraction \/>/);
   assert.match(interaction, /disabled=\{!supportAvailable\}/);
   assert.match(interaction, /supportPreviews\.map\(action => `\$\{action\.label\}: \$\{action\.preview\?\.reason \?\? 'Unavailable'\}`\)/);
   assert.match(interaction, /disabled=\{!passPreview\.accepted\}/);

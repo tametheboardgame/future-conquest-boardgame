@@ -96,12 +96,29 @@ try {
         }
       }
     }
+    const markerStyle = firstFormation instanceof HTMLElement ? getComputedStyle(firstFormation) : null;
+    const formationState = firstFormation instanceof HTMLElement
+      ? firstFormation.querySelector(':scope > .bg12i-formation-state')
+      : null;
+    const formationStateStyle = formationState instanceof HTMLElement ? getComputedStyle(formationState) : null;
+    const formationStateRect = formationState instanceof HTMLElement ? formationState.getBoundingClientRect() : null;
     return {
       hostDataset: host instanceof HTMLElement ? { ...host.dataset } : null,
       webgl2: Boolean(document.querySelector('.r3-terrain-prototype-canvas canvas')?.getContext('webgl2')),
       formationEvidence: window.__r3FormationMiniatures ?? null,
       worldEvidence: window.__r3WorldMiniatures ?? null,
-      formationOpacity: firstFormation instanceof HTMLElement ? getComputedStyle(firstFormation).opacity : null,
+      formationOpacity: markerStyle?.opacity ?? null,
+      formationBackground: markerStyle?.backgroundColor ?? null,
+      formationBorderColor: markerStyle?.borderTopColor ?? null,
+      formationBoxShadow: markerStyle?.boxShadow ?? null,
+      formationStateVisible: Boolean(formationState instanceof HTMLElement
+        && formationStateStyle
+        && formationStateStyle.display !== 'none'
+        && formationStateStyle.visibility !== 'hidden'
+        && Number(formationStateStyle.opacity) > 0
+        && formationStateRect
+        && formationStateRect.width > 0
+        && formationStateRect.height > 0),
       markerSelectorDiagnostic: firstFormation instanceof HTMLElement ? {
         matchesReadySelector: firstFormation.matches(selector),
         insideHost: Boolean(firstFormation.closest('.r3-terrain-prototype')),
@@ -123,8 +140,13 @@ await page.screenshot({ path: process.env.WP35_SCREENSHOT ?? 'wp3-5-production-s
 await browser.close();
 await new Promise(resolveClose => server.close(resolveClose));
 
+const transparent = value => value === 'rgba(0, 0, 0, 0)' || value === 'transparent';
 const ready = result?.hostDataset?.physicalFormations === 'ready'
   && result?.formationEvidence?.renderCount > 0
   && result?.worldEvidence?.renderCount > 0
-  && Number(result?.formationOpacity) === 0;
+  && Number(result?.formationOpacity) > 0
+  && transparent(result?.formationBackground)
+  && transparent(result?.formationBorderColor)
+  && result?.formationBoxShadow === 'none'
+  && result?.formationStateVisible === true;
 if (!ready) process.exitCode = 2;

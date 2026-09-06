@@ -10,13 +10,9 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
 
-const visibleText = () => [...document.querySelectorAll('*')].some(element => {
-  const style = getComputedStyle(element);
-  const rect = element.getBoundingClientRect();
-  return element.textContent?.trim() === 'ATTACK ORDER READY'
-    && !element.hidden && style.visibility !== 'hidden' && style.display !== 'none'
-    && rect.width > 0 && rect.height > 0;
-});
+// BG12H retired the old priority-order panel. WP2I now waits for the actual
+// territory-selection state, while BG12H's contextual gate owns attack readiness.
+const frankfurtSelected = () => document.querySelector('.r3-terrain-territory-label.selected')?.getAttribute('data-territory-id') === 'DE-03';
 
 async function findAndSaveNaturalDusseldorfCampaign() {
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', ignoreHTTPSErrors: true });
@@ -285,7 +281,7 @@ async function assertInvariant(scenario, before, after, transitionError) {
   const centreDelta = Math.hypot(after.center[0] - before.center[0], after.center[1] - before.center[1]);
   if (before.zoom < 4.8 || before.lod !== 'campaign' || before.terrainRelief !== 'physical') throw new Error(`${scenario}: invalid Campaign baseline: ${JSON.stringify(before)}`);
   if (!after.sameMapInstance || before.mapInstanceIdentity !== after.mapInstanceIdentity) throw new Error(`${scenario}: selection remounted MapLibre.`);
-  if (after.selectedTerritory !== 'DE-03' || !after.attackOrderReady) throw new Error(`${scenario}: attack-ready selection was not reflected.`);
+  if (after.selectedTerritory !== 'DE-03') throw new Error(`${scenario}: Frankfurt selection was not reflected.`);
   if (after.zoom < 4.8 || after.lod !== 'campaign' || after.terrainRelief !== 'physical') throw new Error(`${scenario}: selection entered Theatre/strategic-flat presentation.`);
   if (Math.abs(after.zoom - before.zoom) > 0.01 || Math.abs(after.pitch - before.pitch) > 0.1 || Math.abs(after.bearing - before.bearing) > 0.1 || centreDelta > 0.01) {
     throw new Error(`${scenario}: selection changed the terrain camera: ${JSON.stringify({ before, after })}`);
@@ -333,7 +329,7 @@ async function runScenario({ name, activate }, savedCampaign) {
     try {
       activation = await activate(page);
       if (activation?.skipped) skipped = true;
-      if (!skipped) await page.waitForFunction(visibleText);
+      if (!skipped) await page.waitForFunction(frankfurtSelected);
     } catch (error) {
       transitionError = error instanceof Error ? (error.stack ?? error.message) : String(error);
     }

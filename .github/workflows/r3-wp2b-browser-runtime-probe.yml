@@ -119,11 +119,28 @@ jobs:
           const piecePresentation = await page.evaluate(() => {
             const marker = document.querySelector('.r3-terrain-task-group-marker');
             const physical = window.__r3FormationMiniatures;
+            const markerStyle = marker instanceof HTMLElement ? getComputedStyle(marker) : null;
+            const formationState = marker instanceof HTMLElement
+              ? marker.querySelector(':scope > .bg12i-formation-state')
+              : null;
+            const formationStateStyle = formationState instanceof HTMLElement ? getComputedStyle(formationState) : null;
+            const formationStateRect = formationState instanceof HTMLElement ? formationState.getBoundingClientRect() : null;
             return {
               physicalRenderCount: physical?.renderCount ?? 0,
               physicalVisible: physical?.pieces.filter(piece => piece.visible).length ?? 0,
-              compatibilityMarkerOpacity: marker instanceof HTMLElement ? getComputedStyle(marker).opacity : null,
-              compatibilityMarkerPosition: marker instanceof HTMLElement ? getComputedStyle(marker).position : null,
+              compatibilityMarkerOpacity: markerStyle?.opacity ?? null,
+              compatibilityMarkerPosition: markerStyle?.position ?? null,
+              compatibilityMarkerBackground: markerStyle?.backgroundColor ?? null,
+              compatibilityMarkerBorderColor: markerStyle?.borderTopColor ?? null,
+              compatibilityMarkerBoxShadow: markerStyle?.boxShadow ?? null,
+              formationStateVisible: Boolean(formationState instanceof HTMLElement
+                && formationStateStyle
+                && formationStateStyle.display !== 'none'
+                && formationStateStyle.visibility !== 'hidden'
+                && Number(formationStateStyle.opacity) > 0
+                && formationStateRect
+                && formationStateRect.width > 0
+                && formationStateRect.height > 0),
               markerKind: marker instanceof HTMLElement ? marker.dataset.r3MarkerKind ?? null : null
             };
           });
@@ -131,8 +148,15 @@ jobs:
           if (piecePresentation.physicalRenderCount < 1 || piecePresentation.physicalVisible < 1) {
             throw new Error(`WP3.5 physical formation layer is inactive: ${JSON.stringify(piecePresentation)}`);
           }
-          if (Number(piecePresentation.compatibilityMarkerOpacity) !== 0 || piecePresentation.compatibilityMarkerPosition !== 'absolute' || !piecePresentation.markerKind) {
-            throw new Error(`WP3.5 compatibility interaction target is not correctly hidden/anchored: ${JSON.stringify(piecePresentation)}`);
+          const transparent = value => value === 'rgba(0, 0, 0, 0)' || value === 'transparent';
+          if (Number(piecePresentation.compatibilityMarkerOpacity) <= 0
+            || piecePresentation.compatibilityMarkerPosition !== 'absolute'
+            || !piecePresentation.markerKind
+            || !transparent(piecePresentation.compatibilityMarkerBackground)
+            || !transparent(piecePresentation.compatibilityMarkerBorderColor)
+            || piecePresentation.compatibilityMarkerBoxShadow !== 'none'
+            || !piecePresentation.formationStateVisible) {
+            throw new Error(`WP3.5 compatibility target lost its transparent BG12I state-strip contract: ${JSON.stringify(piecePresentation)}`);
           }
 
           await page.waitForTimeout(1200);

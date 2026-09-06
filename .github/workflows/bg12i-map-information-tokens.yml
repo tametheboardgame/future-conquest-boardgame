@@ -1,0 +1,62 @@
+name: BG12I map information and board tokens
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BG12I_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  exact-head-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact BG12I head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BG12I_REF }}
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run BG12I and protected interaction contracts
+        run: |
+          node --test tests/bg12i-map-information-tokens.test.cjs tests/bg12h-contextual-formation-interaction.test.cjs tests/r3-wp2c-terrain-operational-markers.test.cjs tests/r3-wp2i-selection-regression.test.cjs
+      - name: Run full regression suite
+        run: npm test
+      - name: Build exact production game
+        run: npm run build
+      - name: Install browser evidence runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Start exact production preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/bg12i-preview.log 2>&1 &
+          for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/bg12i-preview.log
+          exit 1
+      - name: Capture map-information and board-token evidence
+        env:
+          BG12I_BASE_URL: http://127.0.0.1:4173
+          BG12I_OUTPUT_DIR: artifacts/bg12i
+        run: node scripts/capture-bg12i-map-information.mjs
+      - name: Upload BG12I evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12i-map-information-${{ env.BG12I_REF }}
+          path: |
+            artifacts/bg12i
+            /tmp/bg12i-preview.log
+          if-no-files-found: warn
