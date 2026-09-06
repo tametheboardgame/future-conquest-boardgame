@@ -7,3 +7,22 @@
 .tutorial-guide.action {
   display: block !important;
 }
+
+/* WP6.5 deliberately removed tutorial clipping for the old presentation panel.
+ * BG12J owns the coach-card footprint again: keep guidance compact and scroll
+ * inside the card when its retained explanatory content exceeds the budget. */
+.tutorial-guide .tutorial-overlay,
+.tutorial-guide .tutorial-overlay[data-mode='action'],
+.tutorial-guide .tutorial-overlay[data-mode='explanation'] {
+  max-height: min(42vh, 300px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 760px) {
+  .tutorial-guide .tutorial-overlay,
+  .tutorial-guide .tutorial-overlay[data-mode='action'],
+  .tutorial-guide .tutorial-overlay[data-mode='explanation'] {
+    max-height: min(34vh, 270px);
+  }
+}
