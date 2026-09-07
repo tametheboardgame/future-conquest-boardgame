@@ -25,6 +25,10 @@
   z-index: 2;
 }
 
+html.bg12d-board-ui .command-app-shell:has(.command-stage-forces),
+html.bg12d-board-ui .command-app-shell:has(.command-stage-campaign),
+html.bg12d-board-ui .command-app-shell:has(.command-stage-forces) .command-workspace,
+html.bg12d-board-ui .command-app-shell:has(.command-stage-campaign) .command-workspace,
 html.bg12d-board-ui .command-stage-forces,
 html.bg12d-board-ui .command-stage-campaign {
   background: transparent !important;
