@@ -40,9 +40,12 @@ html.bg12d-board-ui .command-stage-campaign .campaign-view {
   top: 58px;
   bottom: 10px;
   z-index: 74;
+  box-sizing: border-box;
   width: clamp(292px, 31vw, 430px);
   max-width: calc(100vw - 92px);
-  min-height: 0;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
   margin: 0;
   padding: 12px;
   overflow: auto;
