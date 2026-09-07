@@ -10,7 +10,7 @@ function stripInteractiveIdentity(root: HTMLElement) {
   });
 }
 
-function cloneMapWorkspace(source: HTMLElement): HTMLElement {
+function cloneMapStage(source: HTMLElement): HTMLElement {
   const clone = source.cloneNode(true) as HTMLElement;
   clone.classList.add(SNAPSHOT_CLASS);
   clone.dataset.bg12kMapUnderlay = 'true';
@@ -37,7 +37,7 @@ function cloneMapWorkspace(source: HTMLElement): HTMLElement {
 }
 
 function activeCommandView(): string | null {
-  return document.querySelector<HTMLElement>('.command-stage')?.className
+  return document.querySelector<HTMLElement>('.command-app-shell .command-stage')?.className
     .match(/command-stage-([a-z-]+)/)?.[1] ?? null;
 }
 
@@ -50,9 +50,9 @@ export function installBg12kSecondaryDrawers() {
   };
 
   const cacheVisibleMap = () => {
-    const map = document.querySelector<HTMLElement>('.command-stage-map .command-map-workspace');
-    if (!map) return;
-    cachedMap = cloneMapWorkspace(map);
+    const mapStage = document.querySelector<HTMLElement>('.command-app-shell .command-stage-map');
+    if (!mapStage) return;
+    cachedMap = cloneMapStage(mapStage);
   };
 
   const sync = () => {
@@ -69,7 +69,7 @@ export function installBg12kSecondaryDrawers() {
     }
 
     const boardZone = document.querySelector<HTMLElement>('.bg12e-board-zone');
-    if (!boardZone || boardZone.querySelector(`.${SNAPSHOT_CLASS}`) || !cachedMap) return;
+    if (!boardZone || boardZone.querySelector(`:scope > .${SNAPSHOT_CLASS}`) || !cachedMap) return;
     boardZone.prepend(cachedMap.cloneNode(true));
   };
 
