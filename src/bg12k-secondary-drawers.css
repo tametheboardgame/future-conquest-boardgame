@@ -93,6 +93,18 @@ html.bg12d-board-ui .command-stage-campaign .campaign-events {
   overflow: auto;
 }
 
+/* Only one secondary aide is available at a time. Forces / Rules & Save hide
+ * the global Settings launcher, while an open Settings panel suspends command
+ * navigation until it is closed. */
+body:has(.command-stage-forces) .global-settings-toggle,
+body:has(.command-stage-campaign) .global-settings-toggle {
+  display: none !important;
+}
+
+body:has(.global-settings-panel) .command-navigation {
+  pointer-events: none !important;
+}
+
 /* Settings keeps its existing global settings architecture. During gameplay
  * its established modal surface is simply restyled as the same right-hand
  * board aide. Launcher/prologue/ending settings retain their original modal. */
