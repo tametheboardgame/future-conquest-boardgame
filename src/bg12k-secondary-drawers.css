@@ -1,0 +1,144 @@
+/* BG12K turns retained supporting surfaces into temporary board-game aides.
+ * These rules are presentation-only: the existing Forces, Campaign and global
+ * Settings state/handlers remain authoritative. */
+
+html.bg12d-board-ui .command-stage-forces .forces-view,
+html.bg12d-board-ui .command-stage-campaign .campaign-view {
+  position: fixed;
+  top: 58px;
+  bottom: 10px;
+  z-index: 74;
+  width: clamp(292px, 31vw, 430px);
+  max-width: calc(100vw - 92px);
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(131, 158, 164, .68);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(27, 40, 45, .985), rgba(10, 22, 27, .985));
+  box-shadow: 0 18px 46px rgba(0, 0, 0, .48);
+  scrollbar-width: thin;
+}
+
+html.bg12d-board-ui .command-stage-forces .forces-view {
+  left: 54px;
+}
+
+html.bg12d-board-ui .command-stage-campaign .campaign-view {
+  right: calc(var(--bg12e-rail-width, 44px) + 8px);
+}
+
+html.bg12d-board-ui .command-stage-forces .forces-view .command-view-header,
+html.bg12d-board-ui .command-stage-campaign .campaign-view .command-view-header {
+  position: sticky;
+  top: -12px;
+  z-index: 3;
+  margin: -12px -12px 10px;
+  padding: 11px 12px 9px;
+  border-bottom: 1px solid rgba(131, 158, 164, .35);
+  background: rgba(15, 28, 33, .98);
+}
+
+html.bg12d-board-ui .command-stage-forces .forces-view .command-view-header > p,
+html.bg12d-board-ui .command-stage-campaign .campaign-view .command-view-header > p {
+  margin: 4px 0 0;
+  font-size: 10px;
+  line-height: 1.35;
+  opacity: .72;
+}
+
+html.bg12d-board-ui .command-stage-forces .forces-command-grid,
+html.bg12d-board-ui .command-stage-campaign .campaign-command-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 9px !important;
+}
+
+html.bg12d-board-ui .command-stage-campaign .campaign-event-log {
+  margin-top: 9px;
+}
+
+html.bg12d-board-ui .command-stage-campaign .campaign-events {
+  max-height: 190px;
+  overflow: auto;
+}
+
+/* Settings keeps its existing global settings architecture. During gameplay
+ * its established modal surface is simply restyled as the same right-hand
+ * board aide. Launcher/prologue/ending settings retain their original modal. */
+html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop {
+  pointer-events: none;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 58px calc(var(--bg12e-rail-width, 44px) + 8px) 10px 8px;
+  background: rgba(0, 0, 0, .08);
+}
+
+html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel {
+  pointer-events: auto;
+  width: clamp(300px, 31vw, 430px);
+  max-width: calc(100vw - 92px);
+  max-height: 100%;
+  margin: 0;
+  border-radius: 5px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, .48);
+}
+
+html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel > header,
+html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel > footer {
+  position: sticky;
+  z-index: 4;
+  background: rgba(15, 28, 33, .985);
+}
+
+html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel > header {
+  top: 0;
+}
+
+html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel > footer {
+  bottom: 0;
+}
+
+/* A secondary aide never owns the whole compact viewport. The board remains
+ * visually legible around it, and all long content scrolls inside the drawer. */
+@media (max-width: 900px) {
+  html.bg12d-board-ui .command-stage-forces .forces-view,
+  html.bg12d-board-ui .command-stage-campaign .campaign-view {
+    top: 70px;
+    bottom: calc(var(--bg12e-rail-height, 48px) + 8px);
+    width: min(360px, calc(100vw - 68px));
+    max-width: calc(100vw - 68px);
+  }
+
+  html.bg12d-board-ui .command-stage-forces .forces-view {
+    left: 8px;
+  }
+
+  html.bg12d-board-ui .command-stage-campaign .campaign-view {
+    right: 8px;
+  }
+
+  html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop {
+    padding: 70px 8px calc(var(--bg12e-rail-height, 48px) + 8px) 68px;
+  }
+
+  html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel {
+    width: min(360px, calc(100vw - 68px));
+    max-width: calc(100vw - 68px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.bg12d-board-ui .command-stage-forces .forces-view,
+  html.bg12d-board-ui .command-stage-campaign .campaign-view,
+  html.bg12d-board-ui .startup-game-shell:not(.launcher-covered) ~ .global-settings-backdrop .global-settings-panel {
+    animation: bg12k-drawer-in 140ms ease-out;
+  }
+}
+
+@keyframes bg12k-drawer-in {
+  from { opacity: .72; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
