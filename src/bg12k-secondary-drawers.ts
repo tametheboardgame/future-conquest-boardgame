@@ -43,6 +43,7 @@ function activeCommandView(): string | null {
 
 export function installBg12kSecondaryDrawers() {
   let cachedMap: HTMLElement | null = null;
+  let syncFrame: number | null = null;
 
   const removeMountedSnapshot = () => {
     document.querySelectorAll(`.${SNAPSHOT_CLASS}`).forEach(node => node.remove());
@@ -55,6 +56,7 @@ export function installBg12kSecondaryDrawers() {
   };
 
   const sync = () => {
+    syncFrame = null;
     const view = activeCommandView();
     if (view === 'map') {
       removeMountedSnapshot();
@@ -71,14 +73,38 @@ export function installBg12kSecondaryDrawers() {
     boardZone.prepend(cachedMap.cloneNode(true));
   };
 
-  const observer = new MutationObserver(() => queueMicrotask(sync));
+  const scheduleSync = () => {
+    if (syncFrame !== null) return;
+    syncFrame = window.requestAnimationFrame(sync);
+  };
+
+  const closeTopmostSecondaryAide = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+
+    const settingsClose = document.querySelector<HTMLButtonElement>('.global-settings-panel .settings-close');
+    if (settingsClose) {
+      settingsClose.click();
+      return;
+    }
+
+    const view = activeCommandView();
+    if (!view || !SECONDARY_VIEWS.has(view)) return;
+    document.querySelector<HTMLButtonElement>(`[data-command-view="${view}"]`)?.click();
+  };
+
+  const observer = new MutationObserver(scheduleSync);
   const start = () => {
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    document.addEventListener('keydown', closeTopmostSecondaryAide);
     sync();
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();
 
-  window.addEventListener('beforeunload', () => observer.disconnect(), { once: true });
+  window.addEventListener('beforeunload', () => {
+    observer.disconnect();
+    document.removeEventListener('keydown', closeTopmostSecondaryAide);
+    if (syncFrame !== null) window.cancelAnimationFrame(syncFrame);
+  }, { once: true });
 }
