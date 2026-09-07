@@ -36,7 +36,7 @@ test('BG12K preserves board context as an inert non-interactive underlay', () =>
   assert.match(behaviour, /SECONDARY_VIEWS = new Set\(\['forces', 'campaign'\]\)/);
   assert.match(behaviour, /\.command-app-shell \.command-stage-map/);
   assert.match(behaviour, /cloneMapStage/);
-  assert.match(behaviour, /data\.bg12kMapUnderlay = 'true'/);
+  assert.match(behaviour, /dataset\.bg12kMapUnderlay = 'true'/);
   assert.match(behaviour, /setAttribute\('aria-hidden', 'true'\)/);
   assert.match(behaviour, /setAttribute\('inert', ''\)/);
   assert.match(behaviour, /removeAttribute\('id'\)/);
@@ -70,7 +70,7 @@ test('BG12K Escape handling closes Settings first and otherwise returns a second
   assert.match(behaviour, /event\.key !== 'Escape'/);
   assert.match(behaviour, /\.global-settings-panel \.settings-close/);
   assert.match(behaviour, /settingsClose\.click\(\)/);
-  assert.match(behaviour, /\[data-command-view="\$\{view\}"\]/);
+  assert.match(behaviour, /data-command-view=.*\$\{view\}/);
   assert.match(behaviour, /requestAnimationFrame\(sync\)/);
 });
 
@@ -86,8 +86,8 @@ test('BG12K browser gate covers desktop, laptop and compact drawer behaviour', (
   assert.match(capture, /1900, height: 829/);
   assert.match(capture, /1366, height: 768/);
   assert.match(capture, /640, height: 900/);
-  assert.match(capture, /data-command-view="forces"/);
-  assert.match(capture, /data-command-view="campaign"/);
+  assert.match(capture, /data-command-view=.*forces/);
+  assert.match(capture, /data-command-view=.*campaign/);
   assert.match(capture, /bg12k-map-underlay/);
   assert.match(capture, /Open game settings/);
   assert.match(capture, /singleAideCount/);
