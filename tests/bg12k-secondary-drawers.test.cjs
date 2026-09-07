@@ -40,6 +40,8 @@ test('BG12K preserves board context as an inert non-interactive underlay', () =>
   assert.match(behaviour, /setAttribute\('aria-hidden', 'true'\)/);
   assert.match(behaviour, /setAttribute\('inert', ''\)/);
   assert.match(behaviour, /removeAttribute\('id'\)/);
+  assert.match(behaviour, /boardZone\.prepend\(cachedMap\)/);
+  assert.doesNotMatch(behaviour, /cachedMap\.cloneNode/);
   assert.match(css, /\.bg12e-board-zone > \.bg12k-map-underlay[\s\S]*pointer-events: none !important/);
   assert.match(css, /command-app-shell:has\(\.command-stage-forces\)[\s\S]*background: transparent !important/);
 });
