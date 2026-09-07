@@ -1,0 +1,63 @@
+name: BG12K secondary drawers
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BG12K_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  exact-head-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact BG12K head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BG12K_REF }}
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run BG12K and protected board-game presentation contracts
+        run: |
+          node --test tests/bg12k-secondary-drawers.test.cjs tests/bg12j-coach-mark-onboarding.test.cjs tests/bg11a-onboarding-feedback.test.cjs tests/bg12h-contextual-formation-interaction.test.cjs
+      - name: Run full regression suite
+        run: npm test
+      - name: Build exact production game
+        run: npm run build
+      - name: Install browser evidence runtime
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Start exact production preview
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 >/tmp/bg12k-preview.log 2>&1 &
+          for i in {1..45}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/bg12k-preview.log
+          exit 1
+      - name: Capture secondary drawer evidence
+        env:
+          BG12K_REF: ${{ env.BG12K_REF }}
+          BG12K_BASE_URL: http://127.0.0.1:4173
+          BG12K_OUTPUT_DIR: artifacts/bg12k
+        run: node scripts/capture-bg12k-secondary-drawers.mjs
+      - name: Upload BG12K evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg12k-secondary-drawers-${{ env.BG12K_REF }}
+          path: |
+            artifacts/bg12k
+            /tmp/bg12k-preview.log
+          if-no-files-found: warn

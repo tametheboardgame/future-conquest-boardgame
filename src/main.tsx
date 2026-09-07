@@ -50,14 +50,17 @@ import './bg12e-tabletop-layout.css';
 import './bg12e-settings-access.css';
 import './bg12h-contextual-combat-fit.css';
 import './bg12j-coach-mark-onboarding.css';
+import './bg12k-secondary-drawers.css';
 import { installMapTrackpadGuard } from './map-trackpad-guard';
 import { installR3MapVisualGrading } from './presentation/r3-map-visual-grading';
 import { installWp6NotificationDisclosure } from './wp6-notification-disclosure';
 import { installWp66WarningPreferences } from './wp66-warning-preferences';
 import { installR4UsabilityHotfix } from './r4-usability-hotfix';
 import { installBg12dLegacyPresentationQuarantine } from './bg12d-legacy-presentation-quarantine';
+import { installBg12kSecondaryDrawers } from './bg12k-secondary-drawers';
 
 installBg12dLegacyPresentationQuarantine();
+installBg12kSecondaryDrawers();
 installMapTrackpadGuard();
 installR3MapVisualGrading();
 installWp6NotificationDisclosure();
