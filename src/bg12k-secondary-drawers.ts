@@ -70,7 +70,10 @@ export function installBg12kSecondaryDrawers() {
 
     const boardZone = document.querySelector<HTMLElement>('.bg12e-board-zone');
     if (!boardZone || boardZone.querySelector(`:scope > .${SNAPSHOT_CLASS}`) || !cachedMap) return;
-    boardZone.prepend(cachedMap.cloneNode(true));
+    // Mount the already-copied snapshot itself. Cloning a canvas element does
+    // not copy its bitmap, so a second clone would turn a captured WebGL board
+    // into a blank canvas even though the source snapshot was valid.
+    boardZone.prepend(cachedMap);
   };
 
   const scheduleSync = () => {
