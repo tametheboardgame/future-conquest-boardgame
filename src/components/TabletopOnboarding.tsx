@@ -27,7 +27,7 @@ const STEPS: OnboardingStep[] = [
   },
   {
     title: 'Combat is visible dice combat',
-    copy: 'Choose an attacking formation and an adjacent enemy target. Before committing, the combat panel shows the D20 target, supply, terrain and fortification modifiers, plus the possible outcomes.',
+    copy: 'Choose an attacking formation and an adjacent enemy target. Before committing, the combat panel shows the required 2D6 total, supply, terrain and fortification modifiers, plus the possible outcomes.',
     selector: '.tabletop-combat-panel'
   },
   {
@@ -36,15 +36,6 @@ const STEPS: OnboardingStep[] = [
     selector: '.tabletop-support-panel'
   }
 ];
-
-function readCompleted(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === 'complete';
-  } catch {
-    return false;
-  }
-}
 
 function persistCompleted() {
   try {
@@ -55,7 +46,9 @@ function persistCompleted() {
 }
 
 export function TabletopOnboarding() {
-  const [open, setOpen] = useState(() => !readCompleted());
+  // BG12J makes the anchored Guided Campaign the only automatic onboarding.
+  // This older first-turn reference remains available on demand from Guide.
+  const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const step = STEPS[stepIndex];
 

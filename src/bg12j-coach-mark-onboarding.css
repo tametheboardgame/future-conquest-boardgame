@@ -1,0 +1,72 @@
+/* BG12J coach-mark compatibility override.
+ * Older presentation layers suppress the guided wrapper together with the
+ * retired manual-forward treatment. The anchored coach mark now owns automatic
+ * onboarding, so both action and explanation modes must remain available.
+ */
+.tutorial-guide.action,
+.tutorial-guide.explanation {
+  display: block !important;
+}
+
+/* The older BG11 first-turn reference remains a manual utility, but it must not
+ * compete with the active Guided Campaign coach mark. */
+body:has(.tutorial-guide) .tabletop-guide-button,
+body:has(.tutorial-guide) .tabletop-onboarding-card {
+  display: none !important;
+}
+
+/* WP6.5 deliberately removed tutorial clipping for the old presentation panel.
+ * BG12J owns the coach-card footprint again. Keep the card itself fixed within
+ * the compact budget, let explanatory regions yield/scroll when necessary, and
+ * keep navigation/skip controls continuously visible at the bottom. */
+.tutorial-guide .tutorial-overlay,
+.tutorial-guide .tutorial-overlay[data-mode='action'],
+.tutorial-guide .tutorial-overlay[data-mode='explanation'] {
+  display: flex;
+  flex-direction: column;
+  max-height: min(38vh, 260px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.tutorial-guide .tutorial-progress,
+.tutorial-guide .tutorial-overlay h2,
+.tutorial-guide .tutorial-actions {
+  flex: 0 0 auto;
+}
+
+.tutorial-guide .tutorial-overlay > p,
+.tutorial-guide .tutorial-action-brief {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.tutorial-guide .tutorial-overlay > p {
+  flex: 1 1 auto;
+}
+
+.tutorial-guide .tutorial-action-brief {
+  flex: 1 1 auto;
+}
+
+.tutorial-guide .tutorial-hint {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 44px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 760px) {
+  .tutorial-guide .tutorial-overlay,
+  .tutorial-guide .tutorial-overlay[data-mode='action'],
+  .tutorial-guide .tutorial-overlay[data-mode='explanation'] {
+    max-height: min(25vh, 225px);
+  }
+
+  .tutorial-guide .tutorial-hint {
+    max-height: 34px;
+  }
+}

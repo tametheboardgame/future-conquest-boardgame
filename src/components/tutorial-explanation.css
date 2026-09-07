@@ -92,3 +92,154 @@
     width: min(390px, calc(100vw - 16px));
   }
 }
+
+/* BG12J — Coach-mark onboarding.
+   Keep the existing tutorial state machine and anchoring engine, but present it
+   as a small board annotation rather than a tutorial panel. */
+.tutorial-guide .tutorial-spotlight,
+.tutorial-guide.explanation .tutorial-spotlight {
+  border-width: 2px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(118, 215, 255, .18), 0 0 18px rgba(74, 185, 255, .46);
+  animation: bg12jCoachPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes bg12jCoachPulse {
+  50% {
+    border-color: #d4f5ff;
+    box-shadow: 0 0 0 2px rgba(118, 215, 255, .16), 0 0 24px rgba(74, 185, 255, .56);
+  }
+}
+
+.tutorial-guide .tutorial-overlay,
+.tutorial-overlay[data-mode='explanation'],
+.tutorial-overlay[data-mode='action'] {
+  width: min(312px, calc(100vw - 20px));
+  max-height: min(42vh, 300px);
+  padding: 11px 12px 10px;
+  border-radius: 6px;
+  background: rgba(9, 20, 31, .94);
+  box-shadow: 0 12px 34px rgba(0,0,0,.46), 0 0 0 1px rgba(118,215,255,.09);
+  scrollbar-width: thin;
+}
+
+.tutorial-guide .tutorial-progress {
+  gap: 10px;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.tutorial-guide .tutorial-overlay h2 {
+  margin: 5px 0 4px;
+  font-size: 17px;
+  line-height: 1.08;
+}
+
+.tutorial-guide .tutorial-overlay > p {
+  margin: 0;
+  color: #c3d0dc;
+  font-size: 11px;
+  line-height: 1.38;
+}
+
+.tutorial-guide .tutorial-action-brief {
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.tutorial-guide .tutorial-action-brief > div {
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 6px;
+  padding: 4px 6px;
+  border-color: rgba(126, 217, 255, .11);
+  background: rgba(126, 217, 255, .025);
+}
+
+.tutorial-guide .tutorial-action-brief span {
+  font-size: 7px;
+}
+
+.tutorial-guide .tutorial-action-brief p {
+  font-size: 9px;
+  line-height: 1.28;
+}
+
+.tutorial-guide .tutorial-hint {
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.tutorial-guide .tutorial-hint span {
+  font-size: 12px;
+}
+
+.tutorial-guide .tutorial-actions {
+  gap: 5px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.tutorial-guide .tutorial-actions button,
+.tutorial-guide .tutorial-actions .primary,
+.tutorial-guide .tutorial-actions .secondary {
+  width: auto;
+  min-height: 28px;
+  padding: 5px 8px;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.tutorial-overlay[data-placement='docked-top'],
+.tutorial-overlay[data-placement='docked-bottom'] {
+  box-shadow: 0 10px 30px rgba(0,0,0,.46), 0 0 0 1px rgba(118,215,255,.09);
+}
+
+@media (max-width: 760px) {
+  .tutorial-guide .tutorial-overlay,
+  .tutorial-overlay[data-mode='explanation'],
+  .tutorial-overlay[data-mode='action'],
+  .tutorial-overlay[data-placement='docked-top'],
+  .tutorial-overlay[data-placement='docked-bottom'] {
+    width: min(300px, calc(100vw - 16px));
+    max-height: min(34vh, 270px);
+    padding: 9px 10px 8px;
+  }
+
+  .tutorial-guide .tutorial-overlay h2 {
+    font-size: 15px;
+  }
+
+  .tutorial-guide .tutorial-overlay > p {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.32;
+  }
+
+  .tutorial-guide .tutorial-action-brief > div {
+    grid-template-columns: 68px minmax(0, 1fr);
+    padding: 4px 5px;
+  }
+
+  .tutorial-guide .tutorial-action-brief p,
+  .tutorial-guide .tutorial-hint {
+    font-size: 8px;
+  }
+
+  .tutorial-guide .tutorial-actions button,
+  .tutorial-guide .tutorial-actions .primary,
+  .tutorial-guide .tutorial-actions .secondary {
+    min-height: 27px;
+    padding: 5px 7px;
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-guide .tutorial-spotlight,
+  .tutorial-guide.explanation .tutorial-spotlight {
+    animation: none;
+  }
+}
