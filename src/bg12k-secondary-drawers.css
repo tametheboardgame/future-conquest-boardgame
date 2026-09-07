@@ -2,6 +2,34 @@
  * These rules are presentation-only: the existing Forces, Campaign and global
  * Settings state/handlers remain authoritative. */
 
+/* App historically unmounts the command map when Forces or Campaign becomes
+ * the active command view. BG12K caches the most recent board presentation and
+ * mounts an inert copy inside the existing board zone while either aide is
+ * open. It is visual context only: gameplay remains owned by App. */
+.bg12e-board-zone > .bg12k-map-underlay {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.bg12e-board-zone > .command-app-shell {
+  position: relative;
+  z-index: 2;
+}
+
+html.bg12d-board-ui .command-stage-forces,
+html.bg12d-board-ui .command-stage-campaign {
+  background: transparent !important;
+}
+
 html.bg12d-board-ui .command-stage-forces .forces-view,
 html.bg12d-board-ui .command-stage-campaign .campaign-view {
   position: fixed;
